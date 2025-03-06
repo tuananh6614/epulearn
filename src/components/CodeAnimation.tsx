@@ -57,9 +57,9 @@ console.log("Sẵn sàng cho các thử thách!");`;
   return (
     <div className="code-container">
       <pre className="text-sm md:text-base">
-        <code className="text-gray-100">
+        <code className="text-green-400">
           {text}
-          <span className={`${cursorVisible ? 'opacity-100' : 'opacity-0'} transition-opacity`}>|</span>
+          <span className={`${cursorVisible ? 'opacity-100' : 'opacity-0'} transition-opacity text-orange-400`}>|</span>
         </code>
       </pre>
     </div>

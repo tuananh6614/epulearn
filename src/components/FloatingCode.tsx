@@ -1,10 +1,12 @@
 
 import React from 'react';
 
+// Định nghĩa kiểu dữ liệu cho props
 interface FloatingCodeProps {
   style?: React.CSSProperties;
 }
 
+// Component hiển thị đoạn code nổi với animation
 const FloatingCode: React.FC<FloatingCodeProps> = ({ style }) => {
   return (
     <div
@@ -16,16 +18,16 @@ const FloatingCode: React.FC<FloatingCodeProps> = ({ style }) => {
     >
       <pre>
         {`
-function helloWorld() {
-  console.log("Hello, world!");
+function xinChao() {
+  console.log("Xin chào, thế giới!");
   return {
-    message: "Welcome to EPU Learn!",
-    status: 200,
-    success: true
+    thongDiep: "Chào mừng đến với EPU Learn!",
+    trangThai: 200,
+    thanhCong: true
   };
 }
 
-const result = helloWorld();
+const ketQua = xinChao();
         `}
       </pre>
     </div>

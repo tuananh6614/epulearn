@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from "react-router-dom";
 import { Code, Facebook, Twitter, Instagram, Linkedin, Mail } from "lucide-react";
 
+// Component footer
 const Footer = () => {
   return (
     <footer className="bg-epu-dark text-white">
@@ -16,28 +17,28 @@ const Footer = () => {
               <span className="font-bold text-xl">EPU<span className="text-epu-green">Learn</span></span>
             </Link>
             <p className="text-gray-400 mb-6">
-              The premier platform for learning programming languages through interactive lessons and chapter quizzes.
+              Nền tảng hàng đầu để học các ngôn ngữ lập trình thông qua bài học tương tác và kiểm tra sau mỗi chương.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors hover-scale">
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors hover-scale">
                 <Twitter className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors hover-scale">
                 <Instagram className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors hover-scale">
                 <Linkedin className="h-5 w-5" />
               </a>
             </div>
           </div>
           
           <div className="col-span-1">
-            <h3 className="font-bold text-lg mb-4">Courses</h3>
+            <h3 className="font-bold text-lg mb-4">Khóa Học</h3>
             <ul className="space-y-3">
-              <li><Link to="/courses/web-development" className="text-gray-400 hover:text-white transition-colors">Web Development</Link></li>
+              <li><Link to="/courses/web-development" className="text-gray-400 hover:text-white transition-colors">Phát Triển Web</Link></li>
               <li><Link to="/courses/python" className="text-gray-400 hover:text-white transition-colors">Python</Link></li>
               <li><Link to="/courses/javascript" className="text-gray-400 hover:text-white transition-colors">JavaScript</Link></li>
               <li><Link to="/courses/java" className="text-gray-400 hover:text-white transition-colors">Java</Link></li>
@@ -46,30 +47,30 @@ const Footer = () => {
           </div>
           
           <div className="col-span-1">
-            <h3 className="font-bold text-lg mb-4">Resources</h3>
+            <h3 className="font-bold text-lg mb-4">Tài Nguyên</h3>
             <ul className="space-y-3">
               <li><Link to="/blog" className="text-gray-400 hover:text-white transition-colors">Blog</Link></li>
-              <li><Link to="/tutorials" className="text-gray-400 hover:text-white transition-colors">Tutorials</Link></li>
-              <li><Link to="/documentation" className="text-gray-400 hover:text-white transition-colors">Documentation</Link></li>
+              <li><Link to="/tutorials" className="text-gray-400 hover:text-white transition-colors">Hướng Dẫn</Link></li>
+              <li><Link to="/documentation" className="text-gray-400 hover:text-white transition-colors">Tài Liệu</Link></li>
               <li><Link to="/faq" className="text-gray-400 hover:text-white transition-colors">FAQ</Link></li>
-              <li><Link to="/community" className="text-gray-400 hover:text-white transition-colors">Community</Link></li>
+              <li><Link to="/community" className="text-gray-400 hover:text-white transition-colors">Cộng Đồng</Link></li>
             </ul>
           </div>
           
           <div className="col-span-1">
-            <h3 className="font-bold text-lg mb-4">Company</h3>
+            <h3 className="font-bold text-lg mb-4">Công Ty</h3>
             <ul className="space-y-3">
-              <li><Link to="/about" className="text-gray-400 hover:text-white transition-colors">About Us</Link></li>
-              <li><Link to="/contact" className="text-gray-400 hover:text-white transition-colors">Contact</Link></li>
-              <li><Link to="/careers" className="text-gray-400 hover:text-white transition-colors">Careers</Link></li>
-              <li><Link to="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="text-gray-400 hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><Link to="/about" className="text-gray-400 hover:text-white transition-colors">Về Chúng Tôi</Link></li>
+              <li><Link to="/contact" className="text-gray-400 hover:text-white transition-colors">Liên Hệ</Link></li>
+              <li><Link to="/careers" className="text-gray-400 hover:text-white transition-colors">Tuyển Dụng</Link></li>
+              <li><Link to="/privacy" className="text-gray-400 hover:text-white transition-colors">Chính Sách Bảo Mật</Link></li>
+              <li><Link to="/terms" className="text-gray-400 hover:text-white transition-colors">Điều Khoản Dịch Vụ</Link></li>
             </ul>
           </div>
         </div>
         
         <div className="border-t border-gray-800 mt-10 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400">© 2023 EPU Learn. All rights reserved.</p>
+          <p className="text-gray-400">© 2023 EPU Learn. Tất cả các quyền được bảo lưu.</p>
           <div className="flex items-center mt-4 md:mt-0">
             <Mail className="h-5 w-5 mr-2 text-gray-400" />
             <a href="mailto:contact@epulearn.com" className="text-gray-400 hover:text-white transition-colors">contact@epulearn.com</a>

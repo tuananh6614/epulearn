@@ -5,10 +5,11 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from 'lucide-react';
 import CodeAnimation from './CodeAnimation';
 
+// Component Hero chính hiển thị phần đầu trang
 const Hero = () => {
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-white to-gray-50 py-12 md:py-24">
-      {/* Animated background elements */}
+      {/* Các phần tử nền có animation */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="animate-float absolute top-1/4 left-1/6 w-64 h-64 rounded-full bg-epu-green/5"></div>
         <div className="animate-float animation-delay-1000 absolute bottom-1/4 right-1/6 w-96 h-96 rounded-full bg-epu-blue/5"></div>
@@ -20,26 +21,26 @@ const Hero = () => {
           <div className="space-y-6">
             <div className="typewriter mb-4">
               <h1 className="text-4xl md:text-5xl font-bold text-epu-dark leading-tight mb-4 inline-block">
-                Learn coding <span className="text-epu-green">interactively</span>
+                Học lập trình <span className="text-epu-green">tương tác</span>
               </h1>
             </div>
             <p className="text-lg text-gray-600 mb-8">
-              Master programming languages through interactive lessons and test your knowledge after each chapter. Turn learning into an adventure!
+              Làm chủ các ngôn ngữ lập trình thông qua các bài học tương tác và kiểm tra kiến thức sau mỗi chương. Biến việc học thành một cuộc phiêu lưu!
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button className="bg-epu-green hover:bg-epu-green/90 text-white px-6 py-6 rounded-md text-lg" asChild>
                 <Link to="/courses">
-                  Explore Courses
+                  Khám Phá Khóa Học
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
               <Button variant="outline" className="border-epu-blue text-epu-blue hover:bg-epu-blue/10 px-6 py-6 rounded-md text-lg" asChild>
-                <Link to="/demo">Try Demo Lesson</Link>
+                <Link to="/demo">Thử Bài Học Demo</Link>
               </Button>
             </div>
           </div>
           
-          <div className="relative">
+          <div className="relative animate-float">
             <div className="relative bg-white rounded-xl shadow-xl overflow-hidden border border-gray-200">
               <div className="absolute top-0 left-0 right-0 h-8 bg-gray-800 flex items-center px-4">
                 <div className="flex space-x-2">

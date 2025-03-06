@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, BookOpen, Clock, Award } from "lucide-react";
 import { Link } from "react-router-dom";
 
+// Định nghĩa kiểu dữ liệu cho CourseCard
 interface CourseCardProps {
   id: string;
   title: string;
@@ -18,6 +19,7 @@ interface CourseCardProps {
   color: string;
 }
 
+// Component hiển thị thẻ khóa học
 const CourseCard = ({ 
   id, 
   title, 
@@ -30,7 +32,7 @@ const CourseCard = ({
   color 
 }: CourseCardProps) => {
   return (
-    <Card className="course-card overflow-hidden border border-gray-200 transition-all hover:shadow-md">
+    <Card className="course-card overflow-hidden border border-gray-200 transition-all hover:shadow-md shadow-pulse">
       <div 
         className="h-40 w-full" 
         style={{ 
@@ -61,7 +63,7 @@ const CourseCard = ({
         <div className="flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-1 text-gray-500">
             <BookOpen className="h-4 w-4" />
-            <span>{chapters} chapters</span>
+            <span>{chapters} chương</span>
           </div>
           <div className="flex items-center gap-1 text-gray-500">
             <Clock className="h-4 w-4" />
@@ -71,9 +73,9 @@ const CourseCard = ({
       </CardContent>
       
       <CardFooter>
-        <Button className="w-full bg-epu-blue hover:bg-epu-blue/90" asChild>
+        <Button className="w-full bg-epu-blue hover:bg-epu-blue/90 ripple-effect" asChild>
           <Link to={`/course/${id}`}>
-            Start Learning <ArrowRight className="ml-2 h-4 w-4" />
+            Bắt Đầu Học <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       </CardFooter>

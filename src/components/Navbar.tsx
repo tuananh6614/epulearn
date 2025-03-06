@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Code, BookOpen, GraduationCap, Home } from "lucide-react";
 
+// Component thanh điều hướng chính
 const Navbar = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -20,24 +21,24 @@ const Navbar = () => {
         <nav className="hidden md:flex items-center gap-6">
           <Link to="/" className="text-sm font-medium flex items-center gap-1 text-foreground/60 transition-colors hover:text-foreground">
             <Home className="h-4 w-4" />
-            Home
+            Trang Chủ
           </Link>
           <Link to="/courses" className="text-sm font-medium flex items-center gap-1 text-foreground/60 transition-colors hover:text-foreground">
             <BookOpen className="h-4 w-4" />
-            Courses
+            Khóa Học
           </Link>
           <Link to="/certification" className="text-sm font-medium flex items-center gap-1 text-foreground/60 transition-colors hover:text-foreground">
             <GraduationCap className="h-4 w-4" />
-            Certification
+            Chứng Chỉ
           </Link>
         </nav>
         
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" asChild>
-            <Link to="/login">Log in</Link>
+            <Link to="/login">Đăng Nhập</Link>
           </Button>
           <Button size="sm" className="bg-epu-green hover:bg-epu-green/90" asChild>
-            <Link to="/signup">Sign up</Link>
+            <Link to="/signup">Đăng Ký</Link>
           </Button>
         </div>
       </div>

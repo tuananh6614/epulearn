@@ -4,42 +4,44 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Quote } from "lucide-react";
 
+// Dữ liệu đánh giá từ học viên
 const testimonials = [
   {
     id: 1,
-    content: "EPU Learn completely changed how I approach coding. The interactive exercises made the learning process fun and engaging.",
+    content: "EPU Learn đã hoàn toàn thay đổi cách tôi tiếp cận code. Các bài tập tương tác đã làm cho quá trình học trở nên thú vị và hấp dẫn.",
     name: "Minh Anh",
-    title: "Computer Science Student",
+    title: "Sinh viên Khoa học Máy tính",
     avatar: "/placeholder.svg"
   },
   {
     id: 2,
-    content: "As someone with no prior programming experience, EPU Learn made it easy to understand complex concepts through step-by-step lessons.",
-    name: "Van Linh",
-    title: "Self-taught Developer",
+    content: "Là người không có kinh nghiệm lập trình trước đó, EPU Learn đã giúp tôi dễ dàng hiểu các khái niệm phức tạp thông qua các bài học từng bước.",
+    name: "Văn Linh",
+    title: "Lập trình viên tự học",
     avatar: "/placeholder.svg"
   },
   {
     id: 3,
-    content: "The chapter quizzes helped reinforce what I learned. I feel confident in my programming skills after completing the courses.",
-    name: "Quoc Tuan",
-    title: "IT Professional",
+    content: "Các bài kiểm tra sau mỗi chương giúp củng cố những gì tôi đã học. Tôi cảm thấy tự tin về kỹ năng lập trình của mình sau khi hoàn thành các khóa học.",
+    name: "Quốc Tuấn",
+    title: "Chuyên viên IT",
     avatar: "/placeholder.svg"
   }
 ];
 
+// Component hiển thị đánh giá từ học viên
 const Testimonials = () => {
   return (
     <section className="py-20 bg-gray-50">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-epu-dark mb-4">What Our Students Say</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">Join thousands of satisfied learners who have transformed their coding skills with EPU Learn.</p>
+          <h2 className="text-3xl font-bold text-epu-dark mb-4">Học Viên Nói Gì Về Chúng Tôi</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">Tham gia cùng hàng nghìn học viên hài lòng đã nâng cao kỹ năng coding của họ với EPU Learn.</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((testimonial) => (
-            <Card key={testimonial.id} className="bg-white overflow-hidden">
+          {testimonials.map((testimonial, index) => (
+            <Card key={testimonial.id} className="bg-white overflow-hidden hover-scale shadow-pulse">
               <CardContent className="p-6 relative">
                 <Quote className="absolute top-6 right-6 h-10 w-10 text-gray-100 z-0" />
                 <div className="relative z-10">

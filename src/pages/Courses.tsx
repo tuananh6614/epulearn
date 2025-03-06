@@ -1,120 +1,143 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CourseCard from '@/components/CourseCard';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 
+// Dữ liệu các khóa học
 const coursesData = [
   {
     id: "html-basics",
-    title: "HTML Essentials",
-    description: "Learn the fundamentals of HTML to create structured web pages",
-    level: "Beginner",
+    title: "HTML Cơ Bản",
+    description: "Học những kiến thức nền tảng của HTML để tạo trang web có cấu trúc",
+    level: "Người Mới",
     chapters: 8,
-    duration: "4 weeks",
-    category: "Web Development",
+    duration: "4 tuần",
+    category: "Phát Triển Web",
     image: "/placeholder.svg",
     color: "linear-gradient(90deg, #48BB78 0%, #38A169 100%)"
   },
   {
     id: "css-basics",
-    title: "CSS Essentials",
-    description: "Master CSS styling to create beautiful web designs",
-    level: "Beginner",
+    title: "CSS Cơ Bản",
+    description: "Làm chủ CSS để tạo các thiết kế web đẹp mắt",
+    level: "Người Mới",
     chapters: 10,
-    duration: "5 weeks",
-    category: "Web Development",
+    duration: "5 tuần",
+    category: "Phát Triển Web",
     image: "/placeholder.svg",
     color: "linear-gradient(90deg, #4299E1 0%, #3182CE 100%)"
   },
   {
     id: "js-basics",
-    title: "JavaScript Fundamentals",
-    description: "Build interactive web applications with JavaScript",
-    level: "Intermediate",
+    title: "JavaScript Nền Tảng",
+    description: "Xây dựng ứng dụng web tương tác với JavaScript",
+    level: "Trung Cấp",
     chapters: 12,
-    duration: "6 weeks",
-    category: "Programming",
+    duration: "6 tuần",
+    category: "Lập Trình",
     image: "/placeholder.svg",
     color: "linear-gradient(90deg, #ECC94B 0%, #D69E2E 100%)"
   },
   {
     id: "python-basics",
-    title: "Python Essentials",
-    description: "Get started with Python programming for beginners",
-    level: "Beginner",
+    title: "Python Cơ Bản",
+    description: "Bắt đầu với lập trình Python dành cho người mới",
+    level: "Người Mới",
     chapters: 10,
-    duration: "5 weeks",
-    category: "Programming",
+    duration: "5 tuần",
+    category: "Lập Trình",
     image: "/placeholder.svg",
     color: "linear-gradient(90deg, #667EEA 0%, #764BA2 100%)"
   },
   {
     id: "java-basics",
-    title: "Java Fundamentals",
-    description: "Learn object-oriented programming with Java",
-    level: "Beginner",
+    title: "Java Cơ Bản",
+    description: "Học lập trình hướng đối tượng với Java",
+    level: "Người Mới",
     chapters: 12,
-    duration: "6 weeks",
-    category: "Programming",
+    duration: "6 tuần",
+    category: "Lập Trình",
     image: "/placeholder.svg",
     color: "linear-gradient(90deg, #F56565 0%, #E53E3E 100%)"
   },
   {
     id: "cpp-basics",
-    title: "C++ Essentials",
-    description: "Master C++ programming language fundamentals",
-    level: "Intermediate",
+    title: "C++ Cơ Bản",
+    description: "Làm chủ các nguyên tắc cơ bản của ngôn ngữ lập trình C++",
+    level: "Trung Cấp",
     chapters: 14,
-    duration: "7 weeks",
-    category: "Programming",
+    duration: "7 tuần",
+    category: "Lập Trình",
     image: "/placeholder.svg",
     color: "linear-gradient(90deg, #9F7AEA 0%, #805AD5 100%)"
   },
   {
     id: "react-basics",
-    title: "React.js Fundamentals",
-    description: "Build modern user interfaces with React",
-    level: "Intermediate",
+    title: "React.js Cơ Bản",
+    description: "Xây dựng giao diện người dùng hiện đại với React",
+    level: "Trung Cấp",
     chapters: 12,
-    duration: "6 weeks",
-    category: "Web Development",
+    duration: "6 tuần",
+    category: "Phát Triển Web",
     image: "/placeholder.svg",
     color: "linear-gradient(90deg, #4FD1C5 0%, #38B2AC 100%)"
   },
   {
     id: "node-basics",
-    title: "Node.js Basics",
-    description: "Create server-side applications with Node.js",
-    level: "Intermediate",
+    title: "Node.js Cơ Bản",
+    description: "Tạo ứng dụng phía máy chủ với Node.js",
+    level: "Trung Cấp",
     chapters: 10,
-    duration: "5 weeks",
-    category: "Backend Development",
+    duration: "5 tuần",
+    category: "Phát Triển Backend",
     image: "/placeholder.svg",
     color: "linear-gradient(90deg, #68D391 0%, #48BB78 100%)"
   }
 ];
 
+// Component trang khóa học
 const Courses = () => {
+  // State quản lý tìm kiếm và lọc
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [levelFilter, setLevelFilter] = useState('');
+  const [filteredCourses, setFilteredCourses] = useState(coursesData);
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
   
-  const filteredCourses = coursesData.filter(course => {
-    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          course.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === '' || course.category === categoryFilter;
-    const matchesLevel = levelFilter === '' || course.level === levelFilter;
+  // Effect áp dụng bộ lọc khi các điều kiện thay đổi
+  useEffect(() => {
+    const filtered = coursesData.filter(course => {
+      const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            course.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = categoryFilter === '' || course.category === categoryFilter;
+      const matchesLevel = levelFilter === '' || course.level === levelFilter;
+      
+      return matchesSearch && matchesCategory && matchesLevel;
+    });
     
-    return matchesSearch && matchesCategory && matchesLevel;
-  });
+    setFilteredCourses(filtered);
+  }, [searchTerm, categoryFilter, levelFilter]);
   
+  // Lấy danh sách các danh mục và cấp độ độc nhất
   const categories = [...new Set(coursesData.map(course => course.category))];
   const levels = [...new Set(coursesData.map(course => course.level))];
+  
+  // Xử lý xóa bộ lọc
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setCategoryFilter('');
+    setLevelFilter('');
+  };
+  
+  // Chuyển đổi hiển thị bộ lọc trên điện thoại
+  const toggleFilters = () => {
+    setIsFilterVisible(!isFilterVisible);
+  };
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -123,9 +146,9 @@ const Courses = () => {
       <main className="flex-grow bg-gray-50">
         <div className="bg-epu-dark text-white py-12">
           <div className="container mx-auto px-4">
-            <h1 className="text-3xl font-bold mb-4">Explore Our Courses</h1>
+            <h1 className="text-3xl font-bold mb-4">Khám Phá Các Khóa Học</h1>
             <p className="text-gray-300 max-w-3xl">
-              Discover a wide range of programming courses designed to take you from beginner to expert. Each course includes interactive lessons and chapter quizzes.
+              Khám phá nhiều khóa học lập trình được thiết kế để đưa bạn từ người mới đến chuyên gia. Mỗi khóa học bao gồm các bài học tương tác và bài kiểm tra sau mỗi chương.
             </p>
           </div>
         </div>
@@ -136,50 +159,56 @@ const Courses = () => {
               <div className="flex-grow relative">
                 <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <Input
-                  placeholder="Search courses..."
+                  placeholder="Tìm kiếm khóa học..."
                   className="pl-10"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               
-              <div className="w-full md:w-48">
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="w-full md:w-48">
-                <Select value={levelFilter} onValueChange={setLevelFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">All Levels</SelectItem>
-                    {levels.map(level => (
-                      <SelectItem key={level} value={level}>{level}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {(categoryFilter || levelFilter || searchTerm) && (
-                <Button variant="outline" onClick={() => {
-                  setSearchTerm('');
-                  setCategoryFilter('');
-                  setLevelFilter('');
-                }}>
-                  Clear Filters
+              <div className="md:hidden">
+                <Button variant="outline" onClick={toggleFilters} className="w-full flex items-center justify-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Bộ Lọc
                 </Button>
-              )}
+              </div>
+              
+              <div className={`md:flex gap-4 ${isFilterVisible ? 'flex flex-col' : 'hidden'}`}>
+                <div className="w-full md:w-48">
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Danh Mục" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tất Cả Danh Mục</SelectItem>
+                      {categories.map(category => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="w-full md:w-48">
+                  <Select value={levelFilter} onValueChange={setLevelFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Cấp Độ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tất Cả Cấp Độ</SelectItem>
+                      {levels.map(level => (
+                        <SelectItem key={level} value={level}>{level}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {(categoryFilter || levelFilter || searchTerm) && (
+                  <Button variant="outline" onClick={handleClearFilters} className="flex items-center justify-center">
+                    <X className="h-4 w-4 mr-2" />
+                    Xóa Bộ Lọc
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
           
@@ -191,8 +220,8 @@ const Courses = () => {
             </div>
           ) : (
             <div className="text-center py-20">
-              <h3 className="text-xl font-medium text-gray-700 mb-2">No courses found</h3>
-              <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+              <h3 className="text-xl font-medium text-gray-700 mb-2">Không tìm thấy khóa học</h3>
+              <p className="text-gray-500">Hãy thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc của bạn</p>
             </div>
           )}
         </div>

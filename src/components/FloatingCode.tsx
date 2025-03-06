@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 // Định nghĩa kiểu dữ liệu cho props
 interface FloatingCodeProps {
@@ -7,8 +7,26 @@ interface FloatingCodeProps {
   variant?: 'default' | 'javascript' | 'python' | 'html';
 }
 
-// Component hiển thị đoạn code nổi với animation
+// Component hiển thị đoạn code nổi với animation và tương tác
 const FloatingCode: React.FC<FloatingCodeProps> = ({ style, variant = 'default' }) => {
+  // State theo dõi hover
+  const [isHovered, setIsHovered] = useState(false);
+  // State theo dõi vị trí chuột
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  // State theo dõi hiệu ứng nhấp nháy
+  const [isGlowing, setIsGlowing] = useState(false);
+
+  // Effect cho hiệu ứng nhấp nháy ngẫu nhiên
+  useEffect(() => {
+    // Hiệu ứng nhấp nháy định kỳ
+    const glowInterval = setInterval(() => {
+      setIsGlowing(true);
+      setTimeout(() => setIsGlowing(false), 500);
+    }, Math.random() * 5000 + 5000); // 5-10 giây một lần
+
+    return () => clearInterval(glowInterval);
+  }, []);
+
   // Các mẫu code cho các ngôn ngữ khác nhau
   const codeSnippets = {
     default: `
@@ -74,15 +92,59 @@ print(f"Điểm trung bình: {diem_tb}")
     }
   };
 
+  // Xử lý sự kiện hover
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
+
+  // Theo dõi vị trí chuột khi hover
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isHovered) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setMousePosition({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
+  };
+
   return (
     <div
-      className={`absolute pointer-events-none select-none opacity-20 text-xs font-mono ${getColor()}`}
+      className={`absolute select-none ${getColor()} transition-all duration-300`}
       style={{
         ...style,
-        animation: `float 10s ease-in-out infinite, rotate-slow 20s linear infinite`,
+        opacity: isHovered ? 0.6 : 0.2,
+        filter: `blur(${isHovered ? '0px' : '1px'})`,
+        transform: `${style?.transform || ''} scale(${isHovered ? 1.05 : 1})`,
+        animation: isGlowing 
+          ? 'pulse 0.5s ease-in-out' 
+          : `float 10s ease-in-out infinite, rotate-slow 20s linear infinite`,
+        cursor: 'pointer',
+        zIndex: isHovered ? 2 : 0
       }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onMouseMove={handleMouseMove}
     >
-      <pre>
+      {/* Hiệu ứng glow theo vị trí chuột */}
+      {isHovered && (
+        <div 
+          className="absolute rounded-full bg-current opacity-20 blur-xl pointer-events-none transition-all duration-300"
+          style={{
+            width: '80px',
+            height: '80px',
+            left: `${mousePosition.x - 40}px`,
+            top: `${mousePosition.y - 40}px`,
+            zIndex: -1
+          }}
+        />
+      )}
+      
+      <pre className="font-mono text-xs">
         {codeSnippets[variant]}
       </pre>
     </div>

@@ -46,8 +46,9 @@
     @apply bg-[#0a0c12] !important;
   }
   
+  /* Fixed the circular dependency by using direct color value instead of @apply */
   .dark .bg-gray-900 {
-    @apply bg-black !important;
+    background-color: #000000 !important; /* Using black directly instead of @apply bg-black */
   }
   
   /* Fix white backgrounds in light blue buttons */

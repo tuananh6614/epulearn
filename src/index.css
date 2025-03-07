@@ -1,4 +1,3 @@
-
 /* Import theme and animations */
 @import './styles/theme.css';
 @import './styles/animations.css';
@@ -19,6 +18,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     @apply transition-colors duration-500;
+    padding-top: 4rem; /* Add padding to body to account for fixed header */
   }
   
   /* Smooth theme transition */
@@ -34,8 +34,9 @@
   }
 
   /* Fixed header when scrolling */
-  .header-sticky {
-    @apply fixed top-0 w-full z-50 bg-background/95 dark:bg-background/95 backdrop-blur-lg shadow-sm transition-all duration-300;
+  header {
+    @apply fixed top-0 w-full z-50 shadow-md transition-all duration-300;
+    backdrop-filter: blur(10px);
   }
   
   /* Darker backgrounds in dark mode */
@@ -244,4 +245,131 @@ main {
 /* Improved button contrast in dark mode */
 .dark .border-epu-blue {
   border-color: hsl(var(--primary)) !important;
+}
+
+/* Mobile Menu styles - updated for better fixed positioning */
+.mobile-menu {
+  @apply fixed inset-0 pt-16 z-40 bg-gray-900/95 backdrop-blur-md flex flex-col items-center justify-start;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+}
+
+.mobile-menu.open {
+  transform: translateY(0);
+}
+
+/* Additional navbar design improvements */
+.nav-link {
+  @apply relative;
+}
+
+.nav-link::after {
+  content: '';
+  @apply absolute left-0 bottom-0 w-0 h-0.5 bg-green-400 transition-all duration-300;
+}
+
+.nav-link:hover::after {
+  @apply w-full;
+}
+
+/* Fixed UI issues with course cards */
+.course-card {
+  @apply bg-white dark:bg-gray-800 overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-500 border border-gray-100 dark:border-gray-700;
+}
+
+/* General styles for the entire page */
+body {
+  font-family: 'Arial', sans-serif;
+  line-height: 1.6;
+}
+
+/* Container to center content */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Sections with padding */
+section {
+  padding: 60px 0;
+}
+
+/* Hero section styles */
+.hero {
+  background-color: #f9f9f9;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+}
+
+.hero p {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+/* Button styles */
+.button {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.button:hover {
+  background-color: #0056b3;
+}
+
+/* Featured courses section */
+.featured-courses {
+  background-color: #fff;
+}
+
+.featured-courses h2 {
+  font-size: 2rem;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+/* Course card styles */
+.course-card {
+  border: 1px solid #ddd;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+}
+
+.course-card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.course-card p {
+  color: #666;
+}
+
+/* Footer styles */
+footer {
+  background-color: #333;
+  color: white;
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .hero h1 {
+    font-size: 2rem;
+  }
+  .hero p {
+    font-size: 1rem;
+  }
+  .featured-courses h2 {
+    font-size: 1.8rem;
+  }
 }

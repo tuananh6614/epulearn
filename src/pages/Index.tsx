@@ -18,9 +18,7 @@ const Index = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return document.documentElement.classList.contains('dark');
   });
-  const [isScrolled, setIsScrolled] = useState(false);
   const fireflyContainerRef = useRef<HTMLDivElement>(null);
-  const navbarRef = useRef<HTMLDivElement>(null);
 
   // Update dark mode state when it changes
   useEffect(() => {
@@ -38,22 +36,6 @@ const Index = () => {
     return () => {
       observer.disconnect();
     };
-  }, []);
-
-  // Add scroll event listener for sticky header
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-        navbarRef.current?.classList.add('scrolled');
-      } else {
-        setIsScrolled(false);
-        navbarRef.current?.classList.remove('scrolled');
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Simulate content loading and optimization
@@ -89,14 +71,6 @@ const Index = () => {
       observer.disconnect();
     };
   }, [isLoading]);
-
-  // Make navbar sticky
-  useEffect(() => {
-    const navbar = document.querySelector('nav');
-    if (navbar) {
-      navbar.classList.add('header-sticky');
-    }
-  }, []);
   
   if (isLoading) {
     return (
@@ -127,11 +101,9 @@ const Index = () => {
         <FloatingCode style={{ top: '40%', left: '10%', transform: 'rotate(5deg)' }} language="html" />
       </ParallaxEffect>
       
-      <div ref={navbarRef} className={`header-sticky ${isScrolled ? 'scrolled' : ''}`}>
-        <Navbar />
-      </div>
+      <Navbar />
       
-      <main className="pt-16"> {/* Add padding-top to account for fixed header */}
+      <main className="pt-20"> {/* Increased padding-top to account for fixed navbar */}
         <Hero />
         
         <div className="lazy-fade-in">

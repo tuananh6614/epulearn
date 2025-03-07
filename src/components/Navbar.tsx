@@ -14,18 +14,18 @@ const Navbar = () => {
   };
   
   return (
-    <header className="fixed top-0 z-50 w-full border-b bg-gray-900/95 backdrop-blur-xl supports-[backdrop-filter]:bg-gray-900/80 dark:border-gray-800 shadow-lg">
-      <div className="container flex h-16 items-center justify-between">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-gradient-to-r from-gray-900 to-gray-800 shadow-lg">
+      <div className="container mx-auto flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2 font-bold text-xl">
-            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-gradient-to-r from-green-500 to-blue-500 hover:shadow-glow transition-all duration-300">
-              <Code className="h-4 w-4 text-white" />
+            <div className="flex items-center justify-center w-10 h-10 rounded-md bg-gradient-to-r from-green-500 to-blue-500 shadow-inner">
+              <Code className="h-5 w-5 text-white" />
             </div>
-            <span className="text-white dark:text-white">EPU<span className="text-green-500">Learn</span></span>
+            <span className="text-white font-bold tracking-wide">EPU<span className="text-green-400">Learn</span></span>
           </Link>
         </div>
         
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-8">
           <Link to="/" className="nav-link text-sm font-medium flex items-center gap-1 text-white hover:text-green-400 transition-colors">
             <Home className="h-4 w-4" />
             Trang Chủ
@@ -40,9 +40,9 @@ const Navbar = () => {
           </Link>
         </nav>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Button variant="outline" size="sm" className="hidden md:inline-flex text-white border-gray-700 hover:bg-gray-800 hover:text-green-400 transition-all" asChild>
+          <Button variant="outline" size="sm" className="hidden md:inline-flex text-white border-gray-700 hover:bg-gray-800 hover:text-green-400 hover:border-green-400 transition-all" asChild>
             <Link to="/login">Đăng Nhập</Link>
           </Button>
           <Button size="sm" className="hidden md:inline-flex bg-green-600 hover:bg-green-500 text-white hover:scale-105 transition-transform" asChild>

@@ -283,8 +283,10 @@ body {
   @apply text-gray-300 !important;
 }
 
+/* Fixed the circular dependency here - removed the problematic rule */
+/* Manually setting color for .dark .text-gray-400 instead of using @apply */
 .dark .text-gray-400 {
-  @apply text-gray-400 !important;
+  color: #a0aec0 !important; /* Using a direct hex value instead of @apply */
 }
 
 /* Fix dark mode backgrounds */

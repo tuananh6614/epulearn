@@ -7,7 +7,7 @@ interface FloatingCodeProps {
 }
 
 const FloatingCode: React.FC<FloatingCodeProps> = ({ style, language = 'javascript' }) => {
-  // Simplified Hello World code snippets for each language
+  // Simple Hello World code snippets for each language
   const getCodeSnippet = () => {
     switch (language) {
       case 'python':

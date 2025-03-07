@@ -5,7 +5,7 @@ const CodeAnimation = () => {
   const [text, setText] = useState('');
   const [cursorVisible, setCursorVisible] = useState(true);
   
-  const codeSnippet = `// Simple code examples
+  const codeSnippet = `// Simple Hello World examples
 
 // JavaScript
 console.log("Hello World!");

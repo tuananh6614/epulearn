@@ -191,11 +191,11 @@
 .dark .text-gray-600,
 .dark .text-gray-700,
 .dark .text-gray-800 {
-  @apply text-gray-300 !important;
+  color: #e0e0e0 !important; /* Direct color instead of @apply */
 }
 
 .dark .text-gray-500 {
-  @apply text-gray-400 !important;
+  color: #a0aec0 !important; /* Direct color instead of @apply */
 }
 
 /* Main content adjustment for fixed header */
@@ -205,7 +205,9 @@ main {
 
 /* Enhanced firefly effect */
 .firefly {
-  @apply fixed rounded-full pointer-events-none;
+  position: fixed;
+  border-radius: 9999px;
+  pointer-events: none;
   background-color: rgba(255, 235, 156, 0.8);
   box-shadow: 0 0 25px 8px rgba(255, 235, 156, 0.5);
   animation: firefly-move 6s ease-in-out infinite;
@@ -225,21 +227,21 @@ main {
 
 /* Fix for blue/white text in dark mode */
 .dark .text-epu-blue {
-  @apply text-blue-300 !important;
+  color: #90cdf4 !important; /* Direct color instead of @apply */
 }
 
 .dark .bg-white {
-  @apply bg-[#0a0c12] !important;
+  background-color: #0a0c12 !important; /* Direct color instead of @apply */
 }
 
 /* Fix for any remaining white backgrounds */
 .dark .bg-gray-50, 
 .dark .bg-gray-100,
 .dark .bg-gray-200 {
-  @apply bg-gray-900 !important;
+  background-color: #111827 !important; /* Direct color instead of @apply */
 }
 
 /* Improved button contrast in dark mode */
 .dark .border-epu-blue {
-  @apply border-blue-400 !important;
+  border-color: #63b3ed !important; /* Direct color instead of @apply */
 }

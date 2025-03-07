@@ -136,7 +136,10 @@ body {
 /* Theme toggle transition */
 .theme-transitioning::before {
   content: '';
-  @apply absolute inset-0 z-10 opacity-0;
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  opacity: 0;
   animation: theme-flash 0.5s ease-out;
   background: radial-gradient(circle at center, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
 }
@@ -294,13 +297,13 @@ body {
 .dark .bg-gray-50,
 .dark .bg-gray-100,
 .dark .bg-gray-200 {
-  @apply bg-gray-900 !important;
+  background-color: #111827 !important; /* Direct color instead of @apply */
 }
 
 /* Make sure dark borders are visible */
 .dark .border-gray-100,
 .dark .border-gray-200 {
-  @apply border-gray-800 !important;
+  border-color: #1f2937 !important; /* Direct color instead of @apply */
 }
 
 /* Fix gradient backgrounds in dark mode */
@@ -314,15 +317,17 @@ body {
 
 /* Fix text colors for interactive elements */
 .dark .interactive-button {
-  @apply text-white border-white/20;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* Fix card backgrounds */
 .dark .course-card {
-  @apply bg-gray-900 border-gray-800;
+  background-color: #111827;
+  border-color: #1f2937;
 }
 
 /* Fix text in hero section */
 .dark .hero-text {
-  @apply text-white;
+  color: #ffffff;
 }

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import FeaturedCourses from '@/components/FeaturedCourses';
@@ -15,6 +15,28 @@ import ParallaxEffect from '@/components/ParallaxEffect';
 // Component trang chủ chính
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return document.documentElement.classList.contains('dark');
+  });
+  const fireflyContainerRef = useRef<HTMLDivElement>(null);
+
+  // Update dark mode state when it changes
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          const isDark = document.documentElement.classList.contains('dark');
+          setIsDarkMode(isDark);
+        }
+      });
+    });
+    
+    observer.observe(document.documentElement, { attributes: true });
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   // Simulate content loading and optimization
   useEffect(() => {
@@ -62,6 +84,9 @@ const Index = () => {
     <div className="min-h-screen bg-background dark:bg-gray-900 overflow-hidden relative">
       {/* Digital rain effect */}
       <NumberRain density={40} interactive={true} />
+      
+      {/* Firefly container for dark mode */}
+      <div ref={fireflyContainerRef} className="firefly-container"></div>
       
       {/* Floating code elements */}
       <ParallaxEffect speed={-0.2}>

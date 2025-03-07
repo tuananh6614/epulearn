@@ -44,17 +44,22 @@
   /* Line highlight colors */
   --line-highlight: rgba(124, 179, 66, 0.2);
   --line-number: #888;
+  
+  /* Course card colors */
+  --card-bg: #ffffff;
+  --card-text: #1a2b3c;
+  --card-description: #4a5568;
 }
 
 /* Dark mode variables */
 .dark {
-  --background: 222.2 84% 4.9%;
+  --background: 222.2 47.4% 11.2%;
   --foreground: 210 40% 98%;
 
-  --card: 222.2 84% 4.9%;
+  --card: 222.2 47.4% 11.2%;
   --card-foreground: 210 40% 98%;
 
-  --popover: 222.2 84% 4.9%;
+  --popover: 222.2 47.4% 11.2%;
   --popover-foreground: 210 40% 98%;
 
   --primary: 85 52% 45%;
@@ -64,7 +69,7 @@
   --secondary-foreground: 210 40% 98%;
 
   --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
+  --muted-foreground: 215 20.2% 75.1%;
 
   --accent: 217.2 32.6% 17.5%;
   --accent-foreground: 210 40% 98%;
@@ -81,12 +86,17 @@
   
   /* Interactive element colors */
   --hover-glow: rgba(124, 179, 66, 0.4);
-  --code-bg: #1a2233;
+  --code-bg: #121620;
   --code-highlight: rgba(124, 179, 66, 0.2);
   
   /* Line highlight colors */
   --line-highlight: rgba(124, 179, 66, 0.25);
   --line-number: #666;
+  
+  /* Course card colors */
+  --card-bg: #1a202c;
+  --card-text: #e2e8f0;
+  --card-description: #a0aec0;
 }
 
 /* Base styles that change with theme */
@@ -112,6 +122,17 @@ body {
   @apply text-primary;
 }
 
+/* Course card theme styles */
+.course-card {
+  background-color: var(--card-bg);
+  color: var(--card-text);
+  transition: all 0.5s ease;
+}
+
+.course-card .card-description {
+  color: var(--card-description);
+}
+
 /* Theme toggle transition */
 .theme-transitioning::before {
   content: '';
@@ -124,6 +145,38 @@ body {
   0% { opacity: 0; transform: scale(0); }
   50% { opacity: 0.8; transform: scale(1.2); }
   100% { opacity: 0; transform: scale(2); }
+}
+
+/* Dark mode transition effect */
+.dark-transition-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.dark-transition-overlay.active {
+  animation: dark-mode-transition 0.8s ease-in-out forwards;
+}
+
+.light-transition-overlay.active {
+  animation: light-mode-transition 0.8s ease-in-out forwards;
+}
+
+@keyframes dark-mode-transition {
+  0% { opacity: 0; }
+  50% { opacity: 1; background: radial-gradient(circle at center, transparent 0%, #000 100%); }
+  100% { opacity: 0; background: radial-gradient(circle at center, transparent 0%, #000 100%); }
+}
+
+@keyframes light-mode-transition {
+  0% { opacity: 0; }
+  50% { opacity: 1; background: radial-gradient(circle at center, #fff 0%, transparent 100%); }
+  100% { opacity: 0; background: radial-gradient(circle at center, #fff 0%, transparent 100%); }
 }
 
 /* Interactive button effects */
@@ -175,4 +228,37 @@ body {
 .line-number {
   color: var(--line-number);
   @apply text-xs inline-block w-5 text-right mr-3 select-none;
+}
+
+/* Interactive hover effects for course cards */
+.course-card {
+  @apply transition-all duration-300 overflow-hidden;
+}
+
+.course-card:hover {
+  @apply shadow-lg transform -translate-y-1;
+}
+
+.course-card .card-content {
+  @apply transition-all duration-300;
+}
+
+.course-card:hover .card-content {
+  @apply bg-primary/5;
+}
+
+/* Fixed sticky navbar styles */
+.navbar-sticky {
+  @apply fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md shadow-sm transition-all duration-300;
+}
+
+.navbar-sticky.scrolled {
+  @apply shadow-md;
+}
+
+/* Firefly effect for dark mode */
+.firefly {
+  @apply absolute rounded-full pointer-events-none opacity-0;
+  background-color: rgba(255, 235, 156, 0.7);
+  box-shadow: 0 0 20px 5px rgba(255, 235, 156, 0.3);
 }

@@ -82,3 +82,69 @@
   @apply scale-[2.5] opacity-30 bg-gradient-to-r from-yellow-300 to-amber-500 dark:from-indigo-600 dark:to-violet-600;
 }
 
+/* Dark mode transition overlay */
+.theme-transition-overlay {
+  @apply fixed inset-0 z-[9999] pointer-events-none;
+  transition: opacity 0.8s ease;
+}
+
+/* Improved course card styles */
+.course-card {
+  @apply overflow-hidden rounded-xl shadow-sm hover:shadow-xl transition-all duration-500;
+}
+
+.course-card:hover .card-img {
+  @apply scale-110;
+}
+
+.card-img {
+  @apply transition-transform duration-500;
+}
+
+/* Course card text contrast improvements */
+.dark .course-card .text-gray-600 {
+  @apply text-gray-300;
+}
+
+.dark .course-card .text-gray-500 {
+  @apply text-gray-400;
+}
+
+.dark .course-card h3 {
+  @apply text-white;
+}
+
+/* Sticky header styles */
+.header-sticky {
+  @apply sticky top-0 z-50 w-full transition-all duration-300;
+  backdrop-filter: blur(10px);
+}
+
+.header-sticky.scrolled {
+  @apply shadow-md;
+}
+
+/* Mobile Menu styles */
+.mobile-menu {
+  @apply fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex flex-col items-center justify-center;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.mobile-menu.open {
+  transform: translateX(0);
+}
+
+/* Improved hover effects */
+.hover-lift {
+  @apply transition-transform duration-300 hover:-translate-y-1;
+}
+
+.hover-scale {
+  @apply transition-transform duration-300 hover:scale-105;
+}
+
+/* Firefly container styles */
+.firefly-container {
+  @apply fixed inset-0 pointer-events-none z-0 overflow-hidden;
+}

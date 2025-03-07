@@ -32,40 +32,40 @@ const CourseCard = ({
   color 
 }: CourseCardProps) => {
   return (
-    <Card className="course-card overflow-hidden border border-gray-200 transition-all hover:shadow-md shadow-pulse">
+    <Card className="course-card overflow-hidden border border-gray-200 dark:border-gray-700 transition-all hover:shadow-md dark:hover:shadow-xl dark:hover:shadow-primary/5 hover:-translate-y-1">
       <div 
-        className="h-40 w-full" 
+        className="card-img h-40 w-full relative overflow-hidden" 
         style={{ 
           background: color,
           position: 'relative',
           overflow: 'hidden'
         }}
       >
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center transform transition-transform duration-500">
           <img 
             src={image} 
             alt={title} 
-            className="object-cover h-full w-full opacity-80" 
+            className="object-cover h-full w-full opacity-80 transition-all duration-500 hover:opacity-100" 
           />
         </div>
         <div className="absolute top-2 right-2">
-          <Badge className="bg-white/90 text-gray-800 hover:bg-white/95">{level}</Badge>
+          <Badge className="bg-white/90 text-gray-800 hover:bg-white/95 dark:bg-gray-900/90 dark:text-gray-100 dark:hover:bg-gray-900/95 transition-colors">{level}</Badge>
         </div>
       </div>
       
       <CardHeader>
-        <CardTitle className="text-xl text-epu-dark">{title}</CardTitle>
-        <CardDescription className="text-gray-600">{category}</CardDescription>
+        <CardTitle className="text-xl text-foreground transition-colors">{title}</CardTitle>
+        <CardDescription className="text-foreground/60 dark:text-gray-400 transition-colors">{category}</CardDescription>
       </CardHeader>
       
       <CardContent>
-        <p className="text-gray-600 text-sm mb-4">{description}</p>
+        <p className="text-foreground/70 dark:text-gray-300 text-sm mb-4 transition-colors">{description}</p>
         <div className="flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center gap-1 text-gray-500">
+          <div className="flex items-center gap-1 text-foreground/60 dark:text-gray-400 transition-colors">
             <BookOpen className="h-4 w-4" />
             <span>{chapters} chương</span>
           </div>
-          <div className="flex items-center gap-1 text-gray-500">
+          <div className="flex items-center gap-1 text-foreground/60 dark:text-gray-400 transition-colors">
             <Clock className="h-4 w-4" />
             <span>{duration}</span>
           </div>
@@ -73,8 +73,8 @@ const CourseCard = ({
       </CardContent>
       
       <CardFooter>
-        <Button className="w-full bg-epu-blue hover:bg-epu-blue/90 ripple-effect" asChild>
-          <Link to={`/course/${id}`}>
+        <Button className="w-full bg-epu-blue hover:bg-epu-blue/90 dark:bg-epu-blue/90 dark:hover:bg-epu-blue ripple-effect transition-all" asChild>
+          <Link to={`/course/${id}`} className="btn-hover-effect">
             Bắt Đầu Học <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>

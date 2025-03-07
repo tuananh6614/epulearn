@@ -46,6 +46,21 @@
   }
 }
 
+/* Firefly animation */
+@keyframes firefly-move {
+  0% {
+    transform: translateX(0) translateY(0) scale(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateX(var(--x)) translateY(var(--y)) scale(1);
+    opacity: 0;
+  }
+}
+
 /* Text animations */
 @keyframes typing {
   from { width: 0 }
@@ -57,10 +72,32 @@
   50% { border-color: var(--primary) }
 }
 
-/* Theme transition animation */
+/* Theme transition animations */
 @keyframes theme-transition {
   0% { opacity: 0; }
   100% { opacity: 1; }
+}
+
+@keyframes dark-fragments-in {
+  0% { 
+    clip-path: circle(0% at var(--x) var(--y)); 
+    background-color: rgba(0, 0, 0, 0.95);
+  }
+  100% { 
+    clip-path: circle(150% at var(--x) var(--y)); 
+    background-color: rgba(0, 0, 0, 0.95);
+  }
+}
+
+@keyframes light-fragments-out {
+  0% { 
+    clip-path: circle(150% at var(--x) var(--y));
+    background-color: rgba(0, 0, 0, 0.95);
+  }
+  100% { 
+    clip-path: circle(0% at var(--x) var(--y));
+    background-color: rgba(0, 0, 0, 0.95);
+  }
 }
 
 .dark-transition {
@@ -128,6 +165,23 @@
 
 .layer-3 {
   transform: translateZ(60px);
+}
+
+/* Course card hover effects */
+.course-card {
+  @apply transition-all duration-300;
+}
+
+.course-card:hover {
+  @apply shadow-xl;
+}
+
+.course-card:hover .course-card-image {
+  transform: scale(1.05);
+}
+
+.course-card-image {
+  @apply transition-transform duration-300;
 }
 
 /* Animation delay utilities */
@@ -217,4 +271,32 @@
 /* Code highlight transition */
 .code-line-highlight-transition {
   transition: background-color 0.3s ease;
+}
+
+/* Button hover effects */
+.btn-hover-effect {
+  @apply relative overflow-hidden;
+}
+
+.btn-hover-effect::before {
+  content: '';
+  @apply absolute inset-0 bg-white/20 scale-x-0 origin-left transition-transform duration-300;
+}
+
+.btn-hover-effect:hover::before {
+  @apply scale-x-100;
+}
+
+/* Dark mode firefly effect */
+.firefly {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: rgba(255, 235, 156, 0.7);
+  box-shadow: 0 0 20px 5px rgba(255, 235, 156, 0.3);
+  animation-name: firefly-move;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  pointer-events: none;
 }

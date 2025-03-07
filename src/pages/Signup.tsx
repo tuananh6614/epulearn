@@ -13,15 +13,19 @@ import { Checkbox } from '@/components/ui/checkbox';
 // Component trang đăng ký
 const Signup = () => {
   return (
-    <div className="min-h-screen flex flex-col ">
+    <div className="min-h-screen flex flex-col  dark:bg-gray-900 dark:text-white">
       <Navbar />
-      <div className="flex-grow flex items-center justify-center bg-gray-50 py-12">
-        <Card className="w-full max-w-md mx-auto shadow-pulse">
+      {/* Tăng khoảng cách so với Header bằng mt-20, vẫn giữ py-12 để có padding dọc */}
+      <div className="flex-grow flex items-center justify-center py-12 mt-20">
+        {/* Card thêm dark:bg-gray-800, dark:text-white để màu nền và chữ chuyển tối */}
+        <Card className="w-full max-w-md mx-auto shadow-pulse dark:bg-gray-800 dark:text-white">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-epu-green to-epu-blue flex items-center justify-center">
-                <Code className="h-6 w-6 text-white" />
-              </div>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center
+                bg-white text-black       /* Nền trắng, icon đen (Light Mode) */
+                dark:bg-gray-800 dark:text-white /* Nền đen, icon trắng (Dark Mode) */">
+            <Code className="h-6 w-6" />
+</div>
             </div>
             <CardTitle className="text-2xl font-bold">Tạo Tài Khoản</CardTitle>
             <CardDescription>Đăng ký để bắt đầu hành trình học tập của bạn</CardDescription>

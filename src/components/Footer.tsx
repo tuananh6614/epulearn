@@ -6,17 +6,17 @@ import { Code, Facebook, Twitter, Instagram, Linkedin, Mail } from "lucide-react
 // Component footer
 const Footer = () => {
   return (
-    <footer className="bg-epu-dark text-white">
+    <footer className="bg-gray-900 dark:bg-gray-900 text-white">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div className="col-span-1 md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <div className="flex items-center justify-center w-8 h-8 rounded-md bg-gradient-to-r from-epu-green to-epu-blue">
+              <div className="flex items-center justify-center w-8 h-8 rounded-md bg-gradient-to-r from-green-500 to-blue-500">
                 <Code className="h-4 w-4 text-white" />
               </div>
-              <span className="font-bold text-xl">EPU<span className="text-epu-green">Learn</span></span>
+              <span className="font-bold text-xl">EPU<span className="text-green-400">Learn</span></span>
             </Link>
-            <p className="text-gray-400 mb-6">
+            <p className="text-gray-300 dark:text-gray-300 mb-6">
               Nền tảng hàng đầu để học các ngôn ngữ lập trình thông qua bài học tương tác và kiểm tra sau mỗi chương.
             </p>
             <div className="flex space-x-4">
@@ -36,35 +36,35 @@ const Footer = () => {
           </div>
           
           <div className="col-span-1">
-            <h3 className="font-bold text-lg mb-4">Khóa Học</h3>
+            <h3 className="font-bold text-lg mb-4 text-white">Khóa Học</h3>
             <ul className="space-y-3">
-              <li><Link to="/courses/web-development" className="text-gray-400 hover:text-white transition-colors">Phát Triển Web</Link></li>
-              <li><Link to="/courses/python" className="text-gray-400 hover:text-white transition-colors">Python</Link></li>
-              <li><Link to="/courses/javascript" className="text-gray-400 hover:text-white transition-colors">JavaScript</Link></li>
-              <li><Link to="/courses/java" className="text-gray-400 hover:text-white transition-colors">Java</Link></li>
-              <li><Link to="/courses/c-plus-plus" className="text-gray-400 hover:text-white transition-colors">C++</Link></li>
+              <li><Link to="/courses/web-development" className="text-gray-300 hover:text-white transition-colors">Phát Triển Web</Link></li>
+              <li><Link to="/courses/python" className="text-gray-300 hover:text-white transition-colors">Python</Link></li>
+              <li><Link to="/courses/javascript" className="text-gray-300 hover:text-white transition-colors">JavaScript</Link></li>
+              <li><Link to="/courses/java" className="text-gray-300 hover:text-white transition-colors">Java</Link></li>
+              <li><Link to="/courses/c-plus-plus" className="text-gray-300 hover:text-white transition-colors">C++</Link></li>
             </ul>
           </div>
           
           <div className="col-span-1">
-            <h3 className="font-bold text-lg mb-4">Tài Nguyên</h3>
+            <h3 className="font-bold text-lg mb-4 text-white">Tài Nguyên</h3>
             <ul className="space-y-3">
-              <li><Link to="/blog" className="text-gray-400 hover:text-white transition-colors">Blog</Link></li>
-              <li><Link to="/tutorials" className="text-gray-400 hover:text-white transition-colors">Hướng Dẫn</Link></li>
-              <li><Link to="/documentation" className="text-gray-400 hover:text-white transition-colors">Tài Liệu</Link></li>
-              <li><Link to="/faq" className="text-gray-400 hover:text-white transition-colors">FAQ</Link></li>
-              <li><Link to="/community" className="text-gray-400 hover:text-white transition-colors">Cộng Đồng</Link></li>
+              <li><Link to="/blog" className="text-gray-300 hover:text-white transition-colors">Blog</Link></li>
+              <li><Link to="/tutorials" className="text-gray-300 hover:text-white transition-colors">Hướng Dẫn</Link></li>
+              <li><Link to="/documentation" className="text-gray-300 hover:text-white transition-colors">Tài Liệu</Link></li>
+              <li><Link to="/faq" className="text-gray-300 hover:text-white transition-colors">FAQ</Link></li>
+              <li><Link to="/community" className="text-gray-300 hover:text-white transition-colors">Cộng Đồng</Link></li>
             </ul>
           </div>
           
           <div className="col-span-1">
-            <h3 className="font-bold text-lg mb-4">Công Ty</h3>
+            <h3 className="font-bold text-lg mb-4 text-white">Công Ty</h3>
             <ul className="space-y-3">
-              <li><Link to="/about" className="text-gray-400 hover:text-white transition-colors">Về Chúng Tôi</Link></li>
-              <li><Link to="/contact" className="text-gray-400 hover:text-white transition-colors">Liên Hệ</Link></li>
-              <li><Link to="/careers" className="text-gray-400 hover:text-white transition-colors">Tuyển Dụng</Link></li>
-              <li><Link to="/privacy" className="text-gray-400 hover:text-white transition-colors">Chính Sách Bảo Mật</Link></li>
-              <li><Link to="/terms" className="text-gray-400 hover:text-white transition-colors">Điều Khoản Dịch Vụ</Link></li>
+              <li><Link to="/about" className="text-gray-300 hover:text-white transition-colors">Về Chúng Tôi</Link></li>
+              <li><Link to="/contact" className="text-gray-300 hover:text-white transition-colors">Liên Hệ</Link></li>
+              <li><Link to="/careers" className="text-gray-300 hover:text-white transition-colors">Tuyển Dụng</Link></li>
+              <li><Link to="/privacy" className="text-gray-300 hover:text-white transition-colors">Chính Sách Bảo Mật</Link></li>
+              <li><Link to="/terms" className="text-gray-300 hover:text-white transition-colors">Điều Khoản Dịch Vụ</Link></li>
             </ul>
           </div>
         </div>

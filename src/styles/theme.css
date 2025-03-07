@@ -1,4 +1,4 @@
-
+<lov-code>
 @tailwind base;
 
 /* Light mode variables (default) */
@@ -43,42 +43,46 @@
   
   /* Line highlight colors */
   --line-highlight: rgba(124, 179, 66, 0.2);
-  --line-number: #888;
+  --line-number: #666;
   
   /* Course card colors */
   --card-bg: #ffffff;
-  --card-text: #1a2b3c;
-  --card-description: #4a5568;
+  --card-text: #333333;
+  --card-description: #555555;
+  
+  /* CTA colors */
+  --cta-text: #ffffff;
+  --cta-bg: linear-gradient(90deg, #3a5c9b 0%, #7cb342 100%);
 }
 
 /* Dark mode variables - darker for better eye comfort and contrast */
 .dark {
-  --background: 240 15% 6%; /* Much darker background */
+  --background: 240 15% 6%;
   --foreground: 210 40% 98%;
 
-  --card: 240 15% 8%; /* Darker card background */
+  --card: 240 15% 8%;
   --card-foreground: 210 40% 98%;
 
-  --popover: 240 15% 8%; /* Darker popover */
+  --popover: 240 15% 8%;
   --popover-foreground: 210 40% 98%;
 
   --primary: 85 52% 45%;
   --primary-foreground: 210 40% 98%;
 
-  --secondary: 240 15% 10%; /* Darker secondary */
+  --secondary: 240 15% 10%;
   --secondary-foreground: 210 40% 98%;
 
-  --muted: 240 15% 10%; /* Darker muted */
+  --muted: 240 15% 10%;
   --muted-foreground: 215 20.2% 75.1%;
 
-  --accent: 240 15% 10%; /* Darker accent */
+  --accent: 240 15% 10%;
   --accent-foreground: 210 40% 98%;
 
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 240 15% 12%; /* Darker border */
-  --input: 240 15% 12%; /* Darker input */
+  --border: 240 15% 12%;
+  --input: 240 15% 12%;
   --ring: 212.7 26.8% 83.9%;
 
   /* Digital rain color for dark mode */
@@ -86,7 +90,7 @@
   
   /* Interactive element colors */
   --hover-glow: rgba(124, 179, 66, 0.4);
-  --code-bg: #0a0c12; /* Much darker code bg */
+  --code-bg: #0a0c12;
   --code-highlight: rgba(124, 179, 66, 0.2);
   
   /* Line highlight colors */
@@ -94,9 +98,13 @@
   --line-number: #666;
   
   /* Course card colors */
-  --card-bg: #0d101a; /* Darker card bg */
+  --card-bg: #0d101a;
   --card-text: #e2e8f0;
   --card-description: #a0aec0;
+  
+  /* CTA colors */
+  --cta-text: #ffffff;
+  --cta-bg: linear-gradient(90deg, #1E3A8A 0%, #059669 100%);
 }
 
 /* Base styles that change with theme */
@@ -292,6 +300,14 @@ body {
   color: hsl(var(--muted-foreground)) !important;
 }
 
+/* Improved text contrast in light mode */
+.text-gray-600,
+.text-gray-700,
+.text-gray-800,
+.text-gray-900 {
+  color: hsl(var(--foreground)) !important;
+}
+
 /* Fix dark mode backgrounds */
 .dark .bg-white,
 .dark .bg-gray-50,
@@ -315,19 +331,608 @@ body {
   --tw-gradient-to: hsl(240, 15%, 3%) !important;
 }
 
-/* Fix text colors for interactive elements */
-.dark .interactive-button {
+/* Fix text colors for interactive elements - improved contrast */
+.interactive-button {
   color: hsl(var(--foreground));
   border-color: hsl(var(--border));
 }
 
-/* Fix card backgrounds */
-.dark .course-card {
-  background-color: hsl(var(--card));
+/* Fix text colors for Call to Action section */
+.cta-section {
+  color: var(--cta-text);
+  background: var(--cta-bg);
+}
+
+/* Improve text contrast in dark mode */
+.dark .text-blue-600 {
+  color: #60a5fa !important; /* Lighter blue for better contrast in dark mode */
+}
+
+/* Fix text contrast in light mode */
+.text-blue-600 {
+  color: #2563eb !important; /* Darker blue for better contrast in light mode */
+}
+
+/* Fix card backgrounds for better contrast */
+.course-card {
+  background-color: var(--card-bg);
+  color: var(--card-text);
+}
+
+.course-card .card-description {
+  color: var(--card-description);
+}
+
+/* Ensure buttons have consistent colors across themes */
+.btn-primary {
+  @apply bg-green-600 text-white hover:bg-green-500;
+}
+
+.dark .btn-primary {
+  @apply bg-green-600 text-white hover:bg-green-500;
+}
+
+.btn-secondary {
+  @apply bg-blue-600 text-white hover:bg-blue-500;
+}
+
+.dark .btn-secondary {
+  @apply bg-blue-600 text-white hover:bg-blue-500;
+}
+
+/* Theme toggle transition */
+.theme-transitioning::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  opacity: 0;
+  animation: theme-flash 0.5s ease-out;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
+}
+
+@keyframes theme-flash {
+  0% { opacity: 0; transform: scale(0); }
+  50% { opacity: 0.8; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(2); }
+}
+
+/* Dark mode transition effect */
+.dark-transition-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.dark-transition-overlay.active {
+  animation: dark-mode-transition 0.8s ease-in-out forwards;
+}
+
+.light-transition-overlay.active {
+  animation: light-mode-transition 0.8s ease-in-out forwards;
+}
+
+@keyframes dark-mode-transition {
+  0% { opacity: 0; }
+  50% { opacity: 1; background: radial-gradient(circle at center, transparent 0%, #000 100%); }
+  100% { opacity: 0; background: radial-gradient(circle at center, transparent 0%, #000 100%); }
+}
+
+@keyframes light-mode-transition {
+  0% { opacity: 0; }
+  50% { opacity: 1; background: radial-gradient(circle at center, #fff 0%, transparent 100%); }
+  100% { opacity: 0; background: radial-gradient(circle at center, #fff 0%, transparent 100%); }
+}
+
+/* Interactive button effects */
+.interactive-button {
+  @apply relative overflow-hidden transition-all duration-300;
+}
+
+.interactive-button:hover::after {
+  content: '';
+  @apply absolute inset-0 bg-primary opacity-20 rounded-md scale-[0.95];
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+}
+
+/* Card hover effect */
+.hover-card {
+  @apply transition-all duration-500;
+}
+
+.hover-card:hover {
+  box-shadow: 0 0 20px var(--hover-glow);
+  @apply transform -translate-y-1;
+}
+
+/* Link hover effect */
+.nav-link {
+  @apply relative;
+}
+
+.nav-link::after {
+  @apply content-[''] absolute left-0 bottom-0 w-0 h-0.5 bg-primary transition-all duration-300;
+}
+
+.nav-link:hover::after {
+  @apply w-full;
+}
+
+/* Line numbers in code */
+.line-number {
+  color: var(--line-number);
+  @apply text-xs inline-block w-5 text-right mr-3 select-none;
+}
+
+/* Interactive hover effects for course cards */
+.course-card {
+  @apply transition-all duration-300 overflow-hidden;
+}
+
+.course-card:hover {
+  @apply shadow-lg transform -translate-y-1;
+}
+
+.course-card .card-content {
+  @apply transition-all duration-300;
+}
+
+.course-card:hover .card-content {
+  @apply bg-primary/5;
+}
+
+/* Fixed sticky navbar styles */
+.navbar-sticky {
+  @apply fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md shadow-sm transition-all duration-300;
+}
+
+.navbar-sticky.scrolled {
+  @apply shadow-md;
+}
+
+/* Enhanced firefly effect */
+.firefly {
+  @apply absolute rounded-full pointer-events-none opacity-0;
+  background-color: rgba(255, 235, 156, 0.7);
+  box-shadow: 0 0 20px 5px rgba(255, 235, 156, 0.3);
+}
+
+/* Improved text contrast in dark mode */
+.dark .text-foreground {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Dark text in light mode, light text in dark mode */
+.dark .text-gray-700,
+.dark .text-gray-800,
+.dark .text-gray-900 {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .text-gray-600 {
+  color: hsl(var(--foreground) / 0.9) !important;
+}
+
+.dark .text-gray-500 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Fixed the circular dependency here - removed the problematic rule */
+/* Manually setting color for .dark .text-gray-400 instead of using @apply */
+.dark .text-gray-400 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Improved text contrast in light mode */
+.text-gray-600,
+.text-gray-700,
+.text-gray-800,
+.text-gray-900 {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Fix dark mode backgrounds */
+.dark .bg-white,
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark .bg-gray-200 {
+  background-color: hsl(var(--background)) !important;
+}
+
+/* Make sure dark borders are visible */
+.dark .border-gray-100,
+.dark .border-gray-200 {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Fix gradient backgrounds in dark mode */
+.dark .from-background {
+  --tw-gradient-from: hsl(var(--background)) !important;
+}
+
+.dark .to-gray-50 {
+  --tw-gradient-to: hsl(240, 15%, 3%) !important;
+}
+
+/* Fix text colors for interactive elements - improved contrast */
+.interactive-button {
+  color: hsl(var(--foreground));
   border-color: hsl(var(--border));
 }
 
-/* Fix text in hero section */
-.dark .hero-text {
-  color: hsl(var(--foreground));
+/* Fix text colors for Call to Action section */
+.cta-section {
+  color: var(--cta-text);
+  background: var(--cta-bg);
 }
+
+/* Improve text contrast in dark mode */
+.dark .text-blue-600 {
+  color: #60a5fa !important; /* Lighter blue for better contrast in dark mode */
+}
+
+/* Fix text contrast in light mode */
+.text-blue-600 {
+  color: #2563eb !important; /* Darker blue for better contrast in light mode */
+}
+
+/* Fix card backgrounds for better contrast */
+.course-card {
+  background-color: var(--card-bg);
+  color: var(--card-text);
+}
+
+.course-card .card-description {
+  color: var(--card-description);
+}
+
+/* Ensure buttons have consistent colors across themes */
+.btn-primary {
+  @apply bg-green-600 text-white hover:bg-green-500;
+}
+
+.dark .btn-primary {
+  @apply bg-green-600 text-white hover:bg-green-500;
+}
+
+.btn-secondary {
+  @apply bg-blue-600 text-white hover:bg-blue-500;
+}
+
+.dark .btn-secondary {
+  @apply bg-blue-600 text-white hover:bg-blue-500;
+}
+
+/* Theme toggle transition */
+.theme-transitioning::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  opacity: 0;
+  animation: theme-flash 0.5s ease-out;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
+}
+
+@keyframes theme-flash {
+  0% { opacity: 0; transform: scale(0); }
+  50% { opacity: 0.8; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(2); }
+}
+
+/* Dark mode transition effect */
+.dark-transition-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.dark-transition-overlay.active {
+  animation: dark-mode-transition 0.8s ease-in-out forwards;
+}
+
+.light-transition-overlay.active {
+  animation: light-mode-transition 0.8s ease-in-out forwards;
+}
+
+@keyframes dark-mode-transition {
+  0% { opacity: 0; }
+  50% { opacity: 1; background: radial-gradient(circle at center, transparent 0%, #000 100%); }
+  100% { opacity: 0; background: radial-gradient(circle at center, transparent 0%, #000 100%); }
+}
+
+@keyframes light-mode-transition {
+  0% { opacity: 0; }
+  50% { opacity: 1; background: radial-gradient(circle at center, #fff 0%, transparent 100%); }
+  100% { opacity: 0; background: radial-gradient(circle at center, #fff 0%, transparent 100%); }
+}
+
+/* Interactive button effects */
+.interactive-button {
+  @apply relative overflow-hidden transition-all duration-300;
+}
+
+.interactive-button:hover::after {
+  content: '';
+  @apply absolute inset-0 bg-primary opacity-20 rounded-md scale-[0.95];
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+}
+
+/* Card hover effect */
+.hover-card {
+  @apply transition-all duration-500;
+}
+
+.hover-card:hover {
+  box-shadow: 0 0 20px var(--hover-glow);
+  @apply transform -translate-y-1;
+}
+
+/* Link hover effect */
+.nav-link {
+  @apply relative;
+}
+
+.nav-link::after {
+  @apply content-[''] absolute left-0 bottom-0 w-0 h-0.5 bg-primary transition-all duration-300;
+}
+
+.nav-link:hover::after {
+  @apply w-full;
+}
+
+/* Line numbers in code */
+.line-number {
+  color: var(--line-number);
+  @apply text-xs inline-block w-5 text-right mr-3 select-none;
+}
+
+/* Interactive hover effects for course cards */
+.course-card {
+  @apply transition-all duration-300 overflow-hidden;
+}
+
+.course-card:hover {
+  @apply shadow-lg transform -translate-y-1;
+}
+
+.course-card .card-content {
+  @apply transition-all duration-300;
+}
+
+.course-card:hover .card-content {
+  @apply bg-primary/5;
+}
+
+/* Fixed sticky navbar styles */
+.navbar-sticky {
+  @apply fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md shadow-sm transition-all duration-300;
+}
+
+.navbar-sticky.scrolled {
+  @apply shadow-md;
+}
+
+/* Enhanced firefly effect */
+.firefly {
+  @apply absolute rounded-full pointer-events-none opacity-0;
+  background-color: rgba(255, 235, 156, 0.7);
+  box-shadow: 0 0 20px 5px rgba(255, 235, 156, 0.3);
+}
+
+/* Improved text contrast in dark mode */
+.dark .text-foreground {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Dark text in light mode, light text in dark mode */
+.dark .text-gray-700,
+.dark .text-gray-800,
+.dark .text-gray-900 {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .text-gray-600 {
+  color: hsl(var(--foreground) / 0.9) !important;
+}
+
+.dark .text-gray-500 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Fixed the circular dependency here - removed the problematic rule */
+/* Manually setting color for .dark .text-gray-400 instead of using @apply */
+.dark .text-gray-400 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Improved text contrast in light mode */
+.text-gray-600,
+.text-gray-700,
+.text-gray-800,
+.text-gray-900 {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Fix dark mode backgrounds */
+.dark .bg-white,
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark .bg-gray-200 {
+  background-color: hsl(var(--background)) !important;
+}
+
+/* Make sure dark borders are visible */
+.dark .border-gray-100,
+.dark .border-gray-200 {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* Fix gradient backgrounds in dark mode */
+.dark .from-background {
+  --tw-gradient-from: hsl(var(--background)) !important;
+}
+
+.dark .to-gray-50 {
+  --tw-gradient-to: hsl(240, 15%, 3%) !important;
+}
+
+/* Fix text colors for interactive elements - improved contrast */
+.interactive-button {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
+}
+
+/* Fix text colors for Call to Action section */
+.cta-section {
+  color: var(--cta-text);
+  background: var(--cta-bg);
+}
+
+/* Improve text contrast in dark mode */
+.dark .text-blue-600 {
+  color: #60a5fa !important; /* Lighter blue for better contrast in dark mode */
+}
+
+/* Fix text contrast in light mode */
+.text-blue-600 {
+  color: #2563eb !important; /* Darker blue for better contrast in light mode */
+}
+
+/* Fix card backgrounds for better contrast */
+.course-card {
+  background-color: var(--card-bg);
+  color: var(--card-text);
+}
+
+.course-card .card-description {
+  color: var(--card-description);
+}
+
+/* Ensure buttons have consistent colors across themes */
+.btn-primary {
+  @apply bg-green-600 text-white hover:bg-green-500;
+}
+
+.dark .btn-primary {
+  @apply bg-green-600 text-white hover:bg-green-500;
+}
+
+.btn-secondary {
+  @apply bg-blue-600 text-white hover:bg-blue-500;
+}
+
+.dark .btn-secondary {
+  @apply bg-blue-600 text-white hover:bg-blue-500;
+}
+
+/* Theme toggle transition */
+.theme-transitioning::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  opacity: 0;
+  animation: theme-flash 0.5s ease-out;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
+}
+
+@keyframes theme-flash {
+  0% { opacity: 0; transform: scale(0); }
+  50% { opacity: 0.8; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(2); }
+}
+
+/* Dark mode transition effect */
+.dark-transition-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.dark-transition-overlay.active {
+  animation: dark-mode-transition 0.8s ease-in-out forwards;
+}
+
+.light-transition-overlay.active {
+  animation: light-mode-transition 0.8s ease-in-out forwards;
+}
+
+@keyframes dark-mode-transition {
+  0% { opacity: 0; }
+  50% { opacity: 1; background: radial-gradient(circle at center, transparent 0%, #000 100%); }
+  100% { opacity: 0; background: radial-gradient(circle at center, transparent 0%, #000 100%); }
+}
+
+@keyframes light-mode-transition {
+  0% { opacity: 0; }
+  50% { opacity: 1; background: radial-gradient(circle at center, #fff 0%, transparent 100%); }
+  100% { opacity: 0; background: radial-gradient(circle at center, #fff 0%, transparent 100%); }
+}
+
+/* Interactive button effects */
+.interactive-button {
+  @apply relative overflow-hidden transition-all duration-300;
+}
+
+.interactive-button:hover::after {
+  content: '';
+  @apply absolute inset-0 bg-primary opacity-20 rounded-md scale-[0.95];
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+}
+
+/* Card hover effect */
+.hover-card {
+  @apply transition-all duration-500;
+}
+
+.hover-card:hover {
+  box-

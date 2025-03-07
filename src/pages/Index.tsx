@@ -103,7 +103,7 @@ const Index = () => {
       
       <Navbar />
       
-      <main className="pt-20"> {/* Increased padding-top to account for fixed navbar */}
+      <main className="pt-28"> {/* Tăng padding-top để tạo khoảng cách với navbar cố định */}
         <Hero />
         
         <div className="lazy-fade-in">

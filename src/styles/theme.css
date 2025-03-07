@@ -4,15 +4,15 @@
 /* Light mode variables (default) */
 :root {
   --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
+  --foreground: 240 10% 3.9%;
 
   --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
+  --card-foreground: 240 10% 3.9%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
+  --popover-foreground: 240 10% 3.9%;
 
-  --primary: 85 52% 45%;
+  --primary: 222.2 89% 41%;
   --primary-foreground: 210 40% 98%;
 
   --secondary: 210 40% 96.1%;
@@ -33,16 +33,21 @@
 
   --radius: 0.5rem;
 
-  /* Digital rain color for light mode */
-  --digital-rain-color: #3a5c9b80;
+  /* Lovable color palette */
+  --lovable-blue: 214 89% 52%;
+  --lovable-cyan: 196 100% 50%;
+  --lovable-pink: 334 100% 50%;
+  --lovable-orange: 24 100% 62%;
+  --lovable-yellow: 48 100% 67%;
+  --lovable-green: 142 72% 50%;
   
   /* Interactive element colors */
-  --hover-glow: rgba(124, 179, 66, 0.3);
+  --hover-glow: rgba(39, 128, 227, 0.3);
   --code-bg: #f8f8f8;
-  --code-highlight: rgba(124, 179, 66, 0.1);
+  --code-highlight: rgba(39, 128, 227, 0.1);
   
   /* Line highlight colors */
-  --line-highlight: rgba(124, 179, 66, 0.2);
+  --line-highlight: rgba(39, 128, 227, 0.2);
   --line-number: #666;
   
   /* Course card colors */
@@ -52,64 +57,62 @@
   
   /* CTA colors */
   --cta-text: #ffffff;
-  --cta-bg: linear-gradient(90deg, #3a5c9b 0%, #7cb342 100%);
+  --cta-bg: linear-gradient(90deg, #1e88e5 0%, #0ea5e9 100%);
 }
 
-/* Dark mode variables - darker for better eye comfort and contrast */
+/* Dark mode variables - Lovable-like dark theme */
 .dark {
-  --background: 240 15% 6%;
-  --foreground: 210 40% 98%;
+  --background: 240 10% 3.9%; /* #0D0F13 - very dark blue-gray */
+  --foreground: 0 0% 98%; /* #FAFAFA - off-white */
 
-  --card: 240 15% 8%;
-  --card-foreground: 210 40% 98%;
+  --card: 240 10% 5%; /* #12151B - slightly lighter than background */
+  --card-foreground: 0 0% 98%;
 
-  --popover: 240 15% 8%;
-  --popover-foreground: 210 40% 98%;
+  --popover: 240 10% 5%;
+  --popover-foreground: 0 0% 98%;
 
-  --primary: 85 52% 45%;
-  --primary-foreground: 210 40% 98%;
+  --primary: 214 89% 52%; /* #2780E3 - Lovable blue */
+  --primary-foreground: 0 0% 98%;
 
-  --secondary: 240 15% 10%;
-  --secondary-foreground: 210 40% 98%;
+  --secondary: 240 5% 10%; /* #18191D - dark gray with slight blue tint */
+  --secondary-foreground: 0 0% 98%;
 
-  --muted: 240 15% 10%;
-  --muted-foreground: 215 20.2% 75.1%;
+  --muted: 240 5% 12%;
+  --muted-foreground: 240 5% 65%;
 
-  --accent: 240 15% 10%;
-  --accent-foreground: 210 40% 98%;
+  --accent: 240 5% 15%;
+  --accent-foreground: 0 0% 98%;
 
   --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive-foreground: 0 0% 98%;
 
-  --border: 240 15% 12%;
-  --input: 240 15% 12%;
-  --ring: 212.7 26.8% 83.9%;
+  --border: 240 5% 12%;
+  --input: 240 5% 12%;
+  --ring: 240 5% 65%;
 
-  /* Digital rain color for dark mode */
-  --digital-rain-color: #7cb34280;
-  
   /* Interactive element colors */
-  --hover-glow: rgba(124, 179, 66, 0.4);
-  --code-bg: #0a0c12;
-  --code-highlight: rgba(124, 179, 66, 0.2);
+  --hover-glow: rgba(39, 128, 227, 0.4);
+  --code-bg: #141414;
+  --code-highlight: rgba(39, 128, 227, 0.2);
   
   /* Line highlight colors */
-  --line-highlight: rgba(124, 179, 66, 0.25);
+  --line-highlight: rgba(39, 128, 227, 0.25);
   --line-number: #666;
   
   /* Course card colors */
-  --card-bg: #0d101a;
-  --card-text: #e2e8f0;
-  --card-description: #a0aec0;
+  --card-bg: #161616;
+  --card-text: #e1e1e1;
+  --card-description: #a0a0a0;
   
   /* CTA colors */
   --cta-text: #ffffff;
-  --cta-bg: linear-gradient(90deg, #1E3A8A 0%, #059669 100%);
+  --cta-bg: linear-gradient(90deg, #0e63b3 0%, #0284c7 100%);
 }
 
 /* Base styles that change with theme */
 body {
-  @apply bg-background text-foreground transition-colors duration-700;
+  @apply bg-background text-foreground transition-colors duration-500;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .theme-code-block {
@@ -134,7 +137,7 @@ body {
 .course-card {
   background-color: var(--card-bg);
   color: var(--card-text);
-  transition: all 0.5s ease;
+  transition: all 0.3s ease;
 }
 
 .course-card .card-description {
@@ -158,7 +161,7 @@ body {
   100% { opacity: 0; transform: scale(2); }
 }
 
-/* Dark mode transition effect */
+/* Lovable-style dark mode transition with smooth fade */
 .dark-transition-overlay {
   position: fixed;
   top: 0;
@@ -168,43 +171,46 @@ body {
   z-index: 100;
   pointer-events: none;
   opacity: 0;
+  background-color: #0D0F13;
+  transition: opacity 0.5s ease;
 }
 
 .dark-transition-overlay.active {
-  animation: dark-mode-transition 0.8s ease-in-out forwards;
+  opacity: 1;
+}
+
+.light-transition-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  background-color: #ffffff;
+  transition: opacity 0.5s ease;
 }
 
 .light-transition-overlay.active {
-  animation: light-mode-transition 0.8s ease-in-out forwards;
+  opacity: 1;
 }
 
-@keyframes dark-mode-transition {
-  0% { opacity: 0; }
-  50% { opacity: 1; background: radial-gradient(circle at center, transparent 0%, #000 100%); }
-  100% { opacity: 0; background: radial-gradient(circle at center, transparent 0%, #000 100%); }
-}
-
-@keyframes light-mode-transition {
-  0% { opacity: 0; }
-  50% { opacity: 1; background: radial-gradient(circle at center, #fff 0%, transparent 100%); }
-  100% { opacity: 0; background: radial-gradient(circle at center, #fff 0%, transparent 100%); }
-}
-
-/* Interactive button effects */
+/* Interactive button effects - Lovable style */
 .interactive-button {
   @apply relative overflow-hidden transition-all duration-300;
 }
 
 .interactive-button:hover::after {
   content: '';
-  @apply absolute inset-0 bg-primary opacity-20 rounded-md scale-[0.95];
+  @apply absolute inset-0 bg-primary opacity-20 rounded-md;
   animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
   0%, 100% {
     opacity: 0.2;
-    transform: scale(0.95);
+    transform: scale(0.98);
   }
   50% {
     opacity: 0.3;
@@ -214,7 +220,7 @@ body {
 
 /* Card hover effect */
 .hover-card {
-  @apply transition-all duration-500;
+  @apply transition-all duration-300;
 }
 
 .hover-card:hover {
@@ -222,13 +228,13 @@ body {
   @apply transform -translate-y-1;
 }
 
-/* Link hover effect */
+/* Link hover effect - Lovable style */
 .nav-link {
   @apply relative;
 }
 
 .nav-link::after {
-  @apply content-[''] absolute left-0 bottom-0 w-0 h-0.5 bg-primary transition-all duration-300;
+  @apply content-[''] absolute left-0 bottom-0 w-0 h-0.5 bg-blue-500 dark:bg-blue-400 transition-all duration-300;
 }
 
 .nav-link:hover::after {
@@ -260,26 +266,33 @@ body {
 
 /* Fixed sticky navbar styles */
 .navbar-sticky {
-  @apply fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md shadow-sm transition-all duration-300;
+  @apply fixed top-0 left-0 right-0 z-50 border-b border-transparent dark:border-neutral-800;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.dark .navbar-sticky {
+  background: rgba(13, 15, 19, 0.8);
 }
 
 .navbar-sticky.scrolled {
-  @apply shadow-md;
+  @apply shadow-sm border-gray-200 dark:border-neutral-800;
 }
 
-/* Enhanced firefly effect */
+/* Enhanced firefly effect - Lovable style color particles */
 .firefly {
   @apply absolute rounded-full pointer-events-none opacity-0;
-  background-color: rgba(255, 235, 156, 0.7);
-  box-shadow: 0 0 20px 5px rgba(255, 235, 156, 0.3);
+  background: linear-gradient(45deg, #2780E3, #0EA5E9);
+  box-shadow: 0 0 10px 2px rgba(14, 165, 233, 0.3);
+}
+
+.dark .firefly {
+  background: linear-gradient(45deg, #2780E3, #0EA5E9);
+  box-shadow: 0 0 15px 5px rgba(14, 165, 233, 0.4);
 }
 
 /* Improved text contrast in dark mode */
-.dark .text-foreground {
-  color: hsl(var(--foreground)) !important;
-}
-
-/* Dark text in light mode, light text in dark mode */
 .dark .text-gray-700,
 .dark .text-gray-800,
 .dark .text-gray-900 {
@@ -294,20 +307,7 @@ body {
   color: hsl(var(--muted-foreground)) !important;
 }
 
-/* Manually setting color for .dark .text-gray-400 instead of using @apply */
-.dark .text-gray-400 {
-  color: hsl(var(--muted-foreground)) !important;
-}
-
-/* Improved text contrast in light mode */
-.text-gray-600,
-.text-gray-700,
-.text-gray-800,
-.text-gray-900 {
-  color: hsl(var(--foreground)) !important;
-}
-
-/* Fix dark mode backgrounds */
+/* Improved background colors */
 .dark .bg-white,
 .dark .bg-gray-50,
 .dark .bg-gray-100,
@@ -315,66 +315,61 @@ body {
   background-color: hsl(var(--background)) !important;
 }
 
-/* Make sure dark borders are visible */
-.dark .border-gray-100,
-.dark .border-gray-200 {
-  border-color: hsl(var(--border)) !important;
-}
-
-/* Fix gradient backgrounds in dark mode */
-.dark .from-background {
-  --tw-gradient-from: hsl(var(--background)) !important;
-}
-
-.dark .to-gray-50 {
-  --tw-gradient-to: hsl(240, 15%, 3%) !important;
-}
-
-/* Fix text colors for interactive elements - improved contrast */
-.interactive-button {
-  color: hsl(var(--foreground));
-  border-color: hsl(var(--border));
-}
-
-/* Fix text colors for Call to Action section */
-.cta-section {
-  color: var(--cta-text);
-  background: var(--cta-bg);
-}
-
-/* Improve text contrast in dark mode */
-.dark .text-blue-600 {
-  color: #60a5fa !important; /* Lighter blue for better contrast in dark mode */
-}
-
-/* Fix text contrast in light mode */
-.text-blue-600 {
-  color: #2563eb !important; /* Darker blue for better contrast in light mode */
-}
-
-/* Fix card backgrounds for better contrast */
-.course-card {
-  background-color: var(--card-bg);
-  color: var(--card-text);
-}
-
-.course-card .card-description {
-  color: var(--card-description);
-}
-
-/* Ensure buttons have consistent colors across themes */
+/* Lovable-style button colors */
 .btn-primary {
-  @apply bg-green-600 text-white hover:bg-green-500;
+  @apply bg-blue-600 text-white hover:bg-blue-500 transition-colors;
 }
 
 .dark .btn-primary {
-  @apply bg-green-600 text-white hover:bg-green-500;
+  @apply bg-blue-600 text-white hover:bg-blue-500;
 }
 
 .btn-secondary {
-  @apply bg-blue-600 text-white hover:bg-blue-500;
+  @apply bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors;
 }
 
-.dark .btn-secondary {
-  @apply bg-blue-600 text-white hover:bg-blue-500;
+/* Lovable-style glassy card effects */
+.glass-card {
+  @apply backdrop-blur-md bg-white/70 dark:bg-gray-900/70 border border-gray-200 dark:border-gray-800;
+}
+
+/* Lovable style gradient text */
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-cyan-500 dark:from-blue-400 dark:to-cyan-400;
+}
+
+/* Lovable style search input */
+.search-input {
+  @apply bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all;
+}
+
+/* Gradient button style (like Lovable's App button) */
+.gradient-button {
+  @apply bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-full px-5 py-2 transition-all;
+}
+
+.dark .gradient-button {
+  @apply from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500;
+}
+
+/* Lovable-style selection color */
+::selection {
+  @apply bg-blue-500/20 text-foreground;
+}
+
+/* Lovable-style scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-700 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-600;
 }

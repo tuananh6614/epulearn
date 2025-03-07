@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, Clock, Award } from "lucide-react";
+import { ArrowRight, BookOpen, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 
 // Định nghĩa kiểu dữ liệu cho CourseCard
@@ -19,7 +19,7 @@ interface CourseCardProps {
   color: string;
 }
 
-// Component hiển thị thẻ khóa học với thiết kế nổi bật hơn
+// Component hiển thị thẻ khóa học với thiết kế của Lovable
 const CourseCard = ({ 
   id, 
   title, 
@@ -32,7 +32,7 @@ const CourseCard = ({
   color 
 }: CourseCardProps) => {
   return (
-    <Card className="course-card h-full overflow-hidden border-0 rounded-xl shadow-lg dark:shadow-blue-500/5 hover:shadow-xl dark:hover:shadow-green-500/10 hover:-translate-y-2 transition-all duration-500 bg-white dark:bg-gray-800/60">
+    <Card className="course-card h-full overflow-hidden border shadow-sm hover:shadow-xl transition-all duration-500 bg-card dark:bg-card/60 hover:-translate-y-2">
       <div 
         className="card-img h-44 w-full relative overflow-hidden" 
         style={{ 
@@ -45,27 +45,29 @@ const CourseCard = ({
           <img 
             src={image} 
             alt={title} 
-            className="object-cover h-full w-full opacity-80 transition-all duration-500 hover:opacity-100" 
+            className="object-cover h-full w-full opacity-90 transition-all duration-500 hover:opacity-100" 
           />
         </div>
         <div className="absolute top-2 right-2">
-          <Badge className="bg-white/90 text-gray-800 hover:bg-white/95 dark:bg-gray-900/90 dark:text-gray-100 dark:hover:bg-gray-900/95 transition-colors font-medium">{level}</Badge>
+          <Badge className="bg-white/90 text-gray-800 hover:bg-white/95 dark:bg-gray-900/90 dark:text-gray-100 dark:hover:bg-gray-900/95 font-medium">
+            {level}
+          </Badge>
         </div>
       </div>
       
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl text-gray-800 dark:text-white font-bold">{title}</CardTitle>
-        <CardDescription className="text-gray-600 dark:text-gray-300">{category}</CardDescription>
+        <CardTitle className="text-xl font-semibold">{title}</CardTitle>
+        <CardDescription>{category}</CardDescription>
       </CardHeader>
       
       <CardContent className="pt-0">
-        <p className="text-gray-700 dark:text-gray-300 text-sm mb-4">{description}</p>
+        <p className="text-sm mb-4 text-foreground/80">{description}</p>
         <div className="flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-1 text-muted-foreground">
             <BookOpen className="h-4 w-4" />
             <span>{chapters} chương</span>
           </div>
-          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-1 text-muted-foreground">
             <Clock className="h-4 w-4" />
             <span>{duration}</span>
           </div>
@@ -73,9 +75,9 @@ const CourseCard = ({
       </CardContent>
       
       <CardFooter>
-        <Button className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white ripple-effect transition-all shadow-md hover:shadow-lg" asChild>
-          <Link to={`/course/${id}`} className="btn-hover-effect">
-            Bắt Đầu Học <ArrowRight className="ml-2 h-4 w-4" />
+        <Button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all shadow-md hover:shadow-lg font-medium" asChild>
+          <Link to={`/course/${id}`}>
+            Bắt Đầu Học <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
         </Button>
       </CardFooter>

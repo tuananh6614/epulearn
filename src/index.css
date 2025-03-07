@@ -1,3 +1,7 @@
+
+/* Import Google fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 /* Import theme and animations */
 @import './styles/theme.css';
 @import './styles/animations.css';
@@ -18,13 +22,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     @apply transition-colors duration-500;
-    padding-top: 4rem; /* Add padding to body to account for fixed header */
   }
   
   /* Smooth theme transition */
   *, *::before, *::after {
     transition-property: background-color, border-color, color, fill, stroke;
-    transition-duration: 0.5s;
+    transition-duration: 0.3s;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
   
@@ -35,55 +38,22 @@
 
   /* Fixed header when scrolling */
   header {
-    @apply fixed top-0 w-full z-50 shadow-md transition-all duration-300;
-    backdrop-filter: blur(10px);
-  }
-  
-  /* Darker backgrounds in dark mode */
-  .dark .bg-background, 
-  .dark .bg-white,
-  .dark .bg-gray-50,
-  .dark .bg-gray-100 {
-    @apply bg-[#0a0c12] !important;
-  }
-  
-  /* Fixed the circular dependency by using direct color value instead of @apply */
-  .dark .bg-gray-900 {
-    background-color: #000000 !important; /* Using black directly instead of @apply bg-black */
-  }
-  
-  /* Fix white backgrounds in light blue buttons */
-  .interactive-button {
-    @apply relative overflow-hidden;
-  }
-  
-  .dark .interactive-button {
-    @apply bg-opacity-100 text-white;
-  }
-  
-  /* Ensure text is visible in dark mode - using Tailwind classes with !important */
-  .dark .text-gray-600,
-  .dark .text-gray-700,
-  .dark .text-gray-800 {
-    color: hsl(var(--foreground)) !important;
-  }
-  
-  .dark .text-gray-500 {
-    color: hsl(var(--muted-foreground)) !important;
+    @apply fixed top-0 w-full z-50 transition-all duration-300;
+    backdrop-filter: blur(8px);
   }
 }
 
-/* Code syntax highlighting */
+/* Code syntax highlighting - Lovable style */
 .language-code {
   @apply block;
 }
 
 .language-code .keyword {
-  @apply text-purple-600 dark:text-purple-400;
+  @apply text-blue-600 dark:text-blue-400;
 }
 
 .language-code .function {
-  @apply text-blue-600 dark:text-blue-400;
+  @apply text-cyan-600 dark:text-cyan-400;
 }
 
 .language-code .string {
@@ -108,23 +78,17 @@
 }
 
 .highlighted-line {
-  @apply bg-green-100 dark:bg-green-900/30;
+  @apply bg-blue-100 dark:bg-blue-900/30;
 }
 
 /* Theme toggle transitions */
 .theme-toggle::before {
   content: '';
-  @apply absolute inset-0 rounded-full scale-0 opacity-0 transition-all duration-700;
+  @apply absolute inset-0 rounded-full scale-0 opacity-0 transition-all duration-500;
 }
 
 .theme-toggle:active::before {
-  @apply scale-[2.5] opacity-30 bg-gradient-to-r from-yellow-300 to-amber-500 dark:from-indigo-600 dark:to-violet-600;
-}
-
-/* Dark mode transition overlay */
-.theme-transition-overlay {
-  @apply fixed inset-0 z-[9999] pointer-events-none;
-  transition: opacity 0.8s ease;
+  @apply scale-[2.5] opacity-30 bg-gradient-to-r from-blue-300 to-cyan-300 dark:from-blue-600 dark:to-cyan-600;
 }
 
 /* Improved course card styles */
@@ -140,32 +104,9 @@
   @apply transition-transform duration-500;
 }
 
-/* Course card text contrast improvements - using CSS variables */
-.dark .course-card .text-gray-600 {
-  color: hsl(var(--foreground) / 0.9) !important;
-}
-
-.dark .course-card .text-gray-500 {
-  color: hsl(var(--foreground) / 0.7) !important;
-}
-
-.dark .course-card h3 {
-  color: hsl(var(--foreground)) !important;
-}
-
-/* Sticky header styles */
-.header-sticky {
-  @apply sticky top-0 z-50 w-full transition-all duration-300;
-  backdrop-filter: blur(10px);
-}
-
-.header-sticky.scrolled {
-  @apply shadow-md;
-}
-
 /* Mobile Menu styles */
 .mobile-menu {
-  @apply fixed inset-0 z-50 bg-background/95 dark:bg-gray-900/95 backdrop-blur-md flex flex-col items-center justify-center;
+  @apply fixed inset-0 z-50 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md flex flex-col items-center justify-center;
   transform: translateX(-100%);
   transition: transform 0.3s ease;
 }
@@ -174,202 +115,49 @@
   transform: translateX(0);
 }
 
-/* Improved hover effects */
-.hover-lift {
-  @apply transition-transform duration-300 hover:-translate-y-1;
-}
-
-.hover-scale {
-  @apply transition-transform duration-300 hover:scale-105;
-}
-
-/* Firefly container styles */
-.firefly-container {
-  @apply fixed inset-0 pointer-events-none z-0 overflow-hidden;
-}
-
-/* Enhanced text contrast in dark mode - using CSS variables */
-.dark .text-gray-600,
-.dark .text-gray-700,
-.dark .text-gray-800 {
-  color: hsl(var(--foreground)) !important;
-}
-
-.dark .text-gray-500 {
-  color: hsl(var(--muted-foreground)) !important;
-}
-
-/* Main content adjustment for fixed header */
-main {
-  padding-top: 4rem; /* Compensate for fixed header */
-}
-
-/* Enhanced firefly effect */
-.firefly {
-  position: fixed;
-  border-radius: 9999px;
-  pointer-events: none;
-  background-color: rgba(255, 235, 156, 0.8);
-  box-shadow: 0 0 25px 8px rgba(255, 235, 156, 0.5);
-  animation: firefly-move 6s ease-in-out infinite;
-  z-index: 0;
-}
-
-/* Fix for white backgrounds in dark mode */
-.dark .from-background,
-.dark .to-gray-50 {
-  --tw-gradient-from: #0a0c12 !important;
-  --tw-gradient-to: #050608 !important;
-}
-
-.dark .bg-gradient-to-b {
-  background-image: linear-gradient(to bottom, var(--tw-gradient-from), var(--tw-gradient-to)) !important;
-}
-
-/* Fix for blue/white text in dark mode - using CSS variables */
-.dark .text-epu-blue {
-  color: hsl(var(--primary)) !important;
-}
-
-.dark .bg-white {
-  background-color: hsl(var(--background)) !important;
-}
-
-/* Fix for any remaining white backgrounds */
-.dark .bg-gray-50, 
-.dark .bg-gray-100,
-.dark .bg-gray-200 {
-  background-color: hsl(var(--background)) !important;
-}
-
-/* Improved button contrast in dark mode */
-.dark .border-epu-blue {
-  border-color: hsl(var(--primary)) !important;
-}
-
-/* Mobile Menu styles - updated for better fixed positioning */
-.mobile-menu {
-  @apply fixed inset-0 pt-16 z-40 bg-gray-900/95 backdrop-blur-md flex flex-col items-center justify-start;
-  transform: translateY(-100%);
-  transition: transform 0.3s ease;
-}
-
-.mobile-menu.open {
-  transform: translateY(0);
-}
-
-/* Additional navbar design improvements */
-.nav-link {
-  @apply relative;
-}
-
-.nav-link::after {
-  content: '';
-  @apply absolute left-0 bottom-0 w-0 h-0.5 bg-green-400 transition-all duration-300;
-}
-
-.nav-link:hover::after {
-  @apply w-full;
-}
-
-/* Fixed UI issues with course cards */
-.course-card {
-  @apply bg-white dark:bg-gray-800 overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-500 border border-gray-100 dark:border-gray-700;
-}
-
-/* General styles for the entire page */
-body {
-  font-family: 'Arial', sans-serif;
-  line-height: 1.6;
-}
-
-/* Container to center content */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-/* Sections with padding */
-section {
-  padding: 60px 0;
-}
-
-/* Hero section styles */
-.hero {
-  background-color: #f9f9f9;
-  text-align: center;
-}
-
-.hero h1 {
-  font-size: 2.5rem;
-  margin-bottom: 20px;
-}
-
-.hero p {
-  font-size: 1.2rem;
-  color: #666;
-}
-
-/* Button styles */
-.button {
-  display: inline-block;
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
-  text-decoration: none;
-  border-radius: 5px;
-}
-
-.button:hover {
-  background-color: #0056b3;
-}
-
-/* Featured courses section */
-.featured-courses {
-  background-color: #fff;
-}
-
-.featured-courses h2 {
-  font-size: 2rem;
-  margin-bottom: 30px;
-  text-align: center;
-}
-
-/* Course card styles */
-.course-card {
-  border: 1px solid #ddd;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 5px;
-}
-
-.course-card h3 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-}
-
-.course-card p {
-  color: #666;
-}
-
-/* Footer styles */
-footer {
-  background-color: #333;
-  color: white;
-  text-align: center;
-  padding: 20px 0;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .hero h1 {
-    font-size: 2rem;
+/* Enhanced firefly effect - Animation */
+@keyframes firefly-move {
+  0%, 100% {
+    transform: translateX(0) translateY(0);
+    opacity: 0;
   }
-  .hero p {
-    font-size: 1rem;
+  10%, 90% {
+    opacity: 0.8;
   }
-  .featured-courses h2 {
-    font-size: 1.8rem;
+  50% {
+    transform: translateX(var(--x, 100px)) translateY(var(--y, -100px));
+    opacity: 0.6;
   }
+}
+
+/* Lovable-style inputs */
+input, textarea, select {
+  @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md transition-colors;
+}
+
+/* Lovable-like glass effect */
+.glass-effect {
+  @apply backdrop-blur-md bg-white/70 dark:bg-black/40 border border-white/20 dark:border-white/10;
+}
+
+/* Lovable-like button styles */
+.lovable-button {
+  @apply bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors;
+}
+
+.lovable-button-secondary {
+  @apply bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 px-4 py-2 rounded-md transition-colors;
+}
+
+/* Container for logo based on lovable site */
+.logo-container {
+  @apply flex items-center gap-2;
+}
+
+.logo-container svg {
+  @apply w-8 h-8;
+}
+
+.logo-container span {
+  @apply font-medium text-lg;
 }

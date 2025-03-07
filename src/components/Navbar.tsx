@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Code, BookOpen, GraduationCap, Home, Menu, X } from "lucide-react";
@@ -8,33 +8,51 @@ import ThemeToggle from './ThemeToggle';
 // Component thanh điều hướng chính - đã cố định khi cuộn trang
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+    
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
   
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
   
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-gradient-to-r from-gray-900 to-gray-800 dark:from-gray-900 dark:to-gray-800 shadow-lg">
+    <header className={`fixed top-0 left-0 right-0 z-50 w-full border-b transition-all duration-300 ${
+      scrolled ? "bg-white/90 dark:bg-gray-900/90 shadow-md backdrop-blur-md" : "bg-transparent dark:bg-gray-900/90"
+    }`}>
       <div className="container mx-auto flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2 font-bold text-xl">
             <div className="flex items-center justify-center w-10 h-10 rounded-md bg-gradient-to-r from-green-500 to-blue-500 shadow-inner">
               <Code className="h-5 w-5 text-white" />
             </div>
-            <span className="text-white font-bold tracking-wide">EPU<span className="text-green-400">Learn</span></span>
+            <span className="text-gray-900 dark:text-white font-bold tracking-wide">EPU<span className="text-green-400">Learn</span></span>
           </Link>
         </div>
         
         <nav className="hidden md:flex items-center gap-8">
-          <Link to="/" className="nav-link text-sm font-medium flex items-center gap-1 text-white hover:text-green-400 transition-colors">
+          <Link to="/" className="nav-link text-sm font-medium flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-green-500 dark:hover:text-green-400 transition-colors">
             <Home className="h-4 w-4" />
             Trang Chủ
           </Link>
-          <Link to="/courses" className="nav-link text-sm font-medium flex items-center gap-1 text-white hover:text-green-400 transition-colors">
+          <Link to="/courses" className="nav-link text-sm font-medium flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-green-500 dark:hover:text-green-400 transition-colors">
             <BookOpen className="h-4 w-4" />
             Khóa Học
           </Link>
-          <Link to="/certification" className="nav-link text-sm font-medium flex items-center gap-1 text-white hover:text-green-400 transition-colors">
+          <Link to="/certification" className="nav-link text-sm font-medium flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-green-500 dark:hover:text-green-400 transition-colors">
             <GraduationCap className="h-4 w-4" />
             Chứng Chỉ
           </Link>
@@ -42,15 +60,15 @@ const Navbar = () => {
         
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Button variant="outline" size="sm" className="hidden md:inline-flex text-white border-gray-700 hover:bg-gray-800 hover:text-green-400 hover:border-green-400 transition-all" asChild>
+          <Button variant="outline" size="sm" className="hidden md:inline-flex text-gray-900 dark:text-white border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all" asChild>
             <Link to="/login">Đăng Nhập</Link>
           </Button>
-          <Button size="sm" className="hidden md:inline-flex bg-green-600 hover:bg-green-500 text-white hover:scale-105 transition-transform" asChild>
+          <Button size="sm" className="hidden md:inline-flex bg-green-500 hover:bg-green-600 text-white hover:scale-105 transition-transform" asChild>
             <Link to="/signup">Đăng Ký</Link>
           </Button>
           
           {/* Mobile menu button */}
-          <Button variant="ghost" size="icon" className="md:hidden text-white hover:bg-gray-800" onClick={toggleMobileMenu}>
+          <Button variant="ghost" size="icon" className="md:hidden text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800" onClick={toggleMobileMenu}>
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
         </div>
@@ -76,7 +94,7 @@ const Navbar = () => {
             <Button variant="outline" className="w-full text-gray-900 dark:text-white border-gray-300 dark:border-gray-700" asChild onClick={() => setMobileMenuOpen(false)}>
               <Link to="/login">Đăng Nhập</Link>
             </Button>
-            <Button className="w-full bg-green-600 hover:bg-green-500 text-white" asChild onClick={() => setMobileMenuOpen(false)}>
+            <Button className="w-full bg-green-500 hover:bg-green-600 text-white" asChild onClick={() => setMobileMenuOpen(false)}>
               <Link to="/signup">Đăng Ký</Link>
             </Button>
           </div>

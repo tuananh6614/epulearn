@@ -6,9 +6,9 @@ import { ArrowRight } from "lucide-react";
 
 const CallToAction = () => {
   return (
-    <section className="py-20 relative overflow-hidden">
+    <section className="py-16 relative overflow-hidden">
       {/* Lovable-style dark gradient background */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-800 dark:to-blue-700"></div>
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-700 dark:to-blue-600"></div>
       
       {/* Particle effect in background */}
       <div className="absolute inset-0 -z-5">
@@ -38,7 +38,7 @@ const CallToAction = () => {
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button 
               size="lg" 
-              className="bg-white hover:bg-white/90 text-blue-600 hover:text-blue-700 shadow-lg" 
+              className="bg-white hover:bg-white/90 text-blue-600 hover:text-blue-700 shadow-lg hover:shadow-xl transition-all" 
               asChild
             >
               <Link to="/signup" className="font-medium">
@@ -49,7 +49,7 @@ const CallToAction = () => {
             <Button 
               size="lg" 
               variant="outline" 
-              className="border-white text-white hover:bg-white/10 shadow-lg" 
+              className="border-white text-white hover:bg-white/10 shadow-lg hover:shadow-xl transition-all" 
               asChild
             >
               <Link to="/courses" className="font-medium">

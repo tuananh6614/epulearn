@@ -109,12 +109,12 @@ const ThemeToggle: React.FC = () => {
       <Button 
         variant="ghost" 
         size="icon" 
-        className="w-9 h-9 p-0 rounded-full transition-colors"
+        className="w-9 h-9 p-0 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         onClick={toggleTheme}
         aria-label="Thay đổi chủ đề sáng tối"
       >
-        <Sun className={`h-5 w-5 transition-all duration-300 ${isDarkMode ? 'opacity-0 scale-0 absolute' : 'opacity-100 scale-100'}`} />
-        <Moon className={`h-5 w-5 transition-all duration-300 ${isDarkMode ? 'opacity-100 scale-100' : 'opacity-0 scale-0 absolute'}`} />
+        <Sun className={`h-5 w-5 text-amber-500 transition-all duration-300 ${isDarkMode ? 'opacity-0 scale-0 absolute' : 'opacity-100 scale-100'}`} />
+        <Moon className={`h-5 w-5 text-blue-400 transition-all duration-300 ${isDarkMode ? 'opacity-100 scale-100' : 'opacity-0 scale-0 absolute'}`} />
         <span className="sr-only">Thay đổi chủ đề</span>
       </Button>
       

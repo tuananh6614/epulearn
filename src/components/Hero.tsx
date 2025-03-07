@@ -44,7 +44,7 @@ const Hero = () => {
   return (
     <div 
       ref={containerRef}
-      className="relative overflow-hidden bg-gradient-to-b from-background to-gray-50 dark:from-gray-900 dark:to-gray-950 py-12 md:py-24 transform-3d"
+      className="relative overflow-hidden bg-gradient-to-b from-background to-gray-50 dark:from-gray-900 dark:to-gray-950 py-12 md:py-20 transform-3d"
     >
       {/* Background elements with parallax effect */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
@@ -52,35 +52,35 @@ const Hero = () => {
           <div className="absolute top-1/4 left-1/6 w-64 h-64 rounded-full bg-primary/5 dark:bg-primary/10 transform-gpu" />
         </ParallaxEffect>
         <ParallaxEffect speed={-0.3}>
-          <div className="absolute bottom-1/4 right-1/6 w-96 h-96 rounded-full bg-epu-blue/5 dark:bg-epu-blue/10 transform-gpu animation-delay-500" />
+          <div className="absolute bottom-1/4 right-1/6 w-96 h-96 rounded-full bg-blue-500/5 dark:bg-blue-500/10 transform-gpu animation-delay-500" />
         </ParallaxEffect>
         <ParallaxEffect speed={-0.1}>
-          <div className="absolute top-1/2 left-1/3 w-48 h-48 rounded-full bg-epu-green/10 dark:bg-epu-green/15 transform-gpu animation-delay-1000" />
+          <div className="absolute top-1/2 left-1/3 w-48 h-48 rounded-full bg-green-500/10 dark:bg-green-500/15 transform-gpu animation-delay-1000" />
         </ParallaxEffect>
       </div>
       
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="space-y-6">
             <div className="parallax-mouse-layer" data-speed="1.5">
               <div className="typewriter mb-4">
-                <h1 className="text-4xl md:text-5xl font-bold text-epu-dark dark:text-white leading-tight mb-4 inline-block">
-                  Học lập trình <span className="text-epu-green">tương tác</span>
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white leading-tight mb-4 inline-block">
+                  Học lập trình <span className="text-green-500">tương tác</span>
                 </h1>
               </div>
-              <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
+              <p className="text-lg text-gray-700 dark:text-gray-300 mb-8">
                 Làm chủ các ngôn ngữ lập trình thông qua các bài học tương tác và kiểm tra kiến thức sau mỗi chương. Biến việc học thành một cuộc phiêu lưu!
               </p>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 parallax-mouse-layer" data-speed="1">
-              <Button className="interactive-button bg-epu-green hover:bg-epu-green/90 text-white px-6 py-6 rounded-md text-lg" asChild>
+              <Button className="interactive-button bg-green-500 hover:bg-green-600 text-white font-medium px-6 py-2 h-auto rounded-md text-base" asChild>
                 <Link to="/courses">
                   Khám Phá Khóa Học
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button variant="outline" className="interactive-button border-epu-blue text-epu-blue dark:text-epu-blue hover:bg-epu-blue/10 px-6 py-6 rounded-md text-lg" asChild>
+              <Button variant="outline" className="interactive-button border-blue-500 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium px-6 py-2 h-auto rounded-md text-base" asChild>
                 <Link to="/demo">Thử Bài Học Demo</Link>
               </Button>
             </div>
@@ -100,8 +100,8 @@ const Hero = () => {
                   <CodeAnimation />
                 </div>
               </div>
-              <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-epu-green/20 rounded-full blur-xl animate-pulse-light"></div>
-              <div className="absolute -top-6 -left-6 w-32 h-32 bg-epu-blue/20 rounded-full blur-xl animate-pulse-light animation-delay-1000"></div>
+              <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-green-500/20 rounded-full blur-xl animate-pulse-light"></div>
+              <div className="absolute -top-6 -left-6 w-32 h-32 bg-blue-500/20 rounded-full blur-xl animate-pulse-light animation-delay-1000"></div>
             </div>
           </ParallaxEffect>
         </div>

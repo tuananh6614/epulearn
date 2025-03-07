@@ -58,22 +58,24 @@ const Footer = () => {
           </div>
           
           <div className="col-span-1">
-            <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">Công Ty</h3>
+            <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">Người sáng tạotạo</h3>
             <ul className="space-y-3">
-              <li><Link to="/about" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Về Chúng Tôi</Link></li>
-              <li><Link to="/contact" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Liên Hệ</Link></li>
-              <li><Link to="/careers" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Tuyển Dụng</Link></li>
-              <li><Link to="/privacy" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Chính Sách Bảo Mật</Link></li>
-              <li><Link to="/terms" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Điều Khoản Dịch Vụ</Link></li>
+              <li><a href="https://www.facebook.com/boycantien/" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
+              Nguyễn Tuấn Anh</a></li>
+              <li><a href="https://www.facebook.com/boycantien/" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
+              Trần Đình Dũngg</a></li>
+              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">...</Link></li>
+              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">...</Link></li>
+              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">...</Link></li>
             </ul>
           </div>
         </div>
         
         <div className="border-t border-gray-200 dark:border-gray-800 mt-10 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-600 dark:text-gray-400">© 2023 EPU Learn. Tất cả các quyền được bảo lưu.</p>
+          <p className="text-gray-600 dark:text-gray-400">© 2025 EPU Learn. Phát triển bơi nhóm 1.</p>
           <div className="flex items-center mt-4 md:mt-0">
             <Mail className="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" />
-            <a href="mailto:contact@epulearn.com" className="text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">contact@epulearn.com</a>
+            <a href="mailto:contact@epulearn.com" className="text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">tuananh6614@gmailgmail.com</a>
           </div>
         </div>
       </div>

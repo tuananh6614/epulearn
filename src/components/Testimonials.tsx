@@ -9,22 +9,22 @@ const testimonials = [
   {
     id: 1,
     content: "EPU Learn đã hoàn toàn thay đổi cách tôi tiếp cận code. Các bài tập tương tác đã làm cho quá trình học trở nên thú vị và hấp dẫn.",
-    name: "Minh Anh",
-    title: "Sinh viên Khoa học Máy tính",
-    avatar: "/placeholder.svg"
+    name: "Tuấn Anh",
+    title: "Sinh viên Điện tử viễn thông",
+    avatar: "/image/tuananh.svg"
   },
   {
     id: 2,
     content: "Là người không có kinh nghiệm lập trình trước đó, EPU Learn đã giúp tôi dễ dàng hiểu các khái niệm phức tạp thông qua các bài học từng bước.",
-    name: "Văn Linh",
-    title: "Lập trình viên tự học",
+    name: "Đình Dũng",
+    title: "Sinh viên Điện tử viễn thông",
     avatar: "/placeholder.svg"
   },
   {
     id: 3,
     content: "Các bài kiểm tra sau mỗi chương giúp củng cố những gì tôi đã học. Tôi cảm thấy tự tin về kỹ năng lập trình của mình sau khi hoàn thành các khóa học.",
-    name: "Quốc Tuấn",
-    title: "Chuyên viên IT",
+    name: "Văn Phương",
+    title: "Sinh viên Điện tử viễn thông",
     avatar: "/placeholder.svg"
   }
 ];

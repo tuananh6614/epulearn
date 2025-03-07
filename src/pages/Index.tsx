@@ -9,7 +9,7 @@ import Testimonials from '@/components/Testimonials';
 import CallToAction from '@/components/CallToAction';
 import Footer from '@/components/Footer';
 import FloatingCode from '@/components/FloatingCode';
-import NumberRain from '@/components/NumberRain';
+import NumberRain from '@/components/ui/NumberRain';
 import ParallaxEffect from '@/components/ParallaxEffect';
 
 // Component trang chủ chính

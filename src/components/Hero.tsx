@@ -48,9 +48,15 @@ const Hero = () => {
     >
       {/* Background elements with parallax effect */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <ParallaxEffect speed={-0.2} className="absolute top-1/4 left-1/6 w-64 h-64 rounded-full bg-primary/5 dark:bg-primary/10 transform-gpu" />
-        <ParallaxEffect speed={-0.3} className="absolute bottom-1/4 right-1/6 w-96 h-96 rounded-full bg-epu-blue/5 dark:bg-epu-blue/10 transform-gpu animation-delay-500" />
-        <ParallaxEffect speed={-0.1} className="absolute top-1/2 left-1/3 w-48 h-48 rounded-full bg-epu-green/10 dark:bg-epu-green/15 transform-gpu animation-delay-1000" />
+        <ParallaxEffect speed={-0.2}>
+          <div className="absolute top-1/4 left-1/6 w-64 h-64 rounded-full bg-primary/5 dark:bg-primary/10 transform-gpu" />
+        </ParallaxEffect>
+        <ParallaxEffect speed={-0.3}>
+          <div className="absolute bottom-1/4 right-1/6 w-96 h-96 rounded-full bg-epu-blue/5 dark:bg-epu-blue/10 transform-gpu animation-delay-500" />
+        </ParallaxEffect>
+        <ParallaxEffect speed={-0.1}>
+          <div className="absolute top-1/2 left-1/3 w-48 h-48 rounded-full bg-epu-green/10 dark:bg-epu-green/15 transform-gpu animation-delay-1000" />
+        </ParallaxEffect>
       </div>
       
       <div className="container mx-auto px-4">
@@ -80,7 +86,7 @@ const Hero = () => {
             </div>
           </div>
           
-          <ParallaxEffect speed={0.2} className="relative">
+          <ParallaxEffect speed={0.2}>
             <div className="parallax-mouse-layer" data-speed="-1">
               <div className="relative hover-card bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div className="absolute top-0 left-0 right-0 h-8 bg-gray-800 dark:bg-gray-900 flex items-center px-4">

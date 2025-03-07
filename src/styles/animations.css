@@ -57,6 +57,16 @@
   50% { border-color: var(--primary) }
 }
 
+/* Theme transition animation */
+@keyframes theme-transition {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.dark-transition {
+  animation: theme-transition 0.5s ease-out;
+}
+
 /* Parallax utility class */
 .parallax-element {
   will-change: transform;
@@ -183,4 +193,28 @@
 
 .lazy-loaded {
   opacity: 1;
+}
+
+/* Theme toggle specific animations */
+@keyframes sun-rise {
+  from { transform: rotate(-45deg) scale(0.3); opacity: 0; }
+  to { transform: rotate(0) scale(1); opacity: 1; }
+}
+
+@keyframes moon-rise {
+  from { transform: rotate(45deg) scale(0.3); opacity: 0; }
+  to { transform: rotate(0) scale(1); opacity: 1; }
+}
+
+.sun-icon {
+  animation: sun-rise 0.5s ease-out;
+}
+
+.moon-icon {
+  animation: moon-rise 0.5s ease-out;
+}
+
+/* Code highlight transition */
+.code-line-highlight-transition {
+  transition: background-color 0.3s ease;
 }

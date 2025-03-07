@@ -39,14 +39,17 @@ function xinChao() {
 
   return (
     <div
-      className="absolute pointer-events-none select-none opacity-20 text-xs font-mono hover:opacity-40 transition-opacity duration-300"
+      className="absolute pointer-events-none select-none opacity-20 text-xs font-mono hover:opacity-40 dark:hover:opacity-60 transition-all duration-300 group"
       style={{
         ...style,
         animation: `float 10s ease-in-out infinite, rotate-slow 20s linear infinite`,
       }}
     >
-      <pre className="theme-code-block">
-        {getCodeSnippet()}
+      <pre className="theme-code-block dark:bg-gray-800/60 bg-gray-100/70 backdrop-blur-sm group-hover:backdrop-blur-md transition-all">
+        <code className="language-code text-gray-800 dark:text-gray-300">
+          {getCodeSnippet()}
+        </code>
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-primary/10 to-transparent dark:from-primary/20 rounded transition-opacity duration-500"></div>
       </pre>
     </div>
   );

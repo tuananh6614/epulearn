@@ -1,0 +1,125 @@
+
+@tailwind components;
+
+/* Lovable-style theme components */
+@layer components {
+  /* Theme toggle transition */
+  .theme-toggle::before {
+    content: '';
+    @apply absolute inset-0 rounded-full scale-0 opacity-0 transition-all duration-500;
+  }
+
+  .theme-toggle:active::before {
+    @apply scale-[2.5] opacity-30 bg-gradient-to-r from-blue-300 to-cyan-300 dark:from-blue-600 dark:to-cyan-600;
+  }
+
+  /* Dark mode transition overlay */
+  .dark-transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    background-color: #0D0F13;
+    transition: opacity 0.5s ease;
+  }
+
+  .dark-transition-overlay.active {
+    opacity: 1;
+  }
+
+  .light-transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    background-color: #ffffff;
+    transition: opacity 0.5s ease;
+  }
+
+  .light-transition-overlay.active {
+    opacity: 1;
+  }
+
+  /* Course card styles */
+  .course-card {
+    @apply overflow-hidden rounded-xl shadow-sm hover:shadow-xl transition-all duration-500;
+  }
+
+  .course-card:hover .card-img {
+    @apply scale-110;
+  }
+
+  .card-img {
+    @apply transition-transform duration-500;
+  }
+
+  /* Mobile Menu styles */
+  .mobile-menu {
+    @apply fixed inset-0 z-50 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md flex flex-col items-center justify-center;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .mobile-menu.open {
+    transform: translateX(0);
+  }
+
+  /* Code syntax highlighting - Lovable style */
+  .language-code {
+    @apply block;
+  }
+
+  .language-code .keyword {
+    @apply text-blue-600 dark:text-blue-400;
+  }
+
+  .language-code .function {
+    @apply text-cyan-600 dark:text-cyan-400;
+  }
+
+  .language-code .string {
+    @apply text-green-600 dark:text-green-400;
+  }
+
+  .language-code .comment {
+    @apply text-gray-500 dark:text-gray-400;
+  }
+
+  .language-code .number {
+    @apply text-orange-600 dark:text-orange-400;
+  }
+
+  /* Code editor styles */
+  .code-container {
+    @apply relative font-mono text-sm rounded-md overflow-hidden;
+  }
+
+  .code-line {
+    @apply cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/70 transition-colors;
+  }
+
+  .highlighted-line {
+    @apply bg-blue-100 dark:bg-blue-900/30;
+  }
+
+  /* Navbar link styles */
+  .nav-link {
+    @apply relative;
+  }
+
+  .nav-link::after {
+    @apply content-[''] absolute left-0 bottom-0 w-0 h-0.5 bg-blue-500 dark:bg-blue-400 transition-all duration-300;
+  }
+
+  .nav-link:hover::after {
+    @apply w-full;
+  }
+}

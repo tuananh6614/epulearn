@@ -59,21 +59,21 @@ const Navbar = () => {
       {/* Mobile menu */}
       <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''} md:hidden`}>
         <nav className="flex flex-col items-center gap-8 py-8">
-          <Link to="/" className="text-lg font-medium flex items-center gap-2 text-white" onClick={() => setMobileMenuOpen(false)}>
+          <Link to="/" className="text-lg font-medium flex items-center gap-2 text-gray-900 dark:text-white" onClick={() => setMobileMenuOpen(false)}>
             <Home className="h-5 w-5" />
             Trang Chủ
           </Link>
-          <Link to="/courses" className="text-lg font-medium flex items-center gap-2 text-white" onClick={() => setMobileMenuOpen(false)}>
+          <Link to="/courses" className="text-lg font-medium flex items-center gap-2 text-gray-900 dark:text-white" onClick={() => setMobileMenuOpen(false)}>
             <BookOpen className="h-5 w-5" />
             Khóa Học
           </Link>
-          <Link to="/certification" className="text-lg font-medium flex items-center gap-2 text-white" onClick={() => setMobileMenuOpen(false)}>
+          <Link to="/certification" className="text-lg font-medium flex items-center gap-2 text-gray-900 dark:text-white" onClick={() => setMobileMenuOpen(false)}>
             <GraduationCap className="h-5 w-5" />
             Chứng Chỉ
           </Link>
           
           <div className="flex flex-col gap-4 mt-4 w-full max-w-xs">
-            <Button variant="outline" className="w-full text-white border-gray-700 hover:bg-gray-800" asChild onClick={() => setMobileMenuOpen(false)}>
+            <Button variant="outline" className="w-full text-gray-900 dark:text-white border-gray-300 dark:border-gray-700" asChild onClick={() => setMobileMenuOpen(false)}>
               <Link to="/login">Đăng Nhập</Link>
             </Button>
             <Button className="w-full bg-green-600 hover:bg-green-500 text-white" asChild onClick={() => setMobileMenuOpen(false)}>

@@ -19,7 +19,7 @@ interface CourseCardProps {
   color: string;
 }
 
-// Component hiển thị thẻ khóa học
+// Component hiển thị thẻ khóa học với thiết kế nổi bật hơn
 const CourseCard = ({ 
   id, 
   title, 
@@ -32,9 +32,9 @@ const CourseCard = ({
   color 
 }: CourseCardProps) => {
   return (
-    <Card className="course-card overflow-hidden border border-gray-200 dark:border-gray-700 transition-all hover:shadow-md dark:hover:shadow-xl dark:hover:shadow-primary/5 hover:-translate-y-1">
+    <Card className="course-card h-full overflow-hidden border-0 rounded-xl shadow-lg dark:shadow-blue-500/5 hover:shadow-xl dark:hover:shadow-green-500/10 hover:-translate-y-2 transition-all duration-500 bg-white dark:bg-gray-800/60">
       <div 
-        className="card-img h-40 w-full relative overflow-hidden" 
+        className="card-img h-44 w-full relative overflow-hidden" 
         style={{ 
           background: color,
           position: 'relative',
@@ -49,23 +49,23 @@ const CourseCard = ({
           />
         </div>
         <div className="absolute top-2 right-2">
-          <Badge className="bg-white/90 text-gray-800 hover:bg-white/95 dark:bg-gray-900/90 dark:text-gray-100 dark:hover:bg-gray-900/95 transition-colors">{level}</Badge>
+          <Badge className="bg-white/90 text-gray-800 hover:bg-white/95 dark:bg-gray-900/90 dark:text-gray-100 dark:hover:bg-gray-900/95 transition-colors font-medium">{level}</Badge>
         </div>
       </div>
       
-      <CardHeader>
-        <CardTitle className="text-xl text-foreground">{title}</CardTitle>
-        <CardDescription className="text-muted-foreground">{category}</CardDescription>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xl text-gray-800 dark:text-white font-bold">{title}</CardTitle>
+        <CardDescription className="text-gray-600 dark:text-gray-300">{category}</CardDescription>
       </CardHeader>
       
-      <CardContent>
-        <p className="text-foreground/70 dark:text-foreground/80 text-sm mb-4">{description}</p>
+      <CardContent className="pt-0">
+        <p className="text-gray-700 dark:text-gray-300 text-sm mb-4">{description}</p>
         <div className="flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
             <BookOpen className="h-4 w-4" />
             <span>{chapters} chương</span>
           </div>
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
             <Clock className="h-4 w-4" />
             <span>{duration}</span>
           </div>
@@ -73,7 +73,7 @@ const CourseCard = ({
       </CardContent>
       
       <CardFooter>
-        <Button className="w-full bg-epu-blue hover:bg-epu-blue/90 dark:bg-epu-blue/90 dark:hover:bg-epu-blue text-white dark:text-white ripple-effect transition-all" asChild>
+        <Button className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white ripple-effect transition-all shadow-md hover:shadow-lg" asChild>
           <Link to={`/course/${id}`} className="btn-hover-effect">
             Bắt Đầu Học <ArrowRight className="ml-2 h-4 w-4" />
           </Link>

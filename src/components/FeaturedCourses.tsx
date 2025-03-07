@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 import CourseCard from './CourseCard';
 import { Link } from "react-router-dom";
 
-// Dữ liệu các khóa học nổi bật
+// Dữ liệu các khóa học nổi bật với hình ảnh mặc định
 const featuredCourses = [
   {
     id: "html-basics",
@@ -56,14 +56,16 @@ const featuredCourses = [
 // Component hiển thị các khóa học nổi bật
 const FeaturedCourses = () => {
   return (
-    <section className="py-16 bg-gray-50">
-      <div className="container mx-auto px-4">
+    <section className="py-16 bg-gray-50 dark:bg-gray-900 relative">
+      <div className="absolute inset-0 opacity-5 dark:opacity-10 pointer-events-none bg-gradient-to-br from-blue-100 to-green-100 dark:from-blue-900 dark:to-green-900"></div>
+      
+      <div className="container mx-auto px-4 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-baseline mb-12">
           <div>
-            <h2 className="text-3xl font-bold text-epu-dark mb-2">Khóa Học Nổi Bật</h2>
-            <p className="text-gray-600 max-w-2xl">Khám phá các khóa học lập trình phổ biến nhất của chúng tôi và bắt đầu hành trình học code ngay hôm nay.</p>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Khóa Học Nổi Bật</h2>
+            <p className="text-gray-700 dark:text-gray-300 max-w-2xl">Khám phá các khóa học lập trình phổ biến nhất của chúng tôi và bắt đầu hành trình học code ngay hôm nay.</p>
           </div>
-          <Button variant="link" className="text-epu-blue hover-lift" asChild>
+          <Button variant="link" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover-lift" asChild>
             <Link to="/courses" className="flex items-center">
               Xem tất cả khóa học <ArrowRight className="ml-1 h-4 w-4" />
             </Link>

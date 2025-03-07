@@ -54,18 +54,18 @@ const CourseCard = ({
       </div>
       
       <CardHeader>
-        <CardTitle className="text-xl text-foreground transition-colors">{title}</CardTitle>
-        <CardDescription className="text-foreground/60 dark:text-gray-400 transition-colors">{category}</CardDescription>
+        <CardTitle className="text-xl text-foreground">{title}</CardTitle>
+        <CardDescription className="text-muted-foreground">{category}</CardDescription>
       </CardHeader>
       
       <CardContent>
-        <p className="text-foreground/70 dark:text-gray-300 text-sm mb-4 transition-colors">{description}</p>
+        <p className="text-foreground/70 dark:text-foreground/80 text-sm mb-4">{description}</p>
         <div className="flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center gap-1 text-foreground/60 dark:text-gray-400 transition-colors">
+          <div className="flex items-center gap-1 text-muted-foreground">
             <BookOpen className="h-4 w-4" />
             <span>{chapters} chương</span>
           </div>
-          <div className="flex items-center gap-1 text-foreground/60 dark:text-gray-400 transition-colors">
+          <div className="flex items-center gap-1 text-muted-foreground">
             <Clock className="h-4 w-4" />
             <span>{duration}</span>
           </div>
@@ -73,7 +73,7 @@ const CourseCard = ({
       </CardContent>
       
       <CardFooter>
-        <Button className="w-full bg-epu-blue hover:bg-epu-blue/90 dark:bg-epu-blue/90 dark:hover:bg-epu-blue ripple-effect transition-all" asChild>
+        <Button className="w-full bg-epu-blue hover:bg-epu-blue/90 dark:bg-epu-blue/90 dark:hover:bg-epu-blue text-white dark:text-white ripple-effect transition-all" asChild>
           <Link to={`/course/${id}`} className="btn-hover-effect">
             Bắt Đầu Học <ArrowRight className="ml-2 h-4 w-4" />
           </Link>

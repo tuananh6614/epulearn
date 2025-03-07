@@ -275,21 +275,21 @@ body {
 .dark .text-gray-700,
 .dark .text-gray-800,
 .dark .text-gray-900 {
-  @apply text-gray-100 !important;
+  color: hsl(var(--foreground)) !important;
 }
 
 .dark .text-gray-600 {
-  @apply text-gray-200 !important;
+  color: hsl(var(--foreground) / 0.9) !important;
 }
 
 .dark .text-gray-500 {
-  @apply text-gray-300 !important;
+  color: hsl(var(--muted-foreground)) !important;
 }
 
 /* Fixed the circular dependency here - removed the problematic rule */
 /* Manually setting color for .dark .text-gray-400 instead of using @apply */
 .dark .text-gray-400 {
-  color: #a0aec0 !important; /* Using a direct hex value instead of @apply */
+  color: hsl(var(--muted-foreground)) !important;
 }
 
 /* Fix dark mode backgrounds */
@@ -297,13 +297,13 @@ body {
 .dark .bg-gray-50,
 .dark .bg-gray-100,
 .dark .bg-gray-200 {
-  background-color: #111827 !important; /* Direct color instead of @apply */
+  background-color: hsl(var(--background)) !important;
 }
 
 /* Make sure dark borders are visible */
 .dark .border-gray-100,
 .dark .border-gray-200 {
-  border-color: #1f2937 !important; /* Direct color instead of @apply */
+  border-color: hsl(var(--border)) !important;
 }
 
 /* Fix gradient backgrounds in dark mode */
@@ -317,17 +317,17 @@ body {
 
 /* Fix text colors for interactive elements */
 .dark .interactive-button {
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.2);
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border));
 }
 
 /* Fix card backgrounds */
 .dark .course-card {
-  background-color: #111827;
-  border-color: #1f2937;
+  background-color: hsl(var(--card));
+  border-color: hsl(var(--border));
 }
 
 /* Fix text in hero section */
 .dark .hero-text {
-  color: #ffffff;
+  color: hsl(var(--foreground));
 }

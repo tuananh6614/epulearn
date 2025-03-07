@@ -60,15 +60,15 @@
     @apply bg-opacity-100 text-white;
   }
   
-  /* Ensure text is visible in dark mode */
+  /* Ensure text is visible in dark mode - using Tailwind classes with !important */
   .dark .text-gray-600,
   .dark .text-gray-700,
   .dark .text-gray-800 {
-    color: #e0e0e0 !important; /* Direct color instead of @apply */
+    color: hsl(var(--foreground)) !important;
   }
   
   .dark .text-gray-500 {
-    color: #a0aec0 !important; /* Direct color instead of @apply */
+    color: hsl(var(--muted-foreground)) !important;
   }
 }
 
@@ -139,17 +139,17 @@
   @apply transition-transform duration-500;
 }
 
-/* Course card text contrast improvements */
+/* Course card text contrast improvements - using CSS variables */
 .dark .course-card .text-gray-600 {
-  color: #d1d5db !important; /* Direct color instead of @apply */
+  color: hsl(var(--foreground) / 0.9) !important;
 }
 
 .dark .course-card .text-gray-500 {
-  color: #9ca3af !important; /* Direct color instead of @apply */
+  color: hsl(var(--foreground) / 0.7) !important;
 }
 
 .dark .course-card h3 {
-  color: #ffffff !important; /* Direct color instead of @apply */
+  color: hsl(var(--foreground)) !important;
 }
 
 /* Sticky header styles */
@@ -187,15 +187,15 @@
   @apply fixed inset-0 pointer-events-none z-0 overflow-hidden;
 }
 
-/* Enhanced text contrast in dark mode */
+/* Enhanced text contrast in dark mode - using CSS variables */
 .dark .text-gray-600,
 .dark .text-gray-700,
 .dark .text-gray-800 {
-  color: #e0e0e0 !important; /* Direct color instead of @apply */
+  color: hsl(var(--foreground)) !important;
 }
 
 .dark .text-gray-500 {
-  color: #a0aec0 !important; /* Direct color instead of @apply */
+  color: hsl(var(--muted-foreground)) !important;
 }
 
 /* Main content adjustment for fixed header */
@@ -225,23 +225,23 @@ main {
   background-image: linear-gradient(to bottom, var(--tw-gradient-from), var(--tw-gradient-to)) !important;
 }
 
-/* Fix for blue/white text in dark mode */
+/* Fix for blue/white text in dark mode - using CSS variables */
 .dark .text-epu-blue {
-  color: #90cdf4 !important; /* Direct color instead of @apply */
+  color: hsl(var(--primary)) !important;
 }
 
 .dark .bg-white {
-  background-color: #0a0c12 !important; /* Direct color instead of @apply */
+  background-color: hsl(var(--background)) !important;
 }
 
 /* Fix for any remaining white backgrounds */
 .dark .bg-gray-50, 
 .dark .bg-gray-100,
 .dark .bg-gray-200 {
-  background-color: #111827 !important; /* Direct color instead of @apply */
+  background-color: hsl(var(--background)) !important;
 }
 
 /* Improved button contrast in dark mode */
 .dark .border-epu-blue {
-  border-color: #63b3ed !important; /* Direct color instead of @apply */
+  border-color: hsl(var(--primary)) !important;
 }

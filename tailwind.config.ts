@@ -127,7 +127,7 @@ export default {
 				'hero-pattern': 'url("/public/lovable-uploads/06acdeaf-a713-4982-8124-c68c0b3ea6ae.png")',
 				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
 				'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))'
-			}
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

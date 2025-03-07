@@ -1,14 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
 
-// Component hiển thị hiệu ứng gõ code
 const CodeAnimation = () => {
-  // State quản lý nội dung text hiển thị
   const [text, setText] = useState('');
-  // State quản lý trạng thái hiển thị con trỏ
   const [cursorVisible, setCursorVisible] = useState(true);
+  const [lineHighlight, setLineHighlight] = useState(-1);
   
-  // Đoạn code mẫu bằng tiếng Việt
   const codeSnippet = `// Chào mừng đến với EPU Learn
 function hocLapTrinh() {
   const ngonNgu = [
@@ -29,7 +26,8 @@ function hocLapTrinh() {
 const ketQua = hocLapTrinh();
 console.log("Sẵn sàng cho các thử thách!");`;
 
-  // Effect tạo hiệu ứng đánh máy và nhấp nháy con trỏ
+  const lines = codeSnippet.split('\n');
+
   useEffect(() => {
     let i = 0;
     // Hiệu ứng đánh máy từng chữ một
@@ -37,8 +35,21 @@ console.log("Sẵn sàng cho các thử thách!");`;
       if (i < codeSnippet.length) {
         setText(codeSnippet.slice(0, i + 1));
         i++;
+        
+        // Highlight current line
+        const currentLineIndex = codeSnippet.slice(0, i).split('\n').length - 1;
+        setLineHighlight(currentLineIndex);
       } else {
         clearInterval(typingEffect);
+        
+        // After typing is done, cycle through line highlights
+        let lineIndex = 0;
+        const cycleHighlight = setInterval(() => {
+          setLineHighlight(lineIndex % lines.length);
+          lineIndex++;
+        }, 2000);
+        
+        return () => clearInterval(cycleHighlight);
       }
     }, 50);
 
@@ -57,10 +68,17 @@ console.log("Sẵn sàng cho các thử thách!");`;
   return (
     <div className="code-container">
       <pre className="text-sm md:text-base">
-        <code className="text-gray-100">
-          {text}
-          <span className={`${cursorVisible ? 'opacity-100' : 'opacity-0'} transition-opacity`}>|</span>
-        </code>
+        {text.split('\n').map((line, index) => (
+          <div 
+            key={index} 
+            className={`code-line ${lineHighlight === index ? 'highlighted-line' : ''}`}
+          >
+            {line}
+            {index === text.split('\n').length - 1 && (
+              <span className={`cursor ${cursorVisible ? 'opacity-100' : 'opacity-0'} transition-opacity`}>|</span>
+            )}
+          </div>
+        ))}
       </pre>
     </div>
   );

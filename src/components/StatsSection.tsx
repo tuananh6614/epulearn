@@ -13,7 +13,11 @@ const StatsSection = () => {
             <div className="w-16 h-16 rounded-full bg-green-500/10 dark:bg-green-500/20 flex items-center justify-center mb-4 group-hover:bg-green-500/20 dark:group-hover:bg-green-500/30 transition-colors">
               <Users className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
-            <AnimatedCounter end={15000} suffix="+" className="text-3xl font-bold text-gray-900 dark:text-white" />
+            <AnimatedCounter 
+              end={15000} 
+              suffix="+" 
+              className="text-3xl font-bold text-gray-900 dark:text-white" 
+            />
             <p className="text-gray-700 dark:text-gray-300 mt-2">Học Viên Đang Học</p>
           </div>
           
@@ -21,7 +25,11 @@ const StatsSection = () => {
             <div className="w-16 h-16 rounded-full bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 dark:group-hover:bg-blue-500/30 transition-colors">
               <BookOpen className="h-8 w-8 text-blue-600 dark:text-blue-400" />
             </div>
-            <AnimatedCounter end={50} suffix="+" className="text-3xl font-bold text-gray-900 dark:text-white" />
+            <AnimatedCounter 
+              end={50} 
+              suffix="+" 
+              className="text-3xl font-bold text-gray-900 dark:text-white" 
+            />
             <p className="text-gray-700 dark:text-gray-300 mt-2">Khóa Học Lập Trình</p>
           </div>
           
@@ -29,7 +37,11 @@ const StatsSection = () => {
             <div className="w-16 h-16 rounded-full bg-green-500/10 dark:bg-green-500/20 flex items-center justify-center mb-4 group-hover:bg-green-500/20 dark:group-hover:bg-green-500/30 transition-colors">
               <Clock className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
-            <AnimatedCounter end={500} suffix="+" className="text-3xl font-bold text-gray-900 dark:text-white" />
+            <AnimatedCounter 
+              end={500} 
+              suffix="+" 
+              className="text-3xl font-bold text-gray-900 dark:text-white" 
+            />
             <p className="text-gray-700 dark:text-gray-300 mt-2">Giờ Nội Dung</p>
           </div>
           
@@ -37,7 +49,11 @@ const StatsSection = () => {
             <div className="w-16 h-16 rounded-full bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 dark:group-hover:bg-blue-500/30 transition-colors">
               <Award className="h-8 w-8 text-blue-600 dark:text-blue-400" />
             </div>
-            <AnimatedCounter end={8000} suffix="+" className="text-3xl font-bold text-gray-900 dark:text-white" />
+            <AnimatedCounter 
+              end={8000} 
+              suffix="+" 
+              className="text-3xl font-bold text-gray-900 dark:text-white" 
+            />
             <p className="text-gray-700 dark:text-gray-300 mt-2">Chứng Chỉ Đã Cấp</p>
           </div>
         </div>

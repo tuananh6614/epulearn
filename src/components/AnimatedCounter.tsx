@@ -6,13 +6,15 @@ interface AnimatedCounterProps {
   duration?: number;
   suffix?: string;
   prefix?: string;
+  className?: string;
 }
 
 const AnimatedCounter: React.FC<AnimatedCounterProps> = ({ 
   end, 
   duration = 2000,
   suffix = '',
-  prefix = ''
+  prefix = '',
+  className = 'text-4xl font-bold text-epu-dark'
 }) => {
   const [count, setCount] = useState(0);
   const countRef = useRef<HTMLDivElement>(null);
@@ -57,7 +59,7 @@ const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   };
 
   return (
-    <div ref={countRef} className="text-4xl font-bold text-epu-dark">
+    <div ref={countRef} className={className}>
       {prefix}{count.toLocaleString()}{suffix}
     </div>
   );

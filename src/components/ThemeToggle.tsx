@@ -22,26 +22,18 @@ const ThemeToggle: React.FC = () => {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
       
-      // Create fireflies if they don't exist
-      if (document.querySelectorAll('.firefly').length === 0) {
-        createFireflies();
-      }
-      
-      // Remove light mode particles
-      document.querySelectorAll('.particle-light').forEach(el => el.remove());
+      // Create fireflies with dark theme colors
+      createFireflies('dark');
     } else {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
       
-      // Remove fireflies
-      document.querySelectorAll('.firefly').forEach(el => el.remove());
-      
-      // Create light mode particles
-      createLightParticles();
+      // Create fireflies with light theme colors
+      createFireflies('light');
     }
   }, [isDarkMode]);
 
-  const createFireflies = () => {
+  const createFireflies = (theme: 'light' | 'dark') => {
     const fireflyContainer = document.querySelector('.firefly-container') || 
       document.createElement('div');
     
@@ -52,6 +44,15 @@ const ThemeToggle: React.FC = () => {
     
     // Clear existing fireflies
     fireflyContainer.innerHTML = '';
+    
+    // Colors based on theme
+    const colors = theme === 'dark' 
+      ? ['rgba(255, 235, 156, 0.8)', 'rgba(255, 210, 110, 0.8)', 'rgba(255, 180, 70, 0.8)'] 
+      : ['rgba(124, 179, 66, 0.6)', 'rgba(150, 200, 80, 0.6)', 'rgba(173, 220, 100, 0.6)'];
+    
+    const shadowColors = theme === 'dark'
+      ? ['rgba(255, 235, 156, 0.5)', 'rgba(255, 210, 110, 0.5)', 'rgba(255, 180, 70, 0.5)']
+      : ['rgba(124, 179, 66, 0.3)', 'rgba(150, 200, 80, 0.3)', 'rgba(173, 220, 100, 0.3)'];
     
     // Create new fireflies - increased count and brightness
     for (let i = 0; i < 100; i++) {
@@ -79,66 +80,17 @@ const ThemeToggle: React.FC = () => {
       firefly.style.animationDuration = `${duration}s`;
       firefly.style.animationDelay = `${delay}s`;
       
+      // Random color from theme colors
+      const colorIndex = Math.floor(Math.random() * colors.length);
+      firefly.style.backgroundColor = colors[colorIndex];
+      firefly.style.boxShadow = `0 0 25px 8px ${shadowColors[colorIndex]}`;
+      
       // Higher brightness
       const brightness = Math.random() * 0.6 + 0.8; // 0.8 to 1.4
       firefly.style.opacity = brightness.toString();
       
       // Add to container
       fireflyContainer.appendChild(firefly);
-    }
-  };
-  
-  const createLightParticles = () => {
-    const particleContainer = document.querySelector('.particle-container') || 
-      document.createElement('div');
-    
-    if (!document.querySelector('.particle-container')) {
-      particleContainer.classList.add('particle-container', 'fixed', 'inset-0', 'pointer-events-none', 'z-0', 'overflow-hidden');
-      document.body.appendChild(particleContainer);
-    }
-    
-    // Clear existing particles
-    particleContainer.innerHTML = '';
-    
-    // Create floating colorful particles for light mode
-    for (let i = 0; i < 30; i++) {
-      const particle = document.createElement('div');
-      particle.classList.add('particle-light');
-      
-      // Random size
-      const size = Math.random() * 20 + 10;
-      particle.style.width = `${size}px`;
-      particle.style.height = `${size}px`;
-      
-      // Random position
-      particle.style.left = `${Math.random() * 100}vw`;
-      particle.style.top = `${Math.random() * 100}vh`;
-      
-      // Random colors
-      const hue = Math.floor(Math.random() * 360);
-      const saturation = Math.floor(Math.random() * 50) + 50;
-      const lightness = Math.floor(Math.random() * 20) + 70;
-      particle.style.backgroundColor = `hsla(${hue}, ${saturation}%, ${lightness}%, 0.4)`;
-      
-      // Random blur and shape
-      const blur = Math.random() * 5 + 2;
-      particle.style.filter = `blur(${blur}px)`;
-      const borderRadius = Math.random() * 50 + 50;
-      particle.style.borderRadius = `${borderRadius}%`;
-      
-      // Random rotation and animation
-      const rotationStart = Math.random() * 360;
-      particle.style.setProperty('--rotation-start', `${rotationStart}deg`);
-      const rotationEnd = rotationStart + (Math.random() * 180 - 90);
-      particle.style.setProperty('--rotation-end', `${rotationEnd}deg`);
-      
-      // Random animation duration
-      const duration = Math.random() * 20 + 15;
-      particle.style.animationDuration = `${duration}s`;
-      particle.style.animationDelay = `${Math.random() * 10}s`;
-      
-      // Add to container
-      particleContainer.appendChild(particle);
     }
   };
 
@@ -169,12 +121,8 @@ const ThemeToggle: React.FC = () => {
           overlay.classList.remove('active');
         }
         
-        // Create fireflies if switching to dark mode
-        if (!isDarkMode) {
-          createFireflies();
-        } else {
-          createLightParticles();
-        }
+        // Create fireflies for the new theme
+        createFireflies(!isDarkMode ? 'dark' : 'light');
       }, 800);
     }, 400);
   };

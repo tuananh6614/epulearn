@@ -49,6 +49,26 @@
   .dark .bg-gray-900 {
     @apply bg-black !important;
   }
+  
+  /* Fix white backgrounds in light blue buttons */
+  .interactive-button {
+    @apply relative overflow-hidden;
+  }
+  
+  .dark .interactive-button {
+    @apply bg-opacity-100 text-white;
+  }
+  
+  /* Ensure text is visible in dark mode */
+  .dark .text-gray-600,
+  .dark .text-gray-700,
+  .dark .text-gray-800 {
+    @apply text-gray-200 !important;
+  }
+  
+  .dark .text-gray-500 {
+    @apply text-gray-300 !important;
+  }
 }
 
 /* Code syntax highlighting */
@@ -191,11 +211,6 @@ main {
   z-index: 0;
 }
 
-/* Light mode particle container */
-.particle-container {
-  @apply fixed inset-0 pointer-events-none z-0 overflow-hidden;
-}
-
 /* Fix for white backgrounds in dark mode */
 .dark .from-background,
 .dark .to-gray-50 {
@@ -205,4 +220,25 @@ main {
 
 .dark .bg-gradient-to-b {
   background-image: linear-gradient(to bottom, var(--tw-gradient-from), var(--tw-gradient-to)) !important;
+}
+
+/* Fix for blue/white text in dark mode */
+.dark .text-epu-blue {
+  @apply text-blue-300 !important;
+}
+
+.dark .bg-white {
+  @apply bg-[#0a0c12] !important;
+}
+
+/* Fix for any remaining white backgrounds */
+.dark .bg-gray-50, 
+.dark .bg-gray-100,
+.dark .bg-gray-200 {
+  @apply bg-gray-900 !important;
+}
+
+/* Improved button contrast in dark mode */
+.dark .border-epu-blue {
+  @apply border-blue-400 !important;
 }

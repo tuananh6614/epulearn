@@ -1,49 +1,20 @@
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const CodeAnimation = () => {
   const [text, setText] = useState('');
   const [cursorVisible, setCursorVisible] = useState(true);
-  const [lineHighlight, setLineHighlight] = useState(-1);
-  const [userInteraction, setUserInteraction] = useState(false);
   
-  const codeSnippet = `// Chào mừng đến với EPU Learn
-function hocLapTrinh() {
-  const ngonNgu = [
-    "Python", 
-    "JavaScript", 
-    "HTML/CSS",
-    "Java",
-    "C++"
-  ];
-  
-  return ngonNgu.map(lang => {
-    console.log(\`Đang học \${lang}...\`);
-    return \`Đã thành thạo \${lang}!\`;
-  });
-}
+  const codeSnippet = `// Simple code examples
 
-// Bắt đầu hành trình học code
-const ketQua = hocLapTrinh();
-console.log("Sẵn sàng cho các thử thách!");`;
+// JavaScript
+console.log("Hello World!");
 
-  const lines = codeSnippet.split('\n');
+// Python
+print("Hello World!")
 
-  // Handle line click
-  const handleLineClick = useCallback((index: number) => {
-    setUserInteraction(true);
-    setLineHighlight(index);
-  }, []);
-
-  // Reset user interaction flag after some time
-  useEffect(() => {
-    if (userInteraction) {
-      const timer = setTimeout(() => {
-        setUserInteraction(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [userInteraction]);
+// HTML
+<h1>Hello World!</h1>`;
 
   useEffect(() => {
     let i = 0;
@@ -52,23 +23,8 @@ console.log("Sẵn sàng cho các thử thách!");`;
       if (i < codeSnippet.length) {
         setText(codeSnippet.slice(0, i + 1));
         i++;
-        
-        // Highlight current line
-        const currentLineIndex = codeSnippet.slice(0, i).split('\n').length - 1;
-        setLineHighlight(currentLineIndex);
       } else {
         clearInterval(typingEffect);
-        
-        // After typing is done, cycle through line highlights if no user interaction
-        let lineIndex = 0;
-        const cycleHighlight = setInterval(() => {
-          if (!userInteraction) {
-            setLineHighlight(lineIndex % lines.length);
-            lineIndex++;
-          }
-        }, 2000);
-        
-        return () => clearInterval(cycleHighlight);
       }
     }, 50);
 
@@ -90,8 +46,7 @@ console.log("Sẵn sàng cho các thử thách!");`;
         {text.split('\n').map((line, index) => (
           <div 
             key={index} 
-            className={`code-line ${lineHighlight === index ? 'highlighted-line' : ''} hover:bg-primary/5 dark:hover:bg-primary/10 cursor-pointer transition-colors px-2 py-1 rounded`}
-            onClick={() => handleLineClick(index)}
+            className="code-line px-2 py-1 rounded"
           >
             <span className="line-number text-gray-500 dark:text-gray-400 select-none mr-3">{index + 1}</span>
             <span className="line-content">
@@ -103,7 +58,6 @@ console.log("Sẵn sàng cho các thử thách!");`;
           </div>
         ))}
       </pre>
-      <div className="absolute bottom-2 right-2 text-xs text-gray-500 dark:text-gray-400 italic">Nhấp vào dòng để highlight</div>
     </div>
   );
 };

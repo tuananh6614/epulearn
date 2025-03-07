@@ -51,7 +51,7 @@
   --card-description: #4a5568;
 }
 
-/* Dark mode variables - darker for better eye comfort */
+/* Dark mode variables - darker for better eye comfort and contrast */
 .dark {
   --background: 240 15% 6%; /* Much darker background */
   --foreground: 210 40% 98%;
@@ -256,50 +256,71 @@ body {
   @apply shadow-md;
 }
 
-/* Firefly effect for dark mode */
+/* Enhanced firefly effect */
 .firefly {
   @apply absolute rounded-full pointer-events-none opacity-0;
   background-color: rgba(255, 235, 156, 0.7);
   box-shadow: 0 0 20px 5px rgba(255, 235, 156, 0.3);
 }
 
-/* Dark mode specific fixes */
-.dark .bg-background {
-  background-color: hsl(var(--background)) !important;
-}
-
-.dark .bg-card {
-  background-color: hsl(var(--card)) !important;
-}
-
-.dark .bg-muted {
-  background-color: hsl(var(--muted)) !important;
-}
-
+/* Improved text contrast in dark mode */
 .dark .text-foreground {
   color: hsl(var(--foreground)) !important;
 }
 
-/* Ensure correct background in all sections */
+/* Dark text in light mode, light text in dark mode */
+.dark .text-gray-700,
+.dark .text-gray-800,
+.dark .text-gray-900 {
+  @apply text-gray-100 !important;
+}
+
+.dark .text-gray-600 {
+  @apply text-gray-200 !important;
+}
+
+.dark .text-gray-500 {
+  @apply text-gray-300 !important;
+}
+
+.dark .text-gray-400 {
+  @apply text-gray-400 !important;
+}
+
+/* Fix dark mode backgrounds */
+.dark .bg-white,
 .dark .bg-gray-50,
 .dark .bg-gray-100,
 .dark .bg-gray-200 {
   @apply bg-gray-900 !important;
 }
 
-.dark .bg-white {
-  @apply bg-gray-900 !important;
+/* Make sure dark borders are visible */
+.dark .border-gray-100,
+.dark .border-gray-200 {
+  @apply border-gray-800 !important;
 }
 
 /* Fix gradient backgrounds in dark mode */
-.dark .bg-gradient-to-b {
+.dark .from-background {
   --tw-gradient-from: hsl(var(--background)) !important;
+}
+
+.dark .to-gray-50 {
   --tw-gradient-to: hsl(240, 15%, 3%) !important;
 }
 
-/* Fix border colors in dark mode */
-.dark .border-gray-100,
-.dark .border-gray-200,
-.dark .border-gray-300 {
-  @apply border-gray-800 !important;
+/* Fix text colors for interactive elements */
+.dark .interactive-button {
+  @apply text-white border-white/20;
+}
+
+/* Fix card backgrounds */
+.dark .course-card {
+  @apply bg-gray-900 border-gray-800;
+}
+
+/* Fix text in hero section */
+.dark .hero-text {
+  @apply text-white;
 }

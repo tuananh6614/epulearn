@@ -133,7 +133,7 @@
   }
 }
 
-/* Hiệu ứng float mới và cải tiến */
+/* Hiệu ứng float mới */
 @keyframes float {
   0%, 100% {
     transform: translateY(0) rotate(0deg);
@@ -200,20 +200,32 @@
   transform: scale(1.05);
 }
 
-/* Hiệu ứng hover glow */
-.hover-glow {
-  transition: all 0.3s ease;
-}
-
-.hover-glow:hover {
-  box-shadow: 0 0 15px rgba(124, 179, 66, 0.5);
-}
-
-/* Hiệu ứng shimmer cho button */
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
+/* Hiệu ứng flash */
+@keyframes flash {
+  0%, 50%, 100% {
+    opacity: 1;
   }
+  25%, 75% {
+    opacity: 0.5;
+  }
+}
+
+.flash {
+  animation: flash 3s ease infinite;
+}
+
+/* Hiệu ứng shadow pulse */
+@keyframes shadow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
+  50% {
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+  }
+}
+
+.shadow-pulse {
+  animation: shadow-pulse 3s ease infinite;
 }
 
 /* Hiệu ứng ripple cho button */
@@ -246,244 +258,5 @@
 @media (max-width: 768px) {
   .mobile-scroll-animation {
     animation: float 4s ease-in-out infinite;
-  }
-}
-
-/* Hiệu ứng mới - Lưới nền cyber */
-.bg-grid-pattern {
-  background-image: 
-    linear-gradient(rgba(124, 179, 66, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 179, 66, 0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-
-/* Hiệu ứng hạt sáng nhỏ */
-.particles-container {
-  position: relative;
-}
-
-.particles-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.4) 1px, transparent 1px);
-  background-size: 30px 30px;
-}
-
-/* Hiệu ứng quét sáng - thiết kế mới */
-@keyframes sweep-light {
-  0% {
-    transform: translateX(-100%) skewX(-30deg);
-  }
-  15%, 100% {
-    transform: translateX(100%) skewX(-30deg);
-  }
-}
-
-.sweep-shine {
-  position: relative;
-  overflow: hidden;
-}
-
-.sweep-shine::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(255, 255, 255, 0.2) 50%,
-    transparent
-  );
-  transform: translateX(-100%) skewX(-30deg);
-  animation: sweep-light 5s infinite ease-out;
-}
-
-/* Thêm hiệu ứng nhấp nháy của ngôi sao */
-@keyframes star-twinkle {
-  0%, 100% {
-    opacity: 0.2;
-    transform: scale(0.8);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.1);
-  }
-}
-
-.star-twinkle {
-  animation: star-twinkle 3s ease-in-out infinite;
-}
-
-/* Hiệu ứng bounce nhẹ */
-@keyframes bounce-light {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-.bounce-light {
-  animation: bounce-light 2s infinite;
-}
-
-/* Hiệu ứng focus cho input */
-.focus-glow {
-  transition: all 0.3s ease;
-}
-
-.focus-glow:focus {
-  box-shadow: 0 0 0 3px rgba(124, 179, 66, 0.3);
-  border-color: #7cb342;
-}
-
-/* Hiệu ứng pulse cho icons */
-@keyframes pulse-icon {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.15);
-  }
-}
-
-.pulse-icon {
-  animation: pulse-icon 2s infinite;
-}
-
-/* Hiệu ứng fade in */
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out forwards;
-}
-
-/* Hiệu ứng cho nút CTA */
-.cta-btn {
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-}
-
-.cta-btn::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 200%;
-  height: 100%;
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(255, 255, 255, 0.2) 50%,
-    transparent 100%
-  );
-  transform: translateX(-100%);
-  animation: cta-shine 3s infinite;
-  z-index: -1;
-}
-
-@keyframes cta-shine {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-/* Hiệu ứng định vị các phần tử */
-.parallax {
-  transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-/* Hiệu ứng tạo bóng cho text */
-.text-shadow {
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-}
-
-.text-shadow-glow {
-  text-shadow: 0 0 5px rgba(124, 179, 66, 0.5), 0 0 20px rgba(124, 179, 66, 0.3);
-}
-
-/* Hiệu ứng typing cho code blocks */
-@keyframes typing-cursor {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-}
-
-.typing-cursor {
-  animation: typing-cursor 1s infinite;
-}
-
-/* Hiệu ứng nút hover với scaling */
-.btn-scale {
-  transition: all 0.3s ease;
-}
-
-.btn-scale:hover {
-  transform: scale(1.05);
-}
-
-.btn-scale:active {
-  transform: scale(0.95);
-}
-
-/* Hiệu ứng dòng chảy */
-@keyframes flowing {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.flowing-gradient {
-  background: linear-gradient(270deg, 
-    #7cb342, 
-    #3a5c9b,
-    #ff9800,
-    #7cb342
-  );
-  background-size: 300% 100%;
-  animation: flowing 8s ease infinite;
-}
-
-/* Hiệu ứng highlight text */
-.highlight-text {
-  background: linear-gradient(to right, transparent 0%, #7cb342 50%, transparent 100%);
-  background-size: 200% 100%;
-  background-position: 100% 0;
-  animation: highlight-sweep 2s ease-in-out forwards;
-}
-
-@keyframes highlight-sweep {
-  0% {
-    background-position: 100% 0;
-  }
-  100% {
-    background-position: 0 0;
   }
 }

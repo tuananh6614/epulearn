@@ -13,9 +13,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 // Component trang đăng ký
 const Signup = () => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col ">
       <Navbar />
-      
       <div className="flex-grow flex items-center justify-center bg-gray-50 py-12">
         <Card className="w-full max-w-md mx-auto shadow-pulse">
           <CardHeader className="text-center">

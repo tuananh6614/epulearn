@@ -62,8 +62,8 @@ const Footer = () => {
             <ul className="space-y-3">
               <li><a href="https://www.facebook.com/boycantien/" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
               Nguyễn Tuấn Anh</a></li>
-              <li><a href="https://www.facebook.com/boycantien/" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
-              Trần Đình Dũngg</a></li>
+              <li><a href="https://www.facebook.com/inhdung.936915" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
+              Trần Đình Dũng</a></li>
               <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">...</Link></li>
               <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">...</Link></li>
               <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">...</Link></li>

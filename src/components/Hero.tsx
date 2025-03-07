@@ -64,9 +64,12 @@ const Hero = () => {
           <div className="space-y-6">
             <div className="parallax-mouse-layer" data-speed="1.5">
               <div className="typewriter mb-4">
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white leading-tight mb-4 inline-block">
-                  Học lập trình <span className="text-green-500">tương tác</span>
-                </h1>
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white leading-tight mb-4 inline-block">
+                Học lập trình cùng EPU
+                <span className="text-green-500 [text-shadow:0_0_8px_rgba(34,197,94,0.7)]">
+                Learn
+                </span>
+</h1>
               </div>
               <p className="text-lg text-gray-700 dark:text-gray-300 mb-8">
                 Làm chủ các ngôn ngữ lập trình thông qua các bài học tương tác và kiểm tra kiến thức sau mỗi chương. Biến việc học thành một cuộc phiêu lưu!

@@ -84,4 +84,59 @@
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-cyan-500 dark:from-blue-400 dark:to-cyan-400;
   }
+  
+  /* Code editor utilities */
+  .editor-line-number {
+    @apply text-xs py-0.5 pr-2 text-gray-500 dark:text-gray-400 font-mono;
+    user-select: none;
+  }
+  
+  .code-editor-container {
+    @apply shadow-md font-mono text-sm;
+  }
+  
+  /* Language specific syntax highlighting */
+  .language-html .keyword {
+    @apply text-purple-600 dark:text-purple-400;
+  }
+  
+  .language-html .tag {
+    @apply text-blue-600 dark:text-blue-400;
+  }
+  
+  .language-html .attribute {
+    @apply text-green-600 dark:text-green-400;
+  }
+  
+  .language-html .string {
+    @apply text-orange-600 dark:text-orange-400;
+  }
+  
+  .language-css .property {
+    @apply text-blue-600 dark:text-blue-400;
+  }
+  
+  .language-css .value {
+    @apply text-green-600 dark:text-green-400;
+  }
+  
+  .language-javascript .keyword {
+    @apply text-purple-600 dark:text-purple-400;
+  }
+  
+  .language-javascript .function {
+    @apply text-blue-600 dark:text-blue-400;
+  }
+  
+  .language-javascript .string {
+    @apply text-green-600 dark:text-green-400;
+  }
+  
+  .language-javascript .number {
+    @apply text-orange-600 dark:text-orange-400;
+  }
+  
+  .language-javascript .comment {
+    @apply text-gray-500 dark:text-gray-400;
+  }
 }

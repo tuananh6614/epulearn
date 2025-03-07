@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
@@ -12,9 +12,7 @@ const ThemeToggle: React.FC = () => {
   });
 
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const darkOverlayRef = useRef<HTMLDivElement>(null);
-  const lightOverlayRef = useRef<HTMLDivElement>(null);
-
+  
   useEffect(() => {
     // Apply theme to document
     if (isDarkMode) {
@@ -84,51 +82,52 @@ const ThemeToggle: React.FC = () => {
   const toggleTheme = () => {
     setIsTransitioning(true);
     
-    // Activate the appropriate overlay
-    const overlay = isDarkMode ? lightOverlayRef.current : darkOverlayRef.current;
-    if (overlay) {
-      overlay.classList.add('active');
+    // Apply animation transition effect
+    const overlay = document.createElement('div');
+    overlay.classList.add('theme-transition-overlay');
+    document.body.appendChild(overlay);
+    
+    // If we're switching to dark mode, use dark transition color
+    if (!isDarkMode) {
+      overlay.style.background = '#0D0F13';
+    } else {
+      overlay.style.background = '#ffffff';
     }
     
-    // Toggle theme with a small delay for the animation to start
+    // Start animation
     setTimeout(() => {
-      setIsDarkMode(!isDarkMode);
+      overlay.classList.add('active');
       
-      // Remove overlay after transition completes
+      // Toggle theme with delay for animation
       setTimeout(() => {
-        setIsTransitioning(false);
-        if (overlay) {
+        setIsDarkMode(!isDarkMode);
+        
+        // Remove overlay
+        setTimeout(() => {
+          setIsTransitioning(false);
           overlay.classList.remove('active');
-        }
-      }, 500);
-    }, 250);
+          setTimeout(() => {
+            document.body.removeChild(overlay);
+          }, 500);
+        }, 300);
+      }, 300);
+    }, 50);
   };
 
   return (
-    <>
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="w-9 h-9 p-0 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-        onClick={toggleTheme}
-        aria-label="Thay đổi chủ đề sáng tối"
-      >
-        <Sun className={`h-5 w-5 text-amber-500 transition-all duration-300 ${isDarkMode ? 'opacity-0 scale-0 absolute' : 'opacity-100 scale-100'}`} />
-        <Moon className={`h-5 w-5 text-blue-400 transition-all duration-300 ${isDarkMode ? 'opacity-100 scale-100' : 'opacity-0 scale-0 absolute'}`} />
-        <span className="sr-only">Thay đổi chủ đề</span>
-      </Button>
-      
-      {/* Theme transition overlays */}
-      <div 
-        ref={darkOverlayRef} 
-        className="dark-transition-overlay"
-      ></div>
-      
-      <div 
-        ref={lightOverlayRef} 
-        className="light-transition-overlay"
-      ></div>
-    </>
+    <Button 
+      variant="ghost" 
+      size="icon" 
+      className="group w-10 h-10 p-0 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 overflow-hidden relative"
+      onClick={toggleTheme}
+      aria-label="Thay đổi chủ đề sáng tối"
+      disabled={isTransitioning}
+    >
+      <span className="absolute inset-0 bg-gradient-to-tr from-blue-400 to-blue-600 dark:from-blue-500 dark:to-purple-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></span>
+      <Sun className={`h-5 w-5 text-yellow-500 dark:text-white transition-all duration-500 ${isDarkMode ? 'opacity-0 scale-0 rotate-180 absolute' : 'opacity-100 scale-100 rotate-0'}`} />
+      <Moon className={`h-5 w-5 text-blue-600 dark:text-blue-400 transition-all duration-500 ${isDarkMode ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-0 rotate-180 absolute'}`} />
+      <span className="sr-only">Thay đổi chủ đề</span>
+    </Button>
   );
 };
 

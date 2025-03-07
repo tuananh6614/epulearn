@@ -13,38 +13,20 @@
     @apply scale-[2.5] opacity-30 bg-gradient-to-r from-blue-300 to-cyan-300 dark:from-blue-600 dark:to-cyan-600;
   }
 
-  /* Dark mode transition overlay */
-  .dark-transition-overlay {
+  /* Theme transition overlay */
+  .theme-transition-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 100;
+    z-index: 9999;
     pointer-events: none;
     opacity: 0;
-    background-color: #0D0F13;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.6s ease;
   }
 
-  .dark-transition-overlay.active {
-    opacity: 1;
-  }
-
-  .light-transition-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 100;
-    pointer-events: none;
-    opacity: 0;
-    background-color: #ffffff;
-    transition: opacity 0.5s ease;
-  }
-
-  .light-transition-overlay.active {
+  .theme-transition-overlay.active {
     opacity: 1;
   }
 
@@ -99,20 +81,20 @@
 
   /* Code editor styles */
   .code-container {
-    @apply relative font-mono text-sm rounded-md overflow-hidden;
+    @apply relative font-mono text-sm rounded-md overflow-hidden bg-gray-900 text-white p-4 shadow-lg border border-gray-800;
   }
 
   .code-line {
-    @apply cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/70 transition-colors;
+    @apply cursor-pointer hover:bg-gray-800 transition-colors flex;
   }
 
   .highlighted-line {
-    @apply bg-blue-100 dark:bg-blue-900/30;
+    @apply bg-blue-900/30;
   }
 
   /* Navbar link styles */
   .nav-link {
-    @apply relative;
+    @apply relative text-gray-800 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400;
   }
 
   .nav-link::after {
@@ -121,5 +103,26 @@
 
   .nav-link:hover::after {
     @apply w-full;
+  }
+
+  /* Course structure components */
+  .chapter-card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all p-4 border border-gray-100 dark:border-gray-700;
+  }
+  
+  .lesson-item {
+    @apply flex items-center gap-2 p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-all;
+  }
+  
+  .lesson-completed {
+    @apply bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500;
+  }
+  
+  .test-container {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700;
+  }
+  
+  .code-editor {
+    @apply font-mono text-sm bg-gray-900 text-white rounded-md p-4 shadow-inner;
   }
 }

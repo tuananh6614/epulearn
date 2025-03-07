@@ -38,7 +38,7 @@ const CallToAction = () => {
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button 
               size="lg" 
-              className="bg-white hover:bg-white/90 text-blue-600 hover:text-blue-700 shadow-lg hover:shadow-xl transition-all" 
+              className="bg-white hover:bg-white/90 text-blue-600 hover:text-blue-700 shadow-lg hover:shadow-xl transition-all dark:bg-white dark:text-blue-600" 
               asChild
             >
               <Link to="/signup" className="font-medium">

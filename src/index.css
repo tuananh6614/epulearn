@@ -32,6 +32,23 @@
   button, a, .parallax-element, .gpu-accelerated {
     transition-property: transform, opacity;
   }
+
+  /* Fixed header when scrolling */
+  .header-sticky {
+    @apply fixed top-0 w-full z-50 bg-background/95 dark:bg-background/95 backdrop-blur-lg shadow-sm transition-all duration-300;
+  }
+  
+  /* Darker backgrounds in dark mode */
+  .dark .bg-background, 
+  .dark .bg-white,
+  .dark .bg-gray-50,
+  .dark .bg-gray-100 {
+    @apply bg-[#0a0c12] !important;
+  }
+  
+  .dark .bg-gray-900 {
+    @apply bg-black !important;
+  }
 }
 
 /* Code syntax highlighting */
@@ -65,7 +82,7 @@
 }
 
 .code-line {
-  @apply cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors;
+  @apply cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/70 transition-colors;
 }
 
 .highlighted-line {
@@ -126,7 +143,7 @@
 
 /* Mobile Menu styles */
 .mobile-menu {
-  @apply fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex flex-col items-center justify-center;
+  @apply fixed inset-0 z-50 bg-background/95 dark:bg-gray-900/95 backdrop-blur-md flex flex-col items-center justify-center;
   transform: translateX(-100%);
   transition: transform 0.3s ease;
 }
@@ -149,65 +166,15 @@
   @apply fixed inset-0 pointer-events-none z-0 overflow-hidden;
 }
 
-/* Butterfly animations */
-.butterfly {
-  @apply fixed pointer-events-none z-0;
-  animation: butterfly-fly 30s linear infinite alternate;
+/* Enhanced text contrast in dark mode */
+.dark .text-gray-600,
+.dark .text-gray-700,
+.dark .text-gray-800 {
+  @apply text-gray-300 !important;
 }
 
-.butterfly-wings {
-  position: relative;
-}
-
-.butterfly-wings::before,
-.butterfly-wings::after {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50% 50% 0 50%;
-  background: inherit;
-  animation: butterfly-wings 1s ease-in-out infinite alternate;
-}
-
-.butterfly-wings::before {
-  left: -50%;
-  transform-origin: right center;
-}
-
-.butterfly-wings::after {
-  right: -50%;
-  transform-origin: left center;
-  animation-delay: 0.1s;
-}
-
-.dragonfly {
-  position: relative;
-}
-
-.dragonfly::before {
-  content: '';
-  position: absolute;
-  height: 100%;
-  width: 200%;
-  border-radius: 50% 50% 0 50%;
-  background: inherit;
-  opacity: 0.7;
-  animation: dragonfly-wings 0.2s ease-in-out infinite alternate;
-  left: -100%;
-  top: -10%;
-}
-
-.dragonfly::after {
-  content: '';
-  position: absolute;
-  width: 300%;
-  height: 20%;
-  background: inherit;
-  top: 50%;
-  left: -50%;
-  transform: translateY(-50%);
-  border-radius: 50%;
+.dark .text-gray-500 {
+  @apply text-gray-400 !important;
 }
 
 /* Main content adjustment for fixed header */
@@ -222,4 +189,20 @@ main {
   box-shadow: 0 0 25px 8px rgba(255, 235, 156, 0.5);
   animation: firefly-move 6s ease-in-out infinite;
   z-index: 0;
+}
+
+/* Light mode particle container */
+.particle-container {
+  @apply fixed inset-0 pointer-events-none z-0 overflow-hidden;
+}
+
+/* Fix for white backgrounds in dark mode */
+.dark .from-background,
+.dark .to-gray-50 {
+  --tw-gradient-from: #0a0c12 !important;
+  --tw-gradient-to: #050608 !important;
+}
+
+.dark .bg-gradient-to-b {
+  background-image: linear-gradient(to bottom, var(--tw-gradient-from), var(--tw-gradient-to)) !important;
 }

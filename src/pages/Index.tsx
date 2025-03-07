@@ -18,7 +18,9 @@ const Index = () => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return document.documentElement.classList.contains('dark');
   });
+  const [isScrolled, setIsScrolled] = useState(false);
   const fireflyContainerRef = useRef<HTMLDivElement>(null);
+  const navbarRef = useRef<HTMLDivElement>(null);
 
   // Update dark mode state when it changes
   useEffect(() => {
@@ -36,6 +38,22 @@ const Index = () => {
     return () => {
       observer.disconnect();
     };
+  }, []);
+
+  // Add scroll event listener for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
+        navbarRef.current?.classList.add('scrolled');
+      } else {
+        setIsScrolled(false);
+        navbarRef.current?.classList.remove('scrolled');
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Simulate content loading and optimization
@@ -71,17 +89,25 @@ const Index = () => {
       observer.disconnect();
     };
   }, [isLoading]);
+
+  // Make navbar sticky
+  useEffect(() => {
+    const navbar = document.querySelector('nav');
+    if (navbar) {
+      navbar.classList.add('header-sticky');
+    }
+  }, []);
   
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background dark:bg-[#0a0c12] flex items-center justify-center">
         <div className="shimmer w-full max-w-6xl h-screen"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background dark:bg-[#121520] overflow-hidden relative">
+    <div className="min-h-screen bg-background dark:bg-[#0a0c12] overflow-hidden relative">
       {/* Digital rain effect */}
       <NumberRain density={40} interactive={true} />
       
@@ -101,7 +127,10 @@ const Index = () => {
         <FloatingCode style={{ top: '40%', left: '10%', transform: 'rotate(5deg)' }} language="html" />
       </ParallaxEffect>
       
-      <Navbar />
+      <div ref={navbarRef} className={`header-sticky ${isScrolled ? 'scrolled' : ''}`}>
+        <Navbar />
+      </div>
+      
       <main className="pt-16"> {/* Add padding-top to account for fixed header */}
         <Hero />
         

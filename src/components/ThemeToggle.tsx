@@ -27,8 +27,8 @@ const ThemeToggle: React.FC = () => {
         createFireflies();
       }
       
-      // Remove butterflies if any
-      document.querySelectorAll('.butterfly').forEach(el => el.remove());
+      // Remove light mode particles
+      document.querySelectorAll('.particle-light').forEach(el => el.remove());
     } else {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
@@ -36,8 +36,8 @@ const ThemeToggle: React.FC = () => {
       // Remove fireflies
       document.querySelectorAll('.firefly').forEach(el => el.remove());
       
-      // Create butterflies
-      createButterflies();
+      // Create light mode particles
+      createLightParticles();
     }
   }, [isDarkMode]);
 
@@ -53,13 +53,13 @@ const ThemeToggle: React.FC = () => {
     // Clear existing fireflies
     fireflyContainer.innerHTML = '';
     
-    // Create new fireflies
-    for (let i = 0; i < 75; i++) {
+    // Create new fireflies - increased count and brightness
+    for (let i = 0; i < 100; i++) {
       const firefly = document.createElement('div');
       firefly.classList.add('firefly');
       
       // Random size (larger)
-      const size = Math.random() * 6 + 3;
+      const size = Math.random() * 8 + 4; // 4-12px size
       firefly.style.width = `${size}px`;
       firefly.style.height = `${size}px`;
       
@@ -68,19 +68,19 @@ const ThemeToggle: React.FC = () => {
       firefly.style.top = `${Math.random() * 100}vh`;
       
       // Random animation properties
-      const x = Math.random() * 300 - 150;
-      const y = Math.random() * 300 - 150;
+      const x = Math.random() * 400 - 200;
+      const y = Math.random() * 400 - 200;
       firefly.style.setProperty('--x', `${x}px`);
       firefly.style.setProperty('--y', `${y}px`);
       
       // Random duration and delay
-      const duration = Math.random() * 4 + 4;
+      const duration = Math.random() * 6 + 4;
       const delay = Math.random() * 5;
       firefly.style.animationDuration = `${duration}s`;
       firefly.style.animationDelay = `${delay}s`;
       
       // Higher brightness
-      const brightness = Math.random() * 0.4 + 0.7; // 0.7 to 1.1
+      const brightness = Math.random() * 0.6 + 0.8; // 0.8 to 1.4
       firefly.style.opacity = brightness.toString();
       
       // Add to container
@@ -88,55 +88,57 @@ const ThemeToggle: React.FC = () => {
     }
   };
   
-  const createButterflies = () => {
-    const butterflyContainer = document.querySelector('.butterfly-container') || 
+  const createLightParticles = () => {
+    const particleContainer = document.querySelector('.particle-container') || 
       document.createElement('div');
     
-    if (!document.querySelector('.butterfly-container')) {
-      butterflyContainer.classList.add('butterfly-container', 'fixed', 'inset-0', 'pointer-events-none', 'z-0', 'overflow-hidden');
-      document.body.appendChild(butterflyContainer);
+    if (!document.querySelector('.particle-container')) {
+      particleContainer.classList.add('particle-container', 'fixed', 'inset-0', 'pointer-events-none', 'z-0', 'overflow-hidden');
+      document.body.appendChild(particleContainer);
     }
     
-    // Clear existing butterflies
-    butterflyContainer.innerHTML = '';
+    // Clear existing particles
+    particleContainer.innerHTML = '';
     
-    // Add butterflies and dragonflies
-    for (let i = 0; i < 12; i++) {
-      const butterfly = document.createElement('div');
-      const isButterfly = Math.random() > 0.4; // 60% butterflies, 40% dragonflies
-      
-      butterfly.classList.add('butterfly');
-      if (isButterfly) {
-        butterfly.classList.add('butterfly-wings');
-      } else {
-        butterfly.classList.add('dragonfly');
-      }
+    // Create floating colorful particles for light mode
+    for (let i = 0; i < 30; i++) {
+      const particle = document.createElement('div');
+      particle.classList.add('particle-light');
       
       // Random size
-      const size = isButterfly ? (Math.random() * 15 + 10) : (Math.random() * 20 + 15);
-      butterfly.style.width = `${size}px`;
-      butterfly.style.height = `${size}px`;
+      const size = Math.random() * 20 + 10;
+      particle.style.width = `${size}px`;
+      particle.style.height = `${size}px`;
       
       // Random position
-      butterfly.style.left = `${Math.random() * 100}vw`;
-      butterfly.style.top = `${Math.random() * 100}vh`;
+      particle.style.left = `${Math.random() * 100}vw`;
+      particle.style.top = `${Math.random() * 100}vh`;
       
-      // Random colors for butterflies
-      if (isButterfly) {
-        const hue = Math.floor(Math.random() * 360);
-        butterfly.style.backgroundColor = `hsla(${hue}, 90%, 75%, 0.8)`;
-      } else {
-        const hue = Math.floor(Math.random() * 60) + 180; // Blue-green range
-        butterfly.style.backgroundColor = `hsla(${hue}, 90%, 65%, 0.7)`;
-      }
+      // Random colors
+      const hue = Math.floor(Math.random() * 360);
+      const saturation = Math.floor(Math.random() * 50) + 50;
+      const lightness = Math.floor(Math.random() * 20) + 70;
+      particle.style.backgroundColor = `hsla(${hue}, ${saturation}%, ${lightness}%, 0.4)`;
       
-      // Random flight path and speed
-      const duration = (Math.random() * 15) + 15;
-      butterfly.style.animationDuration = `${duration}s`;
-      butterfly.style.animationDelay = `${Math.random() * 10}s`;
+      // Random blur and shape
+      const blur = Math.random() * 5 + 2;
+      particle.style.filter = `blur(${blur}px)`;
+      const borderRadius = Math.random() * 50 + 50;
+      particle.style.borderRadius = `${borderRadius}%`;
+      
+      // Random rotation and animation
+      const rotationStart = Math.random() * 360;
+      particle.style.setProperty('--rotation-start', `${rotationStart}deg`);
+      const rotationEnd = rotationStart + (Math.random() * 180 - 90);
+      particle.style.setProperty('--rotation-end', `${rotationEnd}deg`);
+      
+      // Random animation duration
+      const duration = Math.random() * 20 + 15;
+      particle.style.animationDuration = `${duration}s`;
+      particle.style.animationDelay = `${Math.random() * 10}s`;
       
       // Add to container
-      butterflyContainer.appendChild(butterfly);
+      particleContainer.appendChild(particle);
     }
   };
 
@@ -171,7 +173,7 @@ const ThemeToggle: React.FC = () => {
         if (!isDarkMode) {
           createFireflies();
         } else {
-          createButterflies();
+          createLightParticles();
         }
       }, 800);
     }, 400);

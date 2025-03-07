@@ -7,33 +7,18 @@ interface FloatingCodeProps {
 }
 
 const FloatingCode: React.FC<FloatingCodeProps> = ({ style, language = 'javascript' }) => {
-  // Adjust code snippet based on language
+  // Simplified code snippet based on language
   const getCodeSnippet = () => {
     switch (language) {
       case 'python':
         return `
-def xin_chao():
-  print("Xin chào, thế giới!")
-  return {
-    "thong_diep": "EPU Learn!",
-    "trang_thai": 200
-  }`;
+print("Hello World!")`;
       case 'html':
         return `
-<div class="container">
-  <h1>EPU Learn</h1>
-  <p>Học lập trình dễ dàng</p>
-  <button>Bắt đầu</button>
-</div>`;
+<h1>Hello World!</h1>`;
       default:
         return `
-function xinChao() {
-  console.log("Xin chào!");
-  return {
-    thongDiep: "EPU Learn!",
-    thanhCong: true
-  };
-}`;
+console.log("Hello World!");`;
     }
   };
 

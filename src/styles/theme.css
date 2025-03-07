@@ -51,34 +51,34 @@
   --card-description: #4a5568;
 }
 
-/* Dark mode variables */
+/* Dark mode variables - darker for better eye comfort */
 .dark {
-  --background: 222.2 47.4% 8.2%; /* Darker background */
+  --background: 240 15% 6%; /* Much darker background */
   --foreground: 210 40% 98%;
 
-  --card: 222.2 47.4% 9.2%; /* Darker card background */
+  --card: 240 15% 8%; /* Darker card background */
   --card-foreground: 210 40% 98%;
 
-  --popover: 222.2 47.4% 9.2%; /* Darker popover */
+  --popover: 240 15% 8%; /* Darker popover */
   --popover-foreground: 210 40% 98%;
 
   --primary: 85 52% 45%;
   --primary-foreground: 210 40% 98%;
 
-  --secondary: 217.2 32.6% 13.5%; /* Darker secondary */
+  --secondary: 240 15% 10%; /* Darker secondary */
   --secondary-foreground: 210 40% 98%;
 
-  --muted: 217.2 32.6% 13.5%; /* Darker muted */
+  --muted: 240 15% 10%; /* Darker muted */
   --muted-foreground: 215 20.2% 75.1%;
 
-  --accent: 217.2 32.6% 13.5%; /* Darker accent */
+  --accent: 240 15% 10%; /* Darker accent */
   --accent-foreground: 210 40% 98%;
 
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 217.2 32.6% 13.5%; /* Darker border */
-  --input: 217.2 32.6% 13.5%; /* Darker input */
+  --border: 240 15% 12%; /* Darker border */
+  --input: 240 15% 12%; /* Darker input */
   --ring: 212.7 26.8% 83.9%;
 
   /* Digital rain color for dark mode */
@@ -86,7 +86,7 @@
   
   /* Interactive element colors */
   --hover-glow: rgba(124, 179, 66, 0.4);
-  --code-bg: #121620;
+  --code-bg: #0a0c12; /* Much darker code bg */
   --code-highlight: rgba(124, 179, 66, 0.2);
   
   /* Line highlight colors */
@@ -94,7 +94,7 @@
   --line-number: #666;
   
   /* Course card colors */
-  --card-bg: #1a1f2c; /* Darker card bg */
+  --card-bg: #0d101a; /* Darker card bg */
   --card-text: #e2e8f0;
   --card-description: #a0aec0;
 }
@@ -261,4 +261,45 @@ body {
   @apply absolute rounded-full pointer-events-none opacity-0;
   background-color: rgba(255, 235, 156, 0.7);
   box-shadow: 0 0 20px 5px rgba(255, 235, 156, 0.3);
+}
+
+/* Dark mode specific fixes */
+.dark .bg-background {
+  background-color: hsl(var(--background)) !important;
+}
+
+.dark .bg-card {
+  background-color: hsl(var(--card)) !important;
+}
+
+.dark .bg-muted {
+  background-color: hsl(var(--muted)) !important;
+}
+
+.dark .text-foreground {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Ensure correct background in all sections */
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark .bg-gray-200 {
+  @apply bg-gray-900 !important;
+}
+
+.dark .bg-white {
+  @apply bg-gray-900 !important;
+}
+
+/* Fix gradient backgrounds in dark mode */
+.dark .bg-gradient-to-b {
+  --tw-gradient-from: hsl(var(--background)) !important;
+  --tw-gradient-to: hsl(240, 15%, 3%) !important;
+}
+
+/* Fix border colors in dark mode */
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  @apply border-gray-800 !important;
 }

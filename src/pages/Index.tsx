@@ -81,7 +81,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background dark:bg-gray-900 overflow-hidden relative">
+    <div className="min-h-screen bg-background dark:bg-[#121520] overflow-hidden relative">
       {/* Digital rain effect */}
       <NumberRain density={40} interactive={true} />
       
@@ -102,7 +102,7 @@ const Index = () => {
       </ParallaxEffect>
       
       <Navbar />
-      <main>
+      <main className="pt-16"> {/* Add padding-top to account for fixed header */}
         <Hero />
         
         <div className="lazy-fade-in">

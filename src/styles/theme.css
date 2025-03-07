@@ -53,32 +53,32 @@
 
 /* Dark mode variables */
 .dark {
-  --background: 222.2 47.4% 11.2%;
+  --background: 222.2 47.4% 8.2%; /* Darker background */
   --foreground: 210 40% 98%;
 
-  --card: 222.2 47.4% 11.2%;
+  --card: 222.2 47.4% 9.2%; /* Darker card background */
   --card-foreground: 210 40% 98%;
 
-  --popover: 222.2 47.4% 11.2%;
+  --popover: 222.2 47.4% 9.2%; /* Darker popover */
   --popover-foreground: 210 40% 98%;
 
   --primary: 85 52% 45%;
   --primary-foreground: 210 40% 98%;
 
-  --secondary: 217.2 32.6% 17.5%;
+  --secondary: 217.2 32.6% 13.5%; /* Darker secondary */
   --secondary-foreground: 210 40% 98%;
 
-  --muted: 217.2 32.6% 17.5%;
+  --muted: 217.2 32.6% 13.5%; /* Darker muted */
   --muted-foreground: 215 20.2% 75.1%;
 
-  --accent: 217.2 32.6% 17.5%;
+  --accent: 217.2 32.6% 13.5%; /* Darker accent */
   --accent-foreground: 210 40% 98%;
 
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
+  --border: 217.2 32.6% 13.5%; /* Darker border */
+  --input: 217.2 32.6% 13.5%; /* Darker input */
   --ring: 212.7 26.8% 83.9%;
 
   /* Digital rain color for dark mode */
@@ -94,7 +94,7 @@
   --line-number: #666;
   
   /* Course card colors */
-  --card-bg: #1a202c;
+  --card-bg: #1a1f2c; /* Darker card bg */
   --card-text: #e2e8f0;
   --card-description: #a0aec0;
 }

@@ -26,12 +26,18 @@ const ThemeToggle: React.FC = () => {
       if (document.querySelectorAll('.firefly').length === 0) {
         createFireflies();
       }
+      
+      // Remove butterflies if any
+      document.querySelectorAll('.butterfly').forEach(el => el.remove());
     } else {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
       
       // Remove fireflies
       document.querySelectorAll('.firefly').forEach(el => el.remove());
+      
+      // Create butterflies
+      createButterflies();
     }
   }, [isDarkMode]);
 
@@ -48,12 +54,12 @@ const ThemeToggle: React.FC = () => {
     fireflyContainer.innerHTML = '';
     
     // Create new fireflies
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 75; i++) {
       const firefly = document.createElement('div');
       firefly.classList.add('firefly');
       
-      // Random size
-      const size = Math.random() * 4 + 2;
+      // Random size (larger)
+      const size = Math.random() * 6 + 3;
       firefly.style.width = `${size}px`;
       firefly.style.height = `${size}px`;
       
@@ -73,8 +79,64 @@ const ThemeToggle: React.FC = () => {
       firefly.style.animationDuration = `${duration}s`;
       firefly.style.animationDelay = `${delay}s`;
       
+      // Higher brightness
+      const brightness = Math.random() * 0.4 + 0.7; // 0.7 to 1.1
+      firefly.style.opacity = brightness.toString();
+      
       // Add to container
       fireflyContainer.appendChild(firefly);
+    }
+  };
+  
+  const createButterflies = () => {
+    const butterflyContainer = document.querySelector('.butterfly-container') || 
+      document.createElement('div');
+    
+    if (!document.querySelector('.butterfly-container')) {
+      butterflyContainer.classList.add('butterfly-container', 'fixed', 'inset-0', 'pointer-events-none', 'z-0', 'overflow-hidden');
+      document.body.appendChild(butterflyContainer);
+    }
+    
+    // Clear existing butterflies
+    butterflyContainer.innerHTML = '';
+    
+    // Add butterflies and dragonflies
+    for (let i = 0; i < 12; i++) {
+      const butterfly = document.createElement('div');
+      const isButterfly = Math.random() > 0.4; // 60% butterflies, 40% dragonflies
+      
+      butterfly.classList.add('butterfly');
+      if (isButterfly) {
+        butterfly.classList.add('butterfly-wings');
+      } else {
+        butterfly.classList.add('dragonfly');
+      }
+      
+      // Random size
+      const size = isButterfly ? (Math.random() * 15 + 10) : (Math.random() * 20 + 15);
+      butterfly.style.width = `${size}px`;
+      butterfly.style.height = `${size}px`;
+      
+      // Random position
+      butterfly.style.left = `${Math.random() * 100}vw`;
+      butterfly.style.top = `${Math.random() * 100}vh`;
+      
+      // Random colors for butterflies
+      if (isButterfly) {
+        const hue = Math.floor(Math.random() * 360);
+        butterfly.style.backgroundColor = `hsla(${hue}, 90%, 75%, 0.8)`;
+      } else {
+        const hue = Math.floor(Math.random() * 60) + 180; // Blue-green range
+        butterfly.style.backgroundColor = `hsla(${hue}, 90%, 65%, 0.7)`;
+      }
+      
+      // Random flight path and speed
+      const duration = (Math.random() * 15) + 15;
+      butterfly.style.animationDuration = `${duration}s`;
+      butterfly.style.animationDelay = `${Math.random() * 10}s`;
+      
+      // Add to container
+      butterflyContainer.appendChild(butterfly);
     }
   };
 
@@ -108,6 +170,8 @@ const ThemeToggle: React.FC = () => {
         // Create fireflies if switching to dark mode
         if (!isDarkMode) {
           createFireflies();
+        } else {
+          createButterflies();
         }
       }, 800);
     }, 400);

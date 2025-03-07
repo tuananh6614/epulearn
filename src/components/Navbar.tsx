@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -29,7 +28,7 @@ const Navbar = () => {
   };
   
   return (
-    <header className={`sticky top-0 z-50 w-full border-b ${scrolled ? 'shadow-md' : ''} bg-background/95 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/60 dark:bg-gray-900/95 dark:border-gray-800 transition-all duration-300`}>
+    <header className={`fixed top-0 z-50 w-full border-b ${scrolled ? 'shadow-md' : ''} bg-background/95 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/60 dark:bg-gray-900/95 dark:border-gray-800 transition-all duration-300`}>
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2 font-bold text-xl">

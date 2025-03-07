@@ -148,3 +148,78 @@
 .firefly-container {
   @apply fixed inset-0 pointer-events-none z-0 overflow-hidden;
 }
+
+/* Butterfly animations */
+.butterfly {
+  @apply fixed pointer-events-none z-0;
+  animation: butterfly-fly 30s linear infinite alternate;
+}
+
+.butterfly-wings {
+  position: relative;
+}
+
+.butterfly-wings::before,
+.butterfly-wings::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50% 50% 0 50%;
+  background: inherit;
+  animation: butterfly-wings 1s ease-in-out infinite alternate;
+}
+
+.butterfly-wings::before {
+  left: -50%;
+  transform-origin: right center;
+}
+
+.butterfly-wings::after {
+  right: -50%;
+  transform-origin: left center;
+  animation-delay: 0.1s;
+}
+
+.dragonfly {
+  position: relative;
+}
+
+.dragonfly::before {
+  content: '';
+  position: absolute;
+  height: 100%;
+  width: 200%;
+  border-radius: 50% 50% 0 50%;
+  background: inherit;
+  opacity: 0.7;
+  animation: dragonfly-wings 0.2s ease-in-out infinite alternate;
+  left: -100%;
+  top: -10%;
+}
+
+.dragonfly::after {
+  content: '';
+  position: absolute;
+  width: 300%;
+  height: 20%;
+  background: inherit;
+  top: 50%;
+  left: -50%;
+  transform: translateY(-50%);
+  border-radius: 50%;
+}
+
+/* Main content adjustment for fixed header */
+main {
+  padding-top: 4rem; /* Compensate for fixed header */
+}
+
+/* Enhanced firefly effect */
+.firefly {
+  @apply fixed rounded-full pointer-events-none;
+  background-color: rgba(255, 235, 156, 0.8);
+  box-shadow: 0 0 25px 8px rgba(255, 235, 156, 0.5);
+  animation: firefly-move 6s ease-in-out infinite;
+  z-index: 0;
+}

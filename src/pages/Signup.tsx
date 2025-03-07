@@ -63,11 +63,11 @@ const Signup = () => {
               <Checkbox id="terms" />
               <Label htmlFor="terms" className="text-sm text-gray-600">
                 Tôi đồng ý với{" "}
-                <Link to="/terms" className="text-epu-blue hover:underline">
+                <Link to="" className="text-epu-blue hover:underline">
                   Điều Khoản Dịch Vụ
                 </Link>{" "}
                 và{" "}
-                <Link to="/privacy" className="text-epu-blue hover:underline">
+                <Link to="" className="text-epu-blue hover:underline">
                   Chính Sách Bảo Mật
                 </Link>
               </Label>

@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from 'lucide-react';
 import CodeAnimation from './CodeAnimation';
 import ParallaxEffect from './ParallaxEffect';
-
+import HoverButton from './HoverButton';
 const Hero = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -74,12 +74,10 @@ const Hero = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 parallax-mouse-layer" data-speed="1">
-              <Button className="interactive-button bg-green-500 hover:bg-green-600 text-white font-medium px-6 py-2 h-auto rounded-md text-base" asChild>
-                <Link to="/courses">
-                  Khám Phá Khóa Học
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
+              {/* Gói HoverButton trong Link để có thể chuyển trang khi click */}
+              <Link to="">
+                <HoverButton />
+              </Link>
               <Button variant="outline" className="interactive-button border-blue-500 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium px-6 py-2 h-auto rounded-md text-base" asChild>
                 <Link to="/demo">Thử Bài Học Demo</Link>
               </Button>

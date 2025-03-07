@@ -64,11 +64,11 @@
   .dark .text-gray-600,
   .dark .text-gray-700,
   .dark .text-gray-800 {
-    @apply text-gray-200 !important;
+    color: #e0e0e0 !important; /* Direct color instead of @apply */
   }
   
   .dark .text-gray-500 {
-    @apply text-gray-300 !important;
+    color: #a0aec0 !important; /* Direct color instead of @apply */
   }
 }
 
@@ -141,15 +141,15 @@
 
 /* Course card text contrast improvements */
 .dark .course-card .text-gray-600 {
-  @apply text-gray-300;
+  color: #d1d5db !important; /* Direct color instead of @apply */
 }
 
 .dark .course-card .text-gray-500 {
-  @apply text-gray-400;
+  color: #9ca3af !important; /* Direct color instead of @apply */
 }
 
 .dark .course-card h3 {
-  @apply text-white;
+  color: #ffffff !important; /* Direct color instead of @apply */
 }
 
 /* Sticky header styles */

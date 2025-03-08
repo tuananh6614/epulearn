@@ -2,13 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Code, BookOpen, GraduationCap, Home, Menu, X } from "lucide-react";
+import { Code, BookOpen, GraduationCap, Home, Menu, X, User, LogOut } from "lucide-react";
 import ThemeToggle from './ThemeToggle';
+import { useAuth } from '@/context/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Component thanh điều hướng chính - đã cố định khi cuộn trang
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { currentUser, logout, isAuthenticated } = useAuth();
   
   useEffect(() => {
     const handleScroll = () => {
@@ -60,12 +70,42 @@ const Navbar = () => {
         
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <Button variant="outline" size="sm" className="hidden md:inline-flex text-gray-900 dark:text-white border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all" asChild>
-            <Link to="/login">Đăng Nhập</Link>
-          </Button>
-          <Button size="sm" className="hidden md:inline-flex bg-green-500 hover:bg-green-600 text-white hover:scale-105 transition-transform" asChild>
-            <Link to="/signup">Đăng Ký</Link>
-          </Button>
+          
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="relative rounded-full h-8 w-8 border-green-500">
+                  <User className="h-4 w-4 text-green-600 dark:text-green-400" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Hồ sơ</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  <span>Khóa học của tôi</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer text-red-500 dark:text-red-400" onClick={logout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Đăng xuất</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" className="hidden md:inline-flex text-gray-900 dark:text-white border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all" asChild>
+                <Link to="/login">Đăng Nhập</Link>
+              </Button>
+              <Button size="sm" className="hidden md:inline-flex bg-green-500 hover:bg-green-600 text-white hover:scale-105 transition-transform" asChild>
+                <Link to="/signup">Đăng Ký</Link>
+              </Button>
+            </>
+          )}
           
           {/* Mobile menu button */}
           <Button variant="ghost" size="icon" className="md:hidden text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800" onClick={toggleMobileMenu}>
@@ -91,12 +131,34 @@ const Navbar = () => {
           </Link>
           
           <div className="flex flex-col gap-4 mt-4 w-full max-w-xs">
-            <Button variant="outline" className="w-full text-gray-900 dark:text-white border-gray-300 dark:border-gray-700" asChild onClick={() => setMobileMenuOpen(false)}>
-              <Link to="/login">Đăng Nhập</Link>
-            </Button>
-            <Button className="w-full bg-green-500 hover:bg-green-600 text-white" asChild onClick={() => setMobileMenuOpen(false)}>
-              <Link to="/signup">Đăng Ký</Link>
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <Button variant="outline" className="w-full text-gray-900 dark:text-white border-gray-300 dark:border-gray-700" onClick={() => {
+                  setMobileMenuOpen(false);
+                  // Navigate to profile page in real app
+                }}>
+                  Hồ sơ của tôi
+                </Button>
+                <Button 
+                  className="w-full bg-red-500 hover:bg-red-600 text-white" 
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  Đăng Xuất
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" className="w-full text-gray-900 dark:text-white border-gray-300 dark:border-gray-700" asChild onClick={() => setMobileMenuOpen(false)}>
+                  <Link to="/login">Đăng Nhập</Link>
+                </Button>
+                <Button className="w-full bg-green-500 hover:bg-green-600 text-white" asChild onClick={() => setMobileMenuOpen(false)}>
+                  <Link to="/signup">Đăng Ký</Link>
+                </Button>
+              </>
+            )}
           </div>
         </nav>
       </div>

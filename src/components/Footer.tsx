@@ -58,14 +58,14 @@ const Footer = () => {
           </div>
           
           <div className="col-span-1">
-            <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">Người sáng tạotạo</h3>
+            <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">Người sáng tạo</h3>
             <ul className="space-y-3">
               <li><a href="https://www.facebook.com/boycantien/" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
               Nguyễn Tuấn Anh</a></li>
               <li><a href="https://www.facebook.com/inhdung.936915" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
               Trần Đình Dũng</a></li>
-              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">...</Link></li>
-              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">...</Link></li>
+              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Lovavle</Link></li>
+              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">GPT</Link></li>
               <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">...</Link></li>
             </ul>
           </div>

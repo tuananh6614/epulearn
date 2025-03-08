@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">epu_test</string>
+    <string name="title_activity_main">epu_test</string>
+    <string name="package_name">vn.io.kdt.epu</string>
+    <string name="custom_url_scheme">vn.io.kdt.epu</string>
+</resources>

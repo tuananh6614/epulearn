@@ -14,7 +14,7 @@ const StatsSection = () => {
               <Users className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
             <AnimatedCounter 
-              end={15000} 
+              end={1500000} 
               suffix="+" 
               className="text-3xl font-bold text-gray-900 dark:text-white" 
             />

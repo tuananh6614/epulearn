@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BookOpen, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-
+import Buttonvip from  "./Button";
 // Định nghĩa kiểu dữ liệu cho CourseCard
 interface CourseCardProps {
   id: string;
@@ -75,11 +75,12 @@ const CourseCard = ({
       </CardContent>
       
       <CardFooter>
-        <Button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transition-all shadow-md hover:shadow-lg font-medium" asChild>
-          <Link to={`/course/${id}`}>
-            Bắt Đầu Học <ArrowRight className="ml-1 h-4 w-4" />
-          </Link>
-        </Button>
+        
+      <div className="card-footer flex justify-center" >
+        <Link to={`/courses/${id}`}>
+        <Buttonvip />
+        </Link>
+      </div>
       </CardFooter>
     </Card>
   );

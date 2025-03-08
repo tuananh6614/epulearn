@@ -61,13 +61,13 @@ const Signup = () => {
             
             <div className="flex items-center space-x-2">
               <Checkbox id="terms" />
-              <Label htmlFor="terms" className="text-sm text-gray-600">
+              <Label htmlFor="terms" className="text-sm text-gray-400">
                 Tôi đồng ý với{" "}
-                <Link to="" className="text-epu-blue hover:underline">
+                <Link to="" className="text-epu-blue hover:underline  bg-white text-black  dark:bg-gray-800 dark:text-white">
                   Điều Khoản Dịch Vụ
                 </Link>{" "}
                 và{" "}
-                <Link to="" className="text-epu-blue hover:underline">
+                <Link to="" className="text-epu-blue hover:underline  bg-white text-black  dark:bg-gray-800 dark:text-white ">
                   Chính Sách Bảo Mật
                 </Link>
               </Label>
@@ -75,11 +75,10 @@ const Signup = () => {
           </CardContent>
           
           <CardFooter className="flex flex-col space-y-4">
-            <Button className="w-full bg-epu-green hover:bg-epu-green/90 ripple-effect">Đăng Ký</Button>
-            
-            <div className="text-sm text-center text-gray-600">
+            <Button className="w-full bg-epu-green hover:bg-epu-green/90 ripple-effect  bg-white text-black  dark:bg-gray-800 dark:text-white">Đăng Ký</Button>
+            <div className="text-sm text-center text-gray-400">
               Đã có tài khoản?{" "}
-              <Link to="/login" className="text-epu-blue hover:underline font-medium">
+              <Link to="/login" className="text-epu-blue hover:underline font-medium  bg-white text-black  dark:bg-gray-800 dark:text-white">
                 Đăng nhập
               </Link>
             </div>

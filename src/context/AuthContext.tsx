@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -21,10 +20,8 @@ interface User {
   lastName?: string;
 }
 
-// Define a registered user type that includes password
-interface RegisteredUser extends User {
-  password: string;
-}
+// Base API URL - thay đổi nếu server của bạn chạy ở cổng khác
+const API_URL = 'http://localhost:3000/api';
 
 // Define the auth context type
 interface AuthContextType {
@@ -62,71 +59,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
-  // Login function with registered user validation
+  // Login function using API
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     
     try {
-      // Simulate API request
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simple validation - in real app this would be server-side
       if (!email || !password) {
         toast.error("Vui lòng nhập email và mật khẩu");
         return false;
       }
       
-      if (password.length < 6) {
-        toast.error("Mật khẩu phải có ít nhất 6 ký tự");
+      // Gọi API đăng nhập
+      const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        toast.error(data.message || "Đăng nhập thất bại");
         return false;
       }
       
-      // Get registered users from localStorage
-      const registeredUsersJSON = localStorage.getItem('epu_registered_users');
-      const registeredUsers: RegisteredUser[] = registeredUsersJSON ? JSON.parse(registeredUsersJSON) : [];
-      
-      // Check if the user is registered
-      const registeredUser = registeredUsers.find(
-        user => user.email === email && user.password === password
-      );
-      
-      if (!registeredUser) {
-        toast.error("Thông tin đăng nhập không chính xác hoặc tài khoản chưa được đăng ký");
-        return false;
-      }
-      
-      // Create user object without password for session
-      const user: User = {
-        id: registeredUser.id,
-        email: registeredUser.email,
-        firstName: registeredUser.firstName,
-        lastName: registeredUser.lastName,
-      };
-      
-      // Save user to localStorage
-      localStorage.setItem('epu_user', JSON.stringify(user));
-      setCurrentUser(user);
+      // Lưu thông tin người dùng vào localStorage
+      localStorage.setItem('epu_user', JSON.stringify(data.user));
+      setCurrentUser(data.user);
       
       toast.success("Đăng nhập thành công");
       return true;
     } catch (error) {
       console.error('Login error:', error);
-      toast.error("Đăng nhập thất bại");
+      toast.error("Đăng nhập thất bại. Vui lòng kiểm tra kết nối mạng");
       return false;
     } finally {
       setLoading(false);
     }
   };
 
-  // Signup function that stores users in localStorage
+  // Signup function using API
   const signup = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
     setLoading(true);
     
     try {
-      // Simulate API request
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simple validation
+      // Kiểm tra đầu vào
       if (!email || !password || !firstName || !lastName) {
         toast.error("Vui lòng điền đầy đủ thông tin");
         return false;
@@ -137,34 +116,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Get registered users from localStorage
-      const registeredUsersJSON = localStorage.getItem('epu_registered_users');
-      const registeredUsers: RegisteredUser[] = registeredUsersJSON ? JSON.parse(registeredUsersJSON) : [];
+      // Gọi API đăng ký
+      const response = await fetch(`${API_URL}/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, firstName, lastName }),
+      });
       
-      // Check if email is already registered
-      if (registeredUsers.some(user => user.email === email)) {
-        toast.error("Email này đã được đăng ký");
+      const data = await response.json();
+      
+      if (!response.ok) {
+        toast.error(data.message || "Đăng ký thất bại");
         return false;
       }
-      
-      // Create new user
-      const newUser: RegisteredUser = {
-        id: crypto.randomUUID(),
-        email,
-        password,
-        firstName,
-        lastName,
-      };
-      
-      // Add to registered users and save
-      registeredUsers.push(newUser);
-      localStorage.setItem('epu_registered_users', JSON.stringify(registeredUsers));
       
       toast.success("Đăng ký thành công");
       return true;
     } catch (error) {
       console.error('Signup error:', error);
-      toast.error("Đăng ký thất bại");
+      toast.error("Đăng ký thất bại. Vui lòng kiểm tra kết nối mạng");
       return false;
     } finally {
       setLoading(false);

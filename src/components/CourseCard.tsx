@@ -75,7 +75,7 @@ const CourseCard = ({
       </CardContent>
       
       <CardFooter className="flex justify-center">
-        <Link to={`/course/${id}`} className="w-full">
+        <Link to={`/course/${id}`} className="w-full flex justify-center">
           <Buttonvip />
         </Link>
       </CardFooter>

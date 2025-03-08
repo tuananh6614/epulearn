@@ -2,10 +2,10 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, Clock } from "lucide-react";
+import { BookOpen, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-import Buttonvip from  "./Button";
+import Buttonvip from "./Button";
+
 // Định nghĩa kiểu dữ liệu cho CourseCard
 interface CourseCardProps {
   id: string;
@@ -74,13 +74,10 @@ const CourseCard = ({
         </div>
       </CardContent>
       
-      <CardFooter>
-        
-      <div className="card-footer flex justify-center" >
-        <Link to={`/courses/${id}`}>
-        <Buttonvip />
+      <CardFooter className="flex justify-center">
+        <Link to={`/course/${id}`} className="w-full">
+          <Buttonvip />
         </Link>
-      </div>
       </CardFooter>
     </Card>
   );

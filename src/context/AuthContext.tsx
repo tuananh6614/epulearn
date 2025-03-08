@@ -2,6 +2,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Define the user type
 interface User {
@@ -19,6 +29,8 @@ interface AuthContextType {
   signup: (email: string, password: string, firstName: string, lastName: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
+  showLogoutConfirm: boolean;
+  setShowLogoutConfirm: (show: boolean) => void;
 }
 
 // Create the auth context
@@ -28,6 +40,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const navigate = useNavigate();
 
   // Check if there's a logged-in user in localStorage on initial load
@@ -119,10 +132,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Logout function
   const logout = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  // Perform actual logout
+  const performLogout = () => {
     localStorage.removeItem('epu_user');
     setCurrentUser(null);
     navigate('/');
-    toast.info("Đã đăng xuất");
+    toast.info("Đã đăng xuất. Hẹn gặp lại bạn!");
+    setShowLogoutConfirm(false);
   };
 
   const value = {
@@ -132,9 +151,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signup,
     logout,
     isAuthenticated: !!currentUser,
+    showLogoutConfirm,
+    setShowLogoutConfirm,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận đăng xuất</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn có chắc chắn muốn đăng xuất không? Hệ thống sẽ không lưu tiến trình hiện tại của bạn.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={performLogout}>Đăng xuất</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </AuthContext.Provider>
+  );
 };
 
 // Hook to use the auth context

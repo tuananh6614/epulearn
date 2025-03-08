@@ -21,6 +21,11 @@ interface User {
   lastName?: string;
 }
 
+// Define a registered user type that includes password
+interface RegisteredUser extends User {
+  password: string;
+}
+
 // Define the auth context type
 interface AuthContextType {
   currentUser: User | null;
@@ -57,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
-  // Mock login function - in real app this would make an API call
+  // Login function with registered user validation
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     
@@ -76,12 +81,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Create mock user - in real app this would come from backend
+      // Get registered users from localStorage
+      const registeredUsersJSON = localStorage.getItem('epu_registered_users');
+      const registeredUsers: RegisteredUser[] = registeredUsersJSON ? JSON.parse(registeredUsersJSON) : [];
+      
+      // Check if the user is registered
+      const registeredUser = registeredUsers.find(
+        user => user.email === email && user.password === password
+      );
+      
+      if (!registeredUser) {
+        toast.error("Thông tin đăng nhập không chính xác hoặc tài khoản chưa được đăng ký");
+        return false;
+      }
+      
+      // Create user object without password for session
       const user: User = {
-        id: crypto.randomUUID(),
-        email,
-        firstName: 'Người dùng',
-        lastName: 'EPU',
+        id: registeredUser.id,
+        email: registeredUser.email,
+        firstName: registeredUser.firstName,
+        lastName: registeredUser.lastName,
       };
       
       // Save user to localStorage
@@ -99,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Mock signup function
+  // Signup function that stores users in localStorage
   const signup = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
     setLoading(true);
     
@@ -118,7 +137,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // In a real app, user would be created on the backend
+      // Get registered users from localStorage
+      const registeredUsersJSON = localStorage.getItem('epu_registered_users');
+      const registeredUsers: RegisteredUser[] = registeredUsersJSON ? JSON.parse(registeredUsersJSON) : [];
+      
+      // Check if email is already registered
+      if (registeredUsers.some(user => user.email === email)) {
+        toast.error("Email này đã được đăng ký");
+        return false;
+      }
+      
+      // Create new user
+      const newUser: RegisteredUser = {
+        id: crypto.randomUUID(),
+        email,
+        password,
+        firstName,
+        lastName,
+      };
+      
+      // Add to registered users and save
+      registeredUsers.push(newUser);
+      localStorage.setItem('epu_registered_users', JSON.stringify(registeredUsers));
+      
       toast.success("Đăng ký thành công");
       return true;
     } catch (error) {

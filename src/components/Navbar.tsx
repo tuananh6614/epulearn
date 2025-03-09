@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Code, BookOpen, GraduationCap, Home, Menu, X, User, LogOut } from "lucide-react";
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
@@ -19,6 +18,7 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { currentUser, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   
   useEffect(() => {
     const handleScroll = () => {
@@ -81,11 +81,11 @@ const Navbar = () => {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/profile')}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Hồ sơ</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/my-courses')}>
                   <BookOpen className="mr-2 h-4 w-4" />
                   <span>Khóa học của tôi</span>
                 </DropdownMenuItem>
@@ -135,9 +135,15 @@ const Navbar = () => {
               <>
                 <Button variant="outline" className="w-full text-gray-900 dark:text-white border-gray-300 dark:border-gray-700" onClick={() => {
                   setMobileMenuOpen(false);
-                  // Navigate to profile page in real app
+                  navigate('/profile');
                 }}>
                   Hồ sơ của tôi
+                </Button>
+                <Button variant="outline" className="w-full text-gray-900 dark:text-white border-gray-300 dark:border-gray-700" onClick={() => {
+                  setMobileMenuOpen(false);
+                  navigate('/my-courses');
+                }}>
+                  Khóa học của tôi
                 </Button>
                 <Button 
                   className="w-full bg-red-500 hover:bg-red-600 text-white" 

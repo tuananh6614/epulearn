@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +10,9 @@ import Signup from "./pages/Signup";
 import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
 import LessonDetail from "./pages/LessonDetail";
+import LessonDemo from "./pages/LessonDemo";
+import MyCourses from "./pages/MyCourses";
+import UserProfile from "./pages/UserProfile";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -39,9 +41,20 @@ const App = () => (
                 <CourseDetail />
               </ProtectedRoute>
             } />
+            <Route path="/my-courses" element={
+              <ProtectedRoute>
+                <MyCourses />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            } />
             
-            {/* Demo lesson is accessible without login */}
+            {/* Course lessons */}
             <Route path="/course/:courseId/chapter/:chapterId/lesson/:lessonId" element={<LessonDetail />} />
+            <Route path="/lesson-demo" element={<LessonDemo />} />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

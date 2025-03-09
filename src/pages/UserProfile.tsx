@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/context/AuthContext';
@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -14,6 +15,7 @@ import { toast } from "sonner";
 import { Pencil, User, Lock, FileText, BookOpen, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Progress } from "@/components/ui/progress";
+import { useQuery } from "@tanstack/react-query";
 
 // Schema cho cập nhật hồ sơ
 const profileFormSchema = z.object({
@@ -23,10 +25,12 @@ const profileFormSchema = z.object({
   bio: z.string().optional(),
 });
 
-// Schema cho đổi mật khẩu (chỉ cần 6 ký tự)
+// Schema cho đổi mật khẩu
 const passwordFormSchema = z.object({
   currentPassword: z.string().min(6, { message: "Mật khẩu phải có ít nhất 6 ký tự" }),
-  newPassword: z.string().min(6, { message: "Mật khẩu mới phải có ít nhất 6 ký tự" }),
+  newPassword: z.string().min(6, { message: "Mật khẩu mới phải có ít nhất 6 ký tự" })
+    .regex(/[A-Z]/, { message: "Mật khẩu phải chứa ít nhất một chữ hoa" })
+    .regex(/[0-9]/, { message: "Mật khẩu phải chứa ít nhất một chữ số" }),
   confirmPassword: z.string().min(6, { message: "Xác nhận mật khẩu phải có ít nhất 6 ký tự" }),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "Mật khẩu xác nhận không khớp",
@@ -36,6 +40,23 @@ const passwordFormSchema = z.object({
 // API URL
 const API_URL = 'http://localhost:3000/api';
 
+// Interface cho khóa học
+interface EnrolledCourse {
+  id: string;
+  title: string;
+  progress: number;
+  image: string;
+  color: string;
+}
+
+// Interface cho chứng chỉ
+interface Certificate {
+  id: string;
+  title: string;
+  issueDate: string;
+  credential: string;
+}
+
 const UserProfile = () => {
   const { currentUser, logout } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -44,6 +65,8 @@ const UserProfile = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
 
   // Form hồ sơ
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
@@ -66,39 +89,83 @@ const UserProfile = () => {
     },
   });
 
-  // Dữ liệu giả lập khóa học đã đăng ký
-  const enrolledCourses = [
-    {
-      id: "html-basics",
-      title: "HTML Cơ Bản",
-      progress: 25,
-      image: "/placeholder.svg",
-      color: "linear-gradient(90deg, #48BB78 0%, #38A169 100%)",
-    },
-    {
-      id: "css-basics",
-      title: "CSS Cơ Bản",
-      progress: 10,
-      image: "/placeholder.svg",
-      color: "linear-gradient(90deg, #4299E1 0%, #3182CE 100%)",
+  // Fetch enrolled courses for the current user
+  const fetchUserCourses = async () => {
+    if (!currentUser?.id) return [];
+    
+    try {
+      const response = await fetch(`${API_URL}/user-courses/${currentUser.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch enrolled courses');
+      }
+      const data = await response.json();
+      return data.courses || [];
+    } catch (error) {
+      console.error('Error fetching user courses:', error);
+      return [];
     }
-  ];
+  };
 
-  // Dữ liệu giả lập chứng chỉ
-  const certificates = [
-    {
-      id: "cert-js-1",
-      title: "JavaScript Cơ Bản",
-      issueDate: "12/05/2023",
-      credential: "EPU-JS-2023-12345",
+  // Fetch certificates for the current user
+  const fetchUserCertificates = async () => {
+    if (!currentUser?.id) return [];
+    
+    try {
+      const response = await fetch(`${API_URL}/user-certificates/${currentUser.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch certificates');
+      }
+      const data = await response.json();
+      return data.certificates || [];
+    } catch (error) {
+      console.error('Error fetching user certificates:', error);
+      return [];
     }
-  ];
+  };
+
+  // Use React Query to fetch user courses
+  const { data: userCourses, isLoading: isLoadingCourses } = useQuery({
+    queryKey: ['userCourses', currentUser?.id],
+    queryFn: fetchUserCourses,
+    enabled: !!currentUser?.id,
+  });
+
+  // Use React Query to fetch user certificates
+  const { data: userCertificates, isLoading: isLoadingCertificates } = useQuery({
+    queryKey: ['userCertificates', currentUser?.id],
+    queryFn: fetchUserCertificates,
+    enabled: !!currentUser?.id,
+  });
+
+  // Update enrolled courses and certificates when data is loaded
+  useEffect(() => {
+    if (userCourses) {
+      setEnrolledCourses(userCourses);
+    }
+  }, [userCourses]);
+
+  useEffect(() => {
+    if (userCertificates) {
+      setCertificates(userCertificates);
+    }
+  }, [userCertificates]);
 
   // Xử lý cập nhật hồ sơ
   const onUpdateProfile = (values: z.infer<typeof profileFormSchema>) => {
+    if (!currentUser) return;
+    
     setLoading(true);
     
-    fetch(`${API_URL}/users/${currentUser?.id}`, {
+    // For admin user (fixed account), handle updates locally
+    if (currentUser.email === 'admin@epu.edu.vn') {
+      // Just show success message for admin user
+      toast.success("Thông tin hồ sơ đã được cập nhật");
+      setLoading(false);
+      return;
+    }
+    
+    // For regular users, call the API
+    fetch(`${API_URL}/users/${currentUser.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -113,7 +180,17 @@ const UserProfile = () => {
       })
       .then(data => {
         toast.success("Thông tin hồ sơ đã được cập nhật");
-        console.log("Profile updated:", data);
+        
+        // Update localStorage with new user info
+        const updatedUser = {
+          ...currentUser,
+          firstName: values.firstName,
+          lastName: values.lastName
+        };
+        localStorage.setItem('epu_user', JSON.stringify(updatedUser));
+        
+        // Force reload to update header
+        window.location.reload();
       })
       .catch(error => {
         toast.error(error.message || "Lỗi cập nhật thông tin");
@@ -125,7 +202,7 @@ const UserProfile = () => {
   };
 
   // Kiểm tra mật khẩu hiện tại
-  const checkCurrentPassword = async () => {
+  const checkCurrentPassword = () => {
     const currentPassword = passwordForm.getValues("currentPassword");
     
     if (!currentPassword) {
@@ -135,37 +212,54 @@ const UserProfile = () => {
     
     setLoading(true);
     
-    try {
-      const response = await fetch(`${API_URL}/check-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser?.id,
-          password: currentPassword
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Mật khẩu không chính xác');
+    // For admin user (fixed account), allow password change with fixed password
+    if (currentUser?.email === 'admin@epu.edu.vn') {
+      if (currentPassword === 'admin123') {
+        setIsCurrentPasswordValid(true);
+        setPasswordChecked(true);
+        toast.success("Mật khẩu chính xác");
+      } else {
+        setIsCurrentPasswordValid(false);
+        setPasswordChecked(true);
+        toast.error("Mật khẩu không chính xác");
       }
-      
-      await response.json();
-      setIsCurrentPasswordValid(true);
-      setPasswordChecked(true);
-      toast.success("Mật khẩu chính xác");
-    } catch (error: any) {
-      setIsCurrentPasswordValid(false);
-      setPasswordChecked(true);
-      toast.error(error.message || "Mật khẩu không chính xác");
-    } finally {
       setLoading(false);
+      return;
     }
+    
+    // For regular users, call the API
+    fetch(`${API_URL}/check-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: currentUser?.id,
+        password: currentPassword
+      }),
+    })
+      .then(response => {
+        if (response.ok) {
+          setIsCurrentPasswordValid(true);
+          setPasswordChecked(true);
+          toast.success("Mật khẩu chính xác");
+          return response.json();
+        } else {
+          throw new Error('Mật khẩu không chính xác');
+        }
+      })
+      .catch(error => {
+        setIsCurrentPasswordValid(false);
+        setPasswordChecked(true);
+        toast.error(error.message || "Mật khẩu không chính xác");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
-  // Xử lý đổi mật khẩu sử dụng async/await và tự cập nhật lên database
-  const onChangePassword = async (values: z.infer<typeof passwordFormSchema>) => {
+  // Xử lý đổi mật khẩu
+  const onChangePassword = (values: z.infer<typeof passwordFormSchema>) => {
     if (!passwordChecked || !isCurrentPasswordValid) {
       toast.error("Vui lòng kiểm tra mật khẩu hiện tại trước");
       return;
@@ -173,33 +267,46 @@ const UserProfile = () => {
     
     setLoading(true);
     
-    try {
-      const response = await fetch(`${API_URL}/change-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: currentUser?.id,
-          currentPassword: values.currentPassword,
-          newPassword: values.newPassword
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Không thể thay đổi mật khẩu');
-      }
-      
-      await response.json();
+    // For admin user (fixed account), just show success message
+    if (currentUser?.email === 'admin@epu.edu.vn') {
       toast.success("Mật khẩu đã được cập nhật thành công");
       passwordForm.reset();
       setPasswordChecked(false);
       setIsCurrentPasswordValid(false);
-    } catch (error: any) {
-      toast.error(error.message || "Lỗi thay đổi mật khẩu");
-    } finally {
       setLoading(false);
+      return;
     }
+    
+    // For regular users, call the API
+    fetch(`${API_URL}/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: currentUser?.id,
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword
+      }),
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Không thể thay đổi mật khẩu');
+        }
+        return response.json();
+      })
+      .then(data => {
+        toast.success("Mật khẩu đã được cập nhật thành công");
+        passwordForm.reset();
+        setPasswordChecked(false);
+        setIsCurrentPasswordValid(false);
+      })
+      .catch(error => {
+        toast.error(error.message || "Lỗi thay đổi mật khẩu");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   if (!currentUser) {
@@ -253,17 +360,27 @@ const UserProfile = () => {
               <Card>
                 <CardContent className="p-4">
                   <h3 className="font-medium mb-3">Tiến độ học tập</h3>
-                  {enrolledCourses.map((course) => (
-                    <div key={course.id} className="mb-3 last:mb-0">
-                      <div className="flex justify-between text-sm mb-1">
-                        <Link to={`/course/${course.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                          {course.title}
-                        </Link>
-                        <span>{course.progress}%</span>
-                      </div>
-                      <Progress value={course.progress} className="h-2" />
+                  {isLoadingCourses ? (
+                    <div className="flex justify-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
                     </div>
-                  ))}
+                  ) : enrolledCourses.length > 0 ? (
+                    enrolledCourses.map((course) => (
+                      <div key={course.id} className="mb-3 last:mb-0">
+                        <div className="flex justify-between text-sm mb-1">
+                          <Link to={`/course/${course.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                            {course.title}
+                          </Link>
+                          <span>{course.progress}%</span>
+                        </div>
+                        <Progress value={course.progress} className="h-2" />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-center text-muted-foreground py-2">
+                      Bạn chưa đăng ký khóa học nào
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -494,7 +611,11 @@ const UserProfile = () => {
                         Chứng chỉ của tôi
                       </h2>
                       
-                      {certificates.length > 0 ? (
+                      {isLoadingCertificates ? (
+                        <div className="flex justify-center py-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                        </div>
+                      ) : certificates.length > 0 ? (
                         <div className="space-y-4">
                           {certificates.map((cert) => (
                             <div key={cert.id} className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

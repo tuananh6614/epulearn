@@ -23,6 +23,10 @@ interface User {
 // Base API URL - thay đổi nếu server của bạn chạy ở cổng khác
 const API_URL = 'http://localhost:3000/api';
 
+// Fixed account credentials
+const FIXED_ACCOUNT = {
+};
+
 // Define the auth context type
 interface AuthContextType {
   currentUser: User | null;
@@ -33,6 +37,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   showLogoutConfirm: boolean;
   setShowLogoutConfirm: (show: boolean) => void;
+  loginWithFixedAccount: () => void;
+  updateCurrentUser: (userData: Partial<User>) => void;
 }
 
 // Create the auth context
@@ -59,6 +65,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
+  // Method to update current user data
+  const updateCurrentUser = (userData: Partial<User>) => {
+    if (!currentUser) return;
+    
+    const updatedUser = { ...currentUser, ...userData };
+    setCurrentUser(updatedUser);
+    localStorage.setItem('epu_user', JSON.stringify(updatedUser));
+  };
+
+  // Login with fixed account
+  const loginWithFixedAccount = () => {
+    setLoading(true);
+    
+    // Create user object from fixed account (without password)
+    const user = {
+      id: FIXED_ACCOUNT.id,
+      email: FIXED_ACCOUNT.email,
+      firstName: FIXED_ACCOUNT.firstName,
+      lastName: FIXED_ACCOUNT.lastName
+    };
+    
+    // Save to localStorage
+    localStorage.setItem('epu_user', JSON.stringify(user));
+    setCurrentUser(user);
+    
+    toast.success("Đăng nhập thành công với tài khoản cố định");
+    navigate('/');
+    setLoading(false);
+  };
+
   // Login function using API
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
@@ -67,6 +103,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!email || !password) {
         toast.error("Vui lòng nhập email và mật khẩu");
         return false;
+      }
+      
+      // Check for fixed account first
+      if (email === FIXED_ACCOUNT.email && password === FIXED_ACCOUNT.password) {
+        const user = {
+          id: FIXED_ACCOUNT.id,
+          email: FIXED_ACCOUNT.email,
+          firstName: FIXED_ACCOUNT.firstName,
+          lastName: FIXED_ACCOUNT.lastName
+        };
+        
+        localStorage.setItem('epu_user', JSON.stringify(user));
+        setCurrentUser(user);
+        
+        toast.success("Đăng nhập thành công");
+        return true;
       }
       
       // Gọi API đăng nhập
@@ -113,6 +165,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (password.length < 6) {
         toast.error("Mật khẩu phải có ít nhất 6 ký tự");
+        return false;
+      }
+      
+      // Check if trying to register with fixed account email
+      if (email === FIXED_ACCOUNT.email) {
+        toast.error("Email này đã được sử dụng");
         return false;
       }
       
@@ -166,6 +224,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated: !!currentUser,
     showLogoutConfirm,
     setShowLogoutConfirm,
+    loginWithFixedAccount,
+    updateCurrentUser,
   };
 
   return (

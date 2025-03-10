@@ -24,7 +24,7 @@ const UserProfile = () => {
     if (!currentUser?.id) return [];
     
     try {
-      const response = await fetch(`${API_URL}/user-courses/${currentUser.id}`);
+      const response = await fetch(`${API_URL}/${currentUser.id}/courses`);
       if (!response.ok) {
         throw new Error('Failed to fetch enrolled courses');
       }
@@ -41,7 +41,7 @@ const UserProfile = () => {
     if (!currentUser?.id) return [];
     
     try {
-      const response = await fetch(`${API_URL}/user-certificates/${currentUser.id}`);
+      const response = await fetch(`${API_URL}/${currentUser.id}/certificates`);
       if (!response.ok) {
         throw new Error('Failed to fetch certificates');
       }

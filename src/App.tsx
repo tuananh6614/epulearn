@@ -18,6 +18,7 @@ import Certification from "./pages/Certification";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+
 // Configure query client with error handling
 const queryClient = new QueryClient({
   defaultOptions: {

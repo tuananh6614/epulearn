@@ -17,7 +17,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   useEffect(() => {
     const checkApiHealth = async () => {
       try {
-        // Try the primary health check endpoint
+        // In production or when running as standalone app, skip the health check
+        const isProduction = import.meta.env.PROD;
+        const hostname = window.location.hostname;
+        
+        // Skip API health check if we're not on localhost
+        if (isProduction || (hostname !== 'localhost' && hostname !== '127.0.0.1')) {
+          console.log("Skipping API health check in production environment");
+          setApiAvailable(true);
+          setHealthCheckAttempted(true);
+          return;
+        }
+        
+        // Only perform health checks in development environment
         const response = await fetch('http://localhost:3000/api/health-check', { 
           signal: AbortSignal.timeout(3000) // 3 second timeout
         });
@@ -32,8 +44,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       } catch (primaryError) {
         console.warn('Primary health check failed, trying fallback', primaryError);
         
-        // Try the fallback endpoint
+        // Try the fallback endpoint only in development
         try {
+          // Skip additional checks if not in development
+          if (import.meta.env.PROD || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
+            setApiAvailable(true);
+            setHealthCheckAttempted(true);
+            return;
+          }
+          
           const fallbackResponse = await fetch('http://localhost:3000/api/ping', { 
             signal: AbortSignal.timeout(3000) // 3 second timeout
           });
@@ -46,10 +65,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
           
           throw new Error('Fallback health check failed');
         } catch (fallbackError) {
-          console.error('API is not available', fallbackError);
-          setApiAvailable(false);
+          console.error('API health check failed', fallbackError);
+          
+          // For production environment, assume API is available
+          if (import.meta.env.PROD || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
+            console.log("Assuming API is available in production despite failed health check");
+            setApiAvailable(true);
+          } else {
+            setApiAvailable(false);
+            toast.error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.");
+          }
           setHealthCheckAttempted(true);
-          toast.error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.");
         }
       }
     };
@@ -66,7 +92,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
   
-  // If API is not available, show a message
+  // If API is not available, show a message (only in development)
   if (apiAvailable === false) {
     return (
       <div className="min-h-screen flex items-center justify-center">

@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Award, FileText, ExternalLink, Download } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Certificate {
   id: string;
@@ -19,6 +19,24 @@ interface CertificatesTabProps {
 }
 
 const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, isLoading }) => {
+  const { toast } = useToast();
+
+  const handleViewCertificate = (cert: Certificate) => {
+    // For now, show a toast when viewing certificate
+    toast({
+      title: "Xem chứng chỉ",
+      description: `Đang mở chứng chỉ: ${cert.title}`,
+    });
+  };
+
+  const handleDownloadCertificate = (cert: Certificate) => {
+    // For now, show a toast when downloading certificate
+    toast({
+      title: "Tải xuống chứng chỉ",
+      description: `Đang tải xuống chứng chỉ: ${cert.title}`,
+    });
+  };
+
   return (
     <Card className="border-0 shadow-md">
       <CardContent className="pt-6">
@@ -57,11 +75,21 @@ const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, isLoadi
                   </p>
                 </div>
                 <div className="flex space-x-2 z-10">
-                  <Button variant="outline" size="sm" className="gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-1"
+                    onClick={() => handleViewCertificate(cert)}
+                  >
                     <ExternalLink className="h-4 w-4" />
                     Xem
                   </Button>
-                  <Button variant="default" size="sm" className="gap-1">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="gap-1"
+                    onClick={() => handleDownloadCertificate(cert)}
+                  >
                     <Download className="h-4 w-4" />
                     Tải xuống
                   </Button>

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -68,6 +67,13 @@ const App = () => (
             } />
             <Route path="/lesson-demo" element={<LessonDemo />} />
             <Route path="/demo" element={<LessonDemo />} />
+            
+            {/* Update route path for certificates */}
+            <Route path="/profile/certificates" element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            } />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

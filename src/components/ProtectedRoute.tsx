@@ -17,66 +17,45 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   useEffect(() => {
     const checkApiHealth = async () => {
       try {
-        // In production or when running as standalone app, skip the health check
+        // In production or when running as standalone app, assume API is available
         const isProduction = import.meta.env.PROD;
         const hostname = window.location.hostname;
         
-        // Skip API health check if we're not on localhost
+        // Skip detailed API health check if we're not on localhost
         if (isProduction || (hostname !== 'localhost' && hostname !== '127.0.0.1')) {
-          console.log("Skipping API health check in production environment");
+          console.log("Running in production environment, assuming API is available");
           setApiAvailable(true);
           setHealthCheckAttempted(true);
           return;
         }
         
-        // Only perform health checks in development environment
-        const response = await fetch('http://localhost:3000/api/health-check', { 
-          signal: AbortSignal.timeout(3000) // 3 second timeout
+        // For development, check a simple endpoint that should exist
+        // We'll try to fetch user/1 as a basic check - adjust based on your actual API
+        const response = await fetch('http://localhost:3000/api/users/1', { 
+          signal: AbortSignal.timeout(3000), // 3 second timeout
+          method: 'HEAD' // We only need to check if the endpoint responds, not the actual data
         });
         
-        if (response.ok) {
+        if (response.ok || response.status === 404) {
+          // Even a 404 means the server is responding, which is good enough for our health check
           setApiAvailable(true);
           setHealthCheckAttempted(true);
           return;
         }
         
-        throw new Error('Primary health check failed');
-      } catch (primaryError) {
-        console.warn('Primary health check failed, trying fallback', primaryError);
+        throw new Error('API health check failed');
+      } catch (error) {
+        console.error('API health check failed', error);
         
-        // Try the fallback endpoint only in development
-        try {
-          // Skip additional checks if not in development
-          if (import.meta.env.PROD || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
-            setApiAvailable(true);
-            setHealthCheckAttempted(true);
-            return;
-          }
-          
-          const fallbackResponse = await fetch('http://localhost:3000/api/ping', { 
-            signal: AbortSignal.timeout(3000) // 3 second timeout
-          });
-          
-          if (fallbackResponse.ok) {
-            setApiAvailable(true);
-            setHealthCheckAttempted(true);
-            return;
-          }
-          
-          throw new Error('Fallback health check failed');
-        } catch (fallbackError) {
-          console.error('API health check failed', fallbackError);
-          
-          // For production environment, assume API is available
-          if (import.meta.env.PROD || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
-            console.log("Assuming API is available in production despite failed health check");
-            setApiAvailable(true);
-          } else {
-            setApiAvailable(false);
-            toast.error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.");
-          }
-          setHealthCheckAttempted(true);
+        // For production environment, assume API is available despite failures
+        if (import.meta.env.PROD || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
+          console.log("Assuming API is available in production despite failed health check");
+          setApiAvailable(true);
+        } else {
+          setApiAvailable(false);
+          toast.error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.");
         }
+        setHealthCheckAttempted(true);
       }
     };
     

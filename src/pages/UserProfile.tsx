@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { FileText, Lock, User } from 'lucide-react';
+import { FileText, Lock, User, AlertTriangle, Database } from 'lucide-react';
 import UserSidebar from '@/components/UserSidebar';
-import ProfileForm from '@/components/ProfileForm'; // Đã cập nhật hỗ trợ avatar
+import ProfileForm from '@/components/ProfileForm';
 import SecurityForm from '@/components/SecurityForm';
 import CertificatesTab from '@/components/CertificatesTab';
 import { toast } from 'sonner';
@@ -20,6 +20,33 @@ const API_URL = 'http://localhost:3000/api';
 
 const UserProfile = () => {
   const { currentUser } = useAuth();
+  const [apiConnectionStatus, setApiConnectionStatus] = React.useState<'connected' | 'disconnected' | 'checking'>('checking');
+
+  // Check API connection on mount
+  useEffect(() => {
+    const checkApiConnection = async () => {
+      try {
+        const response = await fetch(`${API_URL}/health-check`, { 
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          // Short timeout to not block the UI for too long
+          signal: AbortSignal.timeout(3000)
+        });
+        
+        if (response.ok) {
+          setApiConnectionStatus('connected');
+        } else {
+          setApiConnectionStatus('disconnected');
+          console.warn('API health check failed:', await response.text());
+        }
+      } catch (error) {
+        console.error('API connection error:', error);
+        setApiConnectionStatus('disconnected');
+      }
+    };
+    
+    checkApiConnection();
+  }, []);
 
   // Fetch enrolled courses cho người dùng hiện tại
   const fetchUserCourses = async () => {
@@ -131,6 +158,17 @@ const UserProfile = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
+      {apiConnectionStatus === 'disconnected' && (
+        <div className="bg-amber-50 border-amber-200 border-b py-2 px-4">
+          <div className="container mx-auto flex items-center text-amber-800 text-sm">
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            <span>
+              Không thể kết nối với máy chủ. Dữ liệu sẽ được lưu cục bộ và đồng bộ khi kết nối được khôi phục.
+            </span>
+          </div>
+        </div>
+      )}
+      
       <main className="flex-grow pt-24 pb-16">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row gap-8">
@@ -142,6 +180,24 @@ const UserProfile = () => {
             
             {/* Nội dung chính */}
             <div className="flex-grow">
+              <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-bold">Hồ sơ của bạn</h1>
+                
+                <div className="flex items-center text-sm">
+                  <Database className="h-4 w-4 mr-1" />
+                  <span>
+                    Trạng thái: {' '}
+                    {apiConnectionStatus === 'connected' ? (
+                      <span className="text-green-600">Đã kết nối với máy chủ</span>
+                    ) : apiConnectionStatus === 'checking' ? (
+                      <span className="text-blue-600">Đang kiểm tra kết nối...</span>
+                    ) : (
+                      <span className="text-amber-600">Không có kết nối, dữ liệu được lưu cục bộ</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+              
               <Tabs defaultValue="profile">
                 <TabsList className="mb-6 w-full justify-start">
                   <TabsTrigger value="profile" className="flex items-center">

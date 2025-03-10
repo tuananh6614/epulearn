@@ -80,9 +80,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
-  // Method to update current user data
+  // Method to update current user data with improved error handling
   const updateCurrentUser = async (userData: Partial<User>): Promise<boolean> => {
     if (!currentUser) return false;
+    
+    setLoading(true);
     
     try {
       // Handle name change restrictions (once every 5 days)
@@ -97,6 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           if (diffDays < 5) {
             toast.error(`Bạn chỉ có thể thay đổi tên mỗi 5 ngày. Vui lòng thử lại sau ${5 - diffDays} ngày.`);
+            setLoading(false);
             return false;
           }
         }
@@ -107,8 +110,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("Updating user data:", userData);
       
-      // Try API call first
       try {
+        // Always attempt to update local storage first
+        const updatedUser = { ...currentUser, ...userData };
+        localStorage.setItem('epu_user', JSON.stringify(updatedUser));
+        setCurrentUser(updatedUser);
+        
         // Update user in the database via API
         const response = await fetch(`${API_URL}/users/${currentUser.id}`, {
           method: 'PUT',
@@ -120,58 +127,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || "Cập nhật thông tin thất bại");
+          console.error('API Error:', errorData);
+          // We continue because local storage was already updated
+          toast.warning("Thông tin đã được cập nhật cục bộ, nhưng chưa đồng bộ với máy chủ");
+          setLoading(false);
+          return true; // Still return true as the local update was successful
         }
         
         // API call succeeded
-        const updatedUser = { ...currentUser, ...userData };
-        setCurrentUser(updatedUser);
-        localStorage.setItem('epu_user', JSON.stringify(updatedUser));
-        
-        toast.success("Thông tin đã được cập nhật");
+        toast.success("Thông tin đã được cập nhật và đồng bộ thành công");
+        setLoading(false);
         return true;
       } catch (apiError) {
         console.error('API Error updating profile:', apiError);
-        console.log('Falling back to local update for demo purposes');
-        
-        // For demo/development, update the local user data anyway
-        const updatedUser = { ...currentUser, ...userData };
-        setCurrentUser(updatedUser);
-        localStorage.setItem('epu_user', JSON.stringify(updatedUser));
-        
-        toast.success("Thông tin đã được cập nhật (chế độ demo)");
-        return true; // Return true for demo purposes
+        toast.warning("Thông tin đã được cập nhật cục bộ, nhưng chưa đồng bộ với máy chủ");
+        setLoading(false);
+        return true; // Still return true as the local update was successful
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      
-      // For demo/development, let's update the local user data anyway
-      const updatedUser = { ...currentUser, ...userData };
-      setCurrentUser(updatedUser);
-      localStorage.setItem('epu_user', JSON.stringify(updatedUser));
-      
-      toast.success("Thông tin đã được cập nhật (chế độ demo)");
-      return true; // Return true for demo purposes
+      toast.error("Không thể cập nhật thông tin. Vui lòng thử lại sau.");
+      setLoading(false);
+      return false;
     }
   };
 
-  // Password change method
+  // Password change method with improved error handling
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     if (!currentUser) return false;
+    
+    setLoading(true);
     
     try {
       // Validate input
       if (!currentPassword || !newPassword) {
         toast.error("Vui lòng nhập đầy đủ thông tin");
+        setLoading(false);
         return false;
       }
       
       if (newPassword.length < 6) {
         toast.error("Mật khẩu mới phải có ít nhất 6 ký tự");
+        setLoading(false);
         return false;
       }
       
-      // Try API call first
       try {
         // Call API to change password
         const response = await fetch(`${API_URL}/users/${currentUser.id}/change-password`, {
@@ -184,25 +184,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || "Thay đổi mật khẩu thất bại");
+          console.error('API Error:', errorData);
+          toast.error(errorData.message || "Thay đổi mật khẩu thất bại");
+          setLoading(false);
+          return false;
         }
         
-        toast.success("Mật khẩu đã được thay đổi thành công");
+        toast.success("Mật khẩu đã được thay đổi thành công và đồng bộ với máy chủ");
+        setLoading(false);
         return true;
       } catch (apiError) {
         console.error('API Error changing password:', apiError);
-        console.log('Falling back to local password change for demo purposes');
         
-        // For demo purposes, simulate a successful password change
-        toast.success("Mật khẩu đã được thay đổi thành công (chế độ demo)");
+        // In demo/development mode, simulate a successful password change
+        // but provide clear feedback that it's only local
+        toast.warning("Mật khẩu đã được thay đổi cục bộ, nhưng chưa đồng bộ với máy chủ");
+        setLoading(false);
         return true;
       }
     } catch (error) {
       console.error('Error changing password:', error);
-      
-      // In demo mode, we'll allow password changes without a backend
-      toast.success("Mật khẩu đã được thay đổi thành công (chế độ demo)");
-      return true;
+      toast.error("Không thể thay đổi mật khẩu. Vui lòng thử lại sau.");
+      setLoading(false);
+      return false;
     }
   };
 

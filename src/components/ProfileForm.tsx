@@ -5,10 +5,11 @@ import { toast } from 'sonner';
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Pencil } from 'lucide-react';
+import { Pencil, Database, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import UserAvatar from './UserAvatar';
 
 // Schema for profile update
 const profileFormSchema = z.object({
@@ -23,6 +24,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 const ProfileForm: React.FC = () => {
   const { currentUser, updateCurrentUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'none' | 'synced' | 'local'>('none');
   
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -38,6 +40,7 @@ const ProfileForm: React.FC = () => {
     if (!currentUser) return;
     
     setLoading(true);
+    setSyncStatus('none');
     
     try {
       // Call the API to update user profile
@@ -48,11 +51,18 @@ const ProfileForm: React.FC = () => {
       });
       
       if (success) {
-        toast.success("Thông tin hồ sơ đã được cập nhật");
+        // Check toast message to determine sync status
+        // This is a workaround - in a real app, you'd get this from the API response
+        if (document.body.textContent?.includes("đồng bộ với máy chủ")) {
+          setSyncStatus('synced');
+        } else {
+          setSyncStatus('local');
+        }
       }
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Lỗi cập nhật thông tin");
+      setSyncStatus('none');
     } finally {
       setLoading(false);
     }
@@ -64,6 +74,19 @@ const ProfileForm: React.FC = () => {
         <Pencil className="h-5 w-5 mr-2 text-blue-500" />
         Cập nhật thông tin cá nhân
       </h2>
+      
+      <div className="flex flex-col items-center mb-6">
+        <UserAvatar 
+          avatarUrl={currentUser?.avatarUrl || null}
+          firstName={currentUser?.firstName}
+          lastName={currentUser?.lastName}
+          size="lg"
+          editable={true}
+        />
+        <p className="text-sm text-muted-foreground mt-2">
+          Nhấp vào biểu tượng để cập nhật ảnh đại diện
+        </p>
+      </div>
       
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -129,9 +152,28 @@ const ProfileForm: React.FC = () => {
             )}
           />
           
-          <Button type="submit" disabled={loading}>
-            {loading ? "Đang cập nhật..." : "Cập nhật thông tin"}
-          </Button>
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+              {loading ? "Đang cập nhật..." : "Cập nhật thông tin"}
+            </Button>
+            
+            {syncStatus !== 'none' && (
+              <div className="flex items-center text-sm">
+                <Database className="h-4 w-4 mr-1 text-blue-500" />
+                {syncStatus === 'synced' ? (
+                  <span className="flex items-center text-green-600">
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                    Đã đồng bộ với máy chủ
+                  </span>
+                ) : (
+                  <span className="flex items-center text-amber-600">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    Đã lưu cục bộ, chưa đồng bộ
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </form>
       </Form>
     </>

@@ -106,25 +106,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("Updating user data:", userData);
       
-      // Update user in the database via API (if connected)
-      try {
-        const response = await fetch(`${API_URL}/users/${currentUser.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(userData),
-        });
-        
-        if (!response.ok) {
-          throw new Error("API update failed");
-        }
-      } catch (error) {
-        console.warn("API update failed, but client-side update will proceed for demo purposes");
-        // Continue with client-side update even if API fails (for demo)
+      // Update user in the database via API
+      const response = await fetch(`${API_URL}/users/${currentUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Cập nhật thông tin thất bại");
+        return false;
       }
       
-      // Always update local user data (for demo purposes)
+      // Only update local storage if API call succeeded
       const updatedUser = { ...currentUser, ...userData };
       setCurrentUser(updatedUser);
       localStorage.setItem('epu_user', JSON.stringify(updatedUser));
@@ -133,14 +130,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     } catch (error) {
       console.error('Error updating profile:', error);
-      
-      // For demo/development, update the local user data anyway
-      const updatedUser = { ...currentUser, ...userData };
-      setCurrentUser(updatedUser);
-      localStorage.setItem('epu_user', JSON.stringify(updatedUser));
-      
-      toast.success("Thông tin đã được cập nhật (chế độ demo)");
-      return true; // Return true for demo purposes
+      toast.error("Lỗi kết nối đến máy chủ. Vui lòng thử lại sau");
+      return false;
     }
   };
 
@@ -179,7 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     } catch (error) {
       console.error('Error changing password:', error);
-      toast.error("Thay đổi mật khẩu thất bại. Vui lòng kiểm tra kết nối mạng");
+      toast.error("Lỗi kết nối đến máy chủ. Vui lòng thử lại sau");
       return false;
     }
   };
@@ -262,7 +253,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     } catch (error) {
       console.error('Login error:', error);
-      toast.error("Đăng nhập thất bại. Vui lòng kiểm tra kết nối mạng");
+      toast.error("Lỗi kết nối đến máy chủ. Vui lòng thử lại sau");
       return false;
     } finally {
       setLoading(false);
@@ -311,7 +302,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     } catch (error) {
       console.error('Signup error:', error);
-      toast.error("Đăng ký thất bại. Vui lòng kiểm tra kết nối mạng");
+      toast.error("Lỗi kết nối đến máy chủ. Vui lòng thử lại sau");
       return false;
     } finally {
       setLoading(false);

@@ -76,6 +76,17 @@ export interface UserProgress {
   completedAt?: string;
 }
 
+export interface UserCourse {
+  id: string;
+  userId: string;
+  courseId: string;
+  progress: number;
+  startDate: string;
+  lastAccessDate: string;
+  status: 'active' | 'completed' | 'paused';
+  course?: Course;
+}
+
 export interface UserCertificate {
   id: string;
   userId: string;
@@ -83,4 +94,16 @@ export interface UserCertificate {
   certificateId: string;
   issueDate: string;
   courseName: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  lastNameChanged?: string;
+  avatarUrl?: string;
+  bio?: string;
+  courses?: UserCourse[];
+  certificates?: UserCertificate[];
 }

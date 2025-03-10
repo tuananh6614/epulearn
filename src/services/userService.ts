@@ -1,59 +1,94 @@
 
-/**
- * Service for handling user profile operations with MySQL backend
- */
+import { toast } from 'sonner';
 
+// Base API URL
 const API_URL = 'http://localhost:3000/api';
 
-// Interface for user profile data
-export interface UserProfile {
-  id?: string;
+// User interface
+interface User {
+  id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
+  lastNameChanged?: string;
+  avatarUrl?: string;
   bio?: string;
-  password?: string; // Only used for password changes
 }
 
-// Get user profile
-export const getUserProfile = async (userId: string): Promise<UserProfile> => {
+/**
+ * Get user details from API
+ */
+export const getUserDetails = async (userId: string): Promise<User | null> => {
   try {
     const response = await fetch(`${API_URL}/users/${userId}`);
     
     if (!response.ok) {
-      throw new Error('Failed to fetch user profile');
+      throw new Error('Failed to fetch user details');
     }
     
     return await response.json();
   } catch (error) {
-    console.error('Error fetching user profile:', error);
-    throw error;
+    console.error('Error fetching user details:', error);
+    return null;
   }
 };
 
-// Update user profile
-export const updateUserProfile = async (userId: string, profileData: Partial<UserProfile>): Promise<UserProfile> => {
+/**
+ * Update user profile in the database
+ */
+export const updateUserProfile = async (userId: string, userData: Partial<User>): Promise<boolean> => {
   try {
     const response = await fetch(`${API_URL}/users/${userId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(profileData),
+      body: JSON.stringify(userData),
     });
     
     if (!response.ok) {
-      throw new Error('Failed to update user profile');
+      const errorData = await response.json();
+      toast.error(errorData.message || "Cập nhật thông tin thất bại");
+      return false;
     }
     
-    return await response.json();
+    return true;
   } catch (error) {
     console.error('Error updating user profile:', error);
-    throw error;
+    toast.error("Lỗi kết nối đến máy chủ. Vui lòng thử lại sau");
+    return false;
   }
 };
 
-// Change user password
+/**
+ * Upload user avatar to the server
+ */
+export const uploadUserAvatar = async (userId: string, file: File): Promise<string | null> => {
+  try {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const response = await fetch(`${API_URL}/users/${userId}/avatar`, {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to upload avatar');
+    }
+    
+    const data = await response.json();
+    return data.avatarUrl;
+  } catch (error) {
+    console.error('Error uploading avatar:', error);
+    toast.error("Không thể tải lên ảnh đại diện. Vui lòng thử lại sau");
+    return null;
+  }
+};
+
+/**
+ * Change user password
+ */
 export const changeUserPassword = async (
   userId: string, 
   currentPassword: string, 
@@ -69,20 +104,43 @@ export const changeUserPassword = async (
     });
     
     if (!response.ok) {
-      throw new Error('Failed to change password');
+      const errorData = await response.json();
+      toast.error(errorData.message || "Thay đổi mật khẩu thất bại");
+      return false;
     }
     
     return true;
   } catch (error) {
     console.error('Error changing password:', error);
-    throw error;
+    toast.error("Lỗi kết nối đến máy chủ. Vui lòng thử lại sau");
+    return false;
   }
 };
 
-// Get user certificates
-export const getUserCertificates = async (userId: string): Promise<any[]> => {
+/**
+ * Get user courses from API
+ */
+export const getUserCourses = async (userId: string) => {
   try {
-    const response = await fetch(`${API_URL}/users/${userId}/certificates`);
+    const response = await fetch(`${API_URL}/user-courses/${userId}`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch user courses');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user courses:', error);
+    return [];
+  }
+};
+
+/**
+ * Get user certificates from API
+ */
+export const getUserCertificates = async (userId: string) => {
+  try {
+    const response = await fetch(`${API_URL}/user-certificates/${userId}`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch user certificates');
@@ -95,18 +153,11 @@ export const getUserCertificates = async (userId: string): Promise<any[]> => {
   }
 };
 
-// Get user course progress
-export const getUserCourseProgress = async (userId: string): Promise<any[]> => {
-  try {
-    const response = await fetch(`${API_URL}/users/${userId}/progress`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch user progress');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching user progress:', error);
-    return [];
-  }
+export default {
+  getUserDetails,
+  updateUserProfile,
+  uploadUserAvatar,
+  changeUserPassword,
+  getUserCourses,
+  getUserCertificates
 };

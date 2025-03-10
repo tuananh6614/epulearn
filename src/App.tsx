@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,7 @@ import LessonDetail from "./pages/LessonDetail";
 import LessonDemo from "./pages/LessonDemo";
 import MyCourses from "./pages/MyCourses";
 import UserProfile from "./pages/UserProfile";
+import Certification from "./pages/Certification";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -39,8 +41,9 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             
-            {/* Public route for courses page */}
+            {/* Public routes */}
             <Route path="/courses" element={<Courses />} />
+            <Route path="/certification" element={<Certification />} />
             
             {/* Protected routes - require login */}
             <Route path="/course/:courseId" element={

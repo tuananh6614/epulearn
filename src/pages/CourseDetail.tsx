@@ -1,200 +1,56 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, BookOpen, Check, Lock, Play, FileText, Code, Award, Trophy } from 'lucide-react';
+import { ChevronRight, BookOpen, Check, Play, FileText, Code, Trophy } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Dữ liệu khóa học mẫu (trong thực tế sẽ lấy từ API)
-const courseData = {
-  id: "html-basics",
-  title: "HTML Cơ Bản",
-  description: "Học những kiến thức nền tảng của HTML để tạo trang web có cấu trúc.",
-  fullDescription: "Khóa học HTML cơ bản này sẽ giúp bạn hiểu rõ về ngôn ngữ đánh dấu siêu văn bản - nền tảng của mọi trang web. Bạn sẽ học cách tạo các trang web có cấu trúc, sử dụng các thẻ HTML để định dạng nội dung, thêm hình ảnh, liên kết và các thành phần tương tác khác.",
-  level: "Người Mới",
-  duration: "4 tuần",
-  totalLessons: 24,
-  totalTests: 8,
-  image: "/placeholder.svg",
-  color: "linear-gradient(90deg, #48BB78 0%, #38A169 100%)",
-  requirements: [
-    "Không yêu cầu kiến thức lập trình trước đó",
-    "Hiểu biết cơ bản về cách sử dụng máy tính",
-    "Trình duyệt web và trình soạn thảo code đơn giản"
-  ],
-  objectives: [
-    "Hiểu rõ cấu trúc của một trang HTML",
-    "Thành thạo sử dụng các thẻ HTML thông dụng",
-    "Tạo các biểu mẫu và xử lý dữ liệu người dùng",
-    "Hiểu về HTML5 và các tính năng mới"
-  ],
-  chapters: [
-    {
-      id: 1,
-      title: "Giới Thiệu HTML",
-      description: "Tìm hiểu về HTML và cách thức hoạt động của web",
-      lessons: [
-        {
-          id: "1-1",
-          title: "HTML là gì?",
-          type: "lesson",
-          duration: "10 phút",
-          completed: true
-        },
-        {
-          id: "1-2",
-          title: "Cấu trúc của một trang HTML",
-          type: "lesson",
-          duration: "15 phút",
-          completed: true
-        },
-        {
-          id: "1-3", 
-          title: "Cài đặt môi trường phát triển",
-          type: "lesson",
-          duration: "20 phút",
-          completed: false
-        },
-        {
-          id: "1-4",
-          title: "Bài test chương 1",
-          type: "test",
-          duration: "30 phút",
-          completed: false,
-          questions: 10
-        }
-      ]
-    },
-    {
-      id: 2,
-      title: "Thẻ HTML Cơ Bản",
-      description: "Các thẻ HTML thông dụng và cách sử dụng",
-      lessons: [
-        {
-          id: "2-1",
-          title: "Thẻ tiêu đề và đoạn văn",
-          type: "lesson",
-          duration: "15 phút",
-          completed: false
-        },
-        {
-          id: "2-2",
-          title: "Thẻ định dạng văn bản",
-          type: "lesson",
-          duration: "20 phút",
-          completed: false
-        },
-        {
-          id: "2-3",
-          title: "Thẻ danh sách",
-          type: "lesson",
-          duration: "15 phút",
-          completed: false
-        },
-        {
-          id: "2-4",
-          title: "Thẻ liên kết và hình ảnh",
-          type: "lesson",
-          duration: "25 phút",
-          completed: false
-        },
-        {
-          id: "2-5",
-          title: "Bài test chương 2",
-          type: "test",
-          duration: "45 phút",
-          completed: false,
-          questions: 15
-        }
-      ]
-    },
-    {
-      id: 3,
-      title: "Biểu Mẫu và Bảng",
-      description: "Tạo biểu mẫu và bảng dữ liệu",
-      lessons: [
-        {
-          id: "3-1",
-          title: "Tạo bảng dữ liệu",
-          type: "lesson",
-          duration: "25 phút",
-          completed: false
-        },
-        {
-          id: "3-2",
-          title: "Biểu mẫu cơ bản",
-          type: "lesson",
-          duration: "20 phút",
-          completed: false
-        },
-        {
-          id: "3-3",
-          title: "Các loại input trong form",
-          type: "lesson",
-          duration: "30 phút",
-          completed: false
-        },
-        {
-          id: "3-4",
-          title: "Bài test chương 3",
-          type: "test",
-          duration: "45 phút",
-          completed: false,
-          questions: 12
-        }
-      ]
-    },
-    {
-      id: 4,
-      title: "HTML5 và Đa Phương Tiện",
-      description: "Tính năng mới trong HTML5 và xử lý đa phương tiện",
-      lessons: [
-        {
-          id: "4-1",
-          title: "Giới thiệu HTML5",
-          type: "lesson",
-          duration: "15 phút",
-          completed: false
-        },
-        {
-          id: "4-2",
-          title: "Audio và Video",
-          type: "lesson",
-          duration: "25 phút",
-          completed: false
-        },
-        {
-          id: "4-3",
-          title: "Canvas và SVG",
-          type: "lesson",
-          duration: "30 phút",
-          completed: false
-        },
-        {
-          id: "4-4",
-          title: "Bài test chương 4",
-          type: "test",
-          duration: "60 phút",
-          completed: false,
-          questions: 20
-        }
-      ]
-    }
-  ]
-};
+// Định nghĩa kiểu cho bài học
+interface Lesson {
+  id: string;
+  title: string;
+  type: 'lesson' | 'test';
+  duration: string;
+  completed: boolean;
+  questions?: number; // Chỉ áp dụng cho bài test
+}
 
-// Tính toán tiến độ khóa học
-const calculateProgress = (chapters: any[]) => {
+// Định nghĩa kiểu cho chương học
+interface Chapter {
+  id: number;
+  title: string;
+  description: string;
+  lessons: Lesson[];
+}
+
+// Định nghĩa kiểu cho khóa học
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  fullDescription: string;
+  level: string;
+  duration: string;
+  totalLessons: number;
+  totalTests: number;
+  image: string;
+  color: string;
+  requirements: string[];
+  objectives: string[];
+  chapters: Chapter[];
+}
+
+// Hàm tính tiến độ dựa trên danh sách chương và bài học
+const calculateProgress = (chapters: Chapter[]): number => {
   let completedLessons = 0;
   let totalLessons = 0;
   
   chapters.forEach(chapter => {
-    chapter.lessons.forEach((lesson: any) => {
+    chapter.lessons.forEach((lesson) => {
       if (lesson.type === 'lesson') {
         totalLessons++;
         if (lesson.completed) completedLessons++;
@@ -202,26 +58,36 @@ const calculateProgress = (chapters: any[]) => {
     });
   });
   
-  return Math.round((completedLessons / totalLessons) * 100);
+  return totalLessons ? Math.round((completedLessons / totalLessons) * 100) : 0;
 };
 
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const [course, setCourse] = useState<any>(null);
+  const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   
   useEffect(() => {
-    // Trong thực tế, sẽ fetch dữ liệu từ API
     setLoading(true);
     
-    // Giả lập API call
-    setTimeout(() => {
-      setCourse(courseData);
-      setProgress(calculateProgress(courseData.chapters));
-      setLoading(false);
-    }, 500);
+    // Lấy dữ liệu từ API thật (thay URL dưới đây bằng endpoint của bạn)
+    fetch(`http://localhost:3000/api/courses/${courseId}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Không thể tải dữ liệu khóa học");
+        }
+        return response.json();
+      })
+      .then((data: Course) => {
+        setCourse(data);
+        setProgress(calculateProgress(data.chapters));
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error("Lỗi khi tải dữ liệu:", error);
+        setLoading(false);
+      });
   }, [courseId]);
   
   if (loading) {
@@ -257,7 +123,7 @@ const CourseDetail = () => {
   }
   
   // Xác định bài học tiếp theo để học
-  const getNextLesson = () => {
+  const getNextLesson = (): { chapter: number; lesson: string } => {
     for (const chapter of course.chapters) {
       for (const lesson of chapter.lessons) {
         if (lesson.type === 'lesson' && !lesson.completed) {
@@ -265,14 +131,14 @@ const CourseDetail = () => {
         }
       }
     }
-    // Nếu đã hoàn thành tất cả bài học
+    // Nếu đã hoàn thành tất cả bài học, trả về bài học đầu tiên
     return { chapter: course.chapters[0].id, lesson: course.chapters[0].lessons[0].id };
   };
   
   const nextLesson = getNextLesson();
   
-  // Xác định màu dựa trên loại bài học
-  const getLessonTypeColor = (type: string, completed: boolean) => {
+  // Xác định màu và icon dựa trên loại bài học
+  const getLessonTypeColor = (type: string, completed: boolean): string => {
     if (completed) return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
     if (type === 'test') return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
     return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
@@ -289,9 +155,8 @@ const CourseDetail = () => {
       <Navbar />
       
       <main className="flex-grow">
-        {/* Header with course info */}
+        {/* Header với thông tin khóa học */}
         <div className="w-full py-16 relative overflow-hidden">
-          {/* Background gradient */}
           <div 
             className="absolute inset-0 -z-10" 
             style={{ 
@@ -299,23 +164,18 @@ const CourseDetail = () => {
               opacity: 0.9 
             }}
           ></div>
-          
-          {/* Decorative elements */}
           <div className="absolute inset-0 -z-5 opacity-20">
             <div className="absolute right-[10%] top-1/4 w-40 h-40 rounded-full bg-white/20 blur-xl"></div>
             <div className="absolute left-[5%] bottom-1/4 w-32 h-32 rounded-full bg-white/10 blur-xl"></div>
           </div>
-          
           <div className="container mx-auto px-4 relative z-10 text-white">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
               <div className="w-20 h-20 flex items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
                 <Code className="h-10 w-10" />
               </div>
-              
               <div className="flex-grow">
                 <h1 className="text-3xl md:text-4xl font-bold">{course.title}</h1>
                 <p className="mt-2 text-white/80 max-w-3xl">{course.description}</p>
-                
                 <div className="flex flex-wrap gap-4 mt-4">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="bg-white/20 text-white border-white/40">
@@ -339,7 +199,6 @@ const CourseDetail = () => {
                   </div>
                 </div>
               </div>
-              
               <div className="md:w-48 w-full mt-4 md:mt-0">
                 <Button 
                   size="lg" 
@@ -348,7 +207,6 @@ const CourseDetail = () => {
                 >
                   {progress > 0 ? "Tiếp Tục Học" : "Bắt Đầu Học"}
                 </Button>
-                
                 <div className="mt-3">
                   <div className="flex justify-between text-sm mb-1">
                     <span>Tiến độ</span>
@@ -361,7 +219,7 @@ const CourseDetail = () => {
           </div>
         </div>
         
-        {/* Course content */}
+        {/* Nội dung khóa học */}
         <div className="container mx-auto px-4 py-10">
           <Tabs defaultValue="content">
             <TabsList className="mb-8">
@@ -373,9 +231,8 @@ const CourseDetail = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
                   <h2 className="text-2xl font-bold mb-6">Chương Trình Học</h2>
-                  
                   <div className="space-y-6">
-                    {course.chapters.map((chapter: any) => (
+                    {course.chapters.map(chapter => (
                       <div key={chapter.id} className="chapter-card">
                         <div className="flex justify-between items-center mb-4">
                           <h3 className="text-lg font-medium">Chương {chapter.id}: {chapter.title}</h3>
@@ -383,13 +240,10 @@ const CourseDetail = () => {
                             {chapter.lessons.length} bài học
                           </Badge>
                         </div>
-                        
                         <p className="text-muted-foreground mb-4">{chapter.description}</p>
-                        
                         <Separator className="my-4" />
-                        
                         <div className="space-y-1">
-                          {chapter.lessons.map((lesson: any) => (
+                          {chapter.lessons.map(lesson => (
                             <Button 
                               key={lesson.id} 
                               variant="ghost" 
@@ -425,29 +279,24 @@ const CourseDetail = () => {
                     ))}
                   </div>
                 </div>
-                
                 <div>
                   <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6 sticky top-24">
                     <h3 className="text-lg font-medium mb-4 flex items-center">
                       <Trophy className="h-5 w-5 mr-2 text-yellow-500" />
                       Sẽ học được gì?
                     </h3>
-                    
                     <ul className="space-y-3">
-                      {course.objectives.map((objective: string, index: number) => (
+                      {course.objectives.map((objective, index) => (
                         <li key={index} className="flex">
                           <Check className="h-5 w-5 mr-2 text-green-500 flex-shrink-0" />
                           <span>{objective}</span>
                         </li>
                       ))}
                     </ul>
-                    
                     <Separator className="my-6" />
-                    
                     <h3 className="text-lg font-medium mb-4">Yêu cầu</h3>
-                    
                     <ul className="space-y-3">
-                      {course.requirements.map((requirement: string, index: number) => (
+                      {course.requirements.map((requirement, index) => (
                         <li key={index} className="flex">
                           <ChevronRight className="h-5 w-5 mr-2 text-blue-500 flex-shrink-0" />
                           <span>{requirement}</span>
@@ -463,7 +312,6 @@ const CourseDetail = () => {
               <div className="max-w-3xl">
                 <h2 className="text-2xl font-bold mb-4">Giới Thiệu Về Khóa Học</h2>
                 <p className="text-muted-foreground mb-6">{course.fullDescription}</p>
-                
                 <h3 className="text-xl font-semibold mt-8 mb-4">Ai nên học khóa học này?</h3>
                 <div className="space-y-4">
                   <div className="flex">
@@ -475,7 +323,6 @@ const CourseDetail = () => {
                       <p className="text-muted-foreground">Nếu bạn chưa có kinh nghiệm lập trình, HTML là điểm bắt đầu lý tưởng cho hành trình học code của bạn.</p>
                     </div>
                   </div>
-                  
                   <div className="flex">
                     <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mr-4 flex-shrink-0">
                       <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -485,7 +332,6 @@ const CourseDetail = () => {
                       <p className="text-muted-foreground">Bạn sẽ học cách tạo nền tảng cho trang web của mình với HTML trước khi chuyển sang CSS và JavaScript.</p>
                     </div>
                   </div>
-                  
                   <div className="flex">
                     <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mr-4 flex-shrink-0">
                       <Check className="h-5 w-5 text-green-600 dark:text-green-400" />

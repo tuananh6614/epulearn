@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -6,132 +5,113 @@ import CourseCard from '@/components/CourseCard';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, X } from 'lucide-react';
-
-// Dữ liệu các khóa học
-const coursesData = [
-  {
-    id: "html-basics",
-    title: "HTML Cơ Bản",
-    description: "Học những kiến thức nền tảng của HTML để tạo trang web có cấu trúc",
-    level: "Người Mới",
-    chapters: 8,
-    duration: "4 tuần",
-    category: "Phát Triển Web",
-    image: "/placeholder.svg",
-    color: "linear-gradient(90deg, #48BB78 0%, #38A169 100%)"
-  },
-  {
-    id: "css-basics",
-    title: "CSS Cơ Bản",
-    description: "Làm chủ CSS để tạo các thiết kế web đẹp mắt",
-    level: "Người Mới",
-    chapters: 10,
-    duration: "5 tuần",
-    category: "Phát Triển Web",
-    image: "/placeholder.svg",
-    color: "linear-gradient(90deg, #4299E1 0%, #3182CE 100%)"
-  },
-  {
-    id: "js-basics",
-    title: "JavaScript Nền Tảng",
-    description: "Xây dựng ứng dụng web tương tác với JavaScript",
-    level: "Trung Cấp",
-    chapters: 12,
-    duration: "6 tuần",
-    category: "Lập Trình",
-    image: "/placeholder.svg",
-    color: "linear-gradient(90deg, #ECC94B 0%, #D69E2E 100%)"
-  },
-  {
-    id: "python-basics",
-    title: "Python Cơ Bản",
-    description: "Bắt đầu với lập trình Python dành cho người mới",
-    level: "Người Mới",
-    chapters: 10,
-    duration: "5 tuần",
-    category: "Lập Trình",
-    image: "/placeholder.svg",
-    color: "linear-gradient(90deg, #667EEA 0%, #764BA2 100%)"
-  },
-  {
-    id: "java-basics",
-    title: "Java Cơ Bản",
-    description: "Học lập trình hướng đối tượng với Java",
-    level: "Người Mới",
-    chapters: 12,
-    duration: "6 tuần",
-    category: "Lập Trình",
-    image: "/placeholder.svg",
-    color: "linear-gradient(90deg, #F56565 0%, #E53E3E 100%)"
-  },
-  {
-    id: "cpp-basics",
-    title: "C++ Cơ Bản",
-    description: "Làm chủ các nguyên tắc cơ bản của ngôn ngữ lập trình C++",
-    level: "Trung Cấp",
-    chapters: 14,
-    duration: "7 tuần",
-    category: "Lập Trình",
-    image: "/placeholder.svg",
-    color: "linear-gradient(90deg, #9F7AEA 0%, #805AD5 100%)"
-  },
-  {
-    id: "react-basics",
-    title: "React.js Cơ Bản",
-    description: "Xây dựng giao diện người dùng hiện đại với React",
-    level: "Trung Cấp",
-    chapters: 12,
-    duration: "6 tuần",
-    category: "Phát Triển Web",
-    image: "/placeholder.svg",
-    color: "linear-gradient(90deg, #4FD1C5 0%, #38B2AC 100%)"
-  },
-  {
-    id: "node-basics",
-    title: "Node.js Cơ Bản",
-    description: "Tạo ứng dụng phía máy chủ với Node.js",
-    level: "Trung Cấp",
-    chapters: 10,
-    duration: "5 tuần",
-    category: "Phát Triển Backend",
-    image: "/placeholder.svg",
-    color: "linear-gradient(90deg, #68D391 0%, #48BB78 100%)"
-  }
-];
+import { Search, Filter, X, RefreshCw } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
 
 // Component trang khóa học
 const Courses = () => {
   // State quản lý tìm kiếm và lọc
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [levelFilter, setLevelFilter] = useState('');
-  const [filteredCourses, setFilteredCourses] = useState(coursesData);
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [levelFilter, setLevelFilter] = useState('all');
+  const [coursesData, setCoursesData] = useState([]);
+  const [filteredCourses, setFilteredCourses] = useState([]);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { toast } = useToast();
+  
+  // Server API URL from environment or use a relative path
+  const API_URL = 'http://localhost:3000/api/courses';
+  
+  // Fetch courses from database
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true);
+        console.log('Fetching courses from API:', API_URL);
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error('Không thể tải danh sách khóa học');
+        }
+        const data = await response.json();
+        console.log('Fetched courses data:', data);
+        setCoursesData(data);
+        setFilteredCourses(data);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Lỗi khi tải khóa học:', err);
+        setError(err.message);
+        setIsLoading(false);
+        
+        toast({
+          title: "Không thể kết nối đến máy chủ",
+          description: "Vui lòng kiểm tra kết nối của bạn hoặc thử lại sau.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchCourses();
+  }, [toast]);
   
   // Effect áp dụng bộ lọc khi các điều kiện thay đổi
   useEffect(() => {
+    if (coursesData.length === 0) return;
+    
     const filtered = coursesData.filter(course => {
       const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            course.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === '' || course.category === categoryFilter;
-      const matchesLevel = levelFilter === '' || course.level === levelFilter;
+                          course.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = categoryFilter === 'all' || course.category === categoryFilter;
+      const matchesLevel = levelFilter === 'all' || course.level === levelFilter;
       
       return matchesSearch && matchesCategory && matchesLevel;
     });
     
     setFilteredCourses(filtered);
-  }, [searchTerm, categoryFilter, levelFilter]);
+  }, [searchTerm, categoryFilter, levelFilter, coursesData]);
   
   // Lấy danh sách các danh mục và cấp độ độc nhất
-  const categories = [...new Set(coursesData.map(course => course.category))];
-  const levels = [...new Set(coursesData.map(course => course.level))];
+  const categories = coursesData.length > 0 ? [...new Set(coursesData.map(course => course.category))] : [];
+  const levels = coursesData.length > 0 ? [...new Set(coursesData.map(course => course.level))] : [];
   
   // Xử lý xóa bộ lọc
   const handleClearFilters = () => {
     setSearchTerm('');
-    setCategoryFilter('');
-    setLevelFilter('');
+    setCategoryFilter('all');
+    setLevelFilter('all');
+  };
+  
+  // Thử lại khi gặp lỗi
+  const handleRetry = () => {
+    setError(null);
+    setIsLoading(true);
+    
+    const fetchCourses = async () => {
+      try {
+        console.log('Retrying fetch courses from API:', API_URL);
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error('Không thể tải danh sách khóa học');
+        }
+        const data = await response.json();
+        setCoursesData(data);
+        setFilteredCourses(data);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Lỗi khi tải khóa học:', err);
+        setError(err.message);
+        setIsLoading(false);
+        
+        toast({
+          title: "Không thể kết nối đến máy chủ",
+          description: "Vui lòng kiểm tra kết nối của bạn hoặc thử lại sau.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchCourses();
   };
   
   // Chuyển đổi hiển thị bộ lọc trên điện thoại
@@ -143,7 +123,7 @@ const Courses = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-grow bg-gray-50">
+      <main className="flex-grow bg-gray-50 dark:bg-gray-900">
         <div className="bg-epu-dark text-white py-12">
           <div className="container mx-auto px-4">
             <h1 className="text-3xl font-bold mb-4">Khám Phá Các Khóa Học</h1>
@@ -154,7 +134,7 @@ const Courses = () => {
         </div>
         
         <div className="container mx-auto px-4 py-10">
-          <div className="bg-white p-6 rounded-lg shadow-sm mb-10">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-10">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-grow relative">
                 <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -180,7 +160,7 @@ const Courses = () => {
                       <SelectValue placeholder="Danh Mục" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tất Cả Danh Mục</SelectItem>
+                      <SelectItem value="all">Tất Cả Danh Mục</SelectItem>
                       {categories.map(category => (
                         <SelectItem key={category} value={category}>{category}</SelectItem>
                       ))}
@@ -194,7 +174,7 @@ const Courses = () => {
                       <SelectValue placeholder="Cấp Độ" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tất Cả Cấp Độ</SelectItem>
+                      <SelectItem value="all">Tất Cả Cấp Độ</SelectItem>
                       {levels.map(level => (
                         <SelectItem key={level} value={level}>{level}</SelectItem>
                       ))}
@@ -202,7 +182,7 @@ const Courses = () => {
                   </Select>
                 </div>
                 
-                {(categoryFilter || levelFilter || searchTerm) && (
+                {(categoryFilter !== 'all' || levelFilter !== 'all' || searchTerm) && (
                   <Button variant="outline" onClick={handleClearFilters} className="flex items-center justify-center">
                     <X className="h-4 w-4 mr-2" />
                     Xóa Bộ Lọc
@@ -212,7 +192,22 @@ const Courses = () => {
             </div>
           </div>
           
-          {filteredCourses.length > 0 ? (
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((_, index) => (
+                <div key={index} className="bg-gray-200 dark:bg-gray-700 animate-pulse h-80 rounded-lg"></div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-20">
+              <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-4">Lỗi tải khóa học</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">{error}</p>
+              <Button onClick={handleRetry} variant="outline" className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Thử lại
+              </Button>
+            </div>
+          ) : filteredCourses.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredCourses.map((course) => (
                 <CourseCard key={course.id} {...course} />
@@ -220,8 +215,8 @@ const Courses = () => {
             </div>
           ) : (
             <div className="text-center py-20">
-              <h3 className="text-xl font-medium text-gray-700 mb-2">Không tìm thấy khóa học</h3>
-              <p className="text-gray-500">Hãy thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc của bạn</p>
+              <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">Không tìm thấy khóa học</h3>
+              <p className="text-gray-500 dark:text-gray-400">Hãy thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc của bạn</p>
             </div>
           )}
         </div>

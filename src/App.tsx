@@ -30,12 +30,10 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             
+            {/* Public route for courses page */}
+            <Route path="/courses" element={<Courses />} />
+            
             {/* Protected routes - require login */}
-            <Route path="/courses" element={
-              <ProtectedRoute>
-                <Courses />
-              </ProtectedRoute>
-            } />
             <Route path="/course/:courseId" element={
               <ProtectedRoute>
                 <CourseDetail />
@@ -55,6 +53,7 @@ const App = () => (
             {/* Course lessons */}
             <Route path="/course/:courseId/chapter/:chapterId/lesson/:lessonId" element={<LessonDetail />} />
             <Route path="/lesson-demo" element={<LessonDemo />} />
+            <Route path="/demo" element={<LessonDemo />} />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

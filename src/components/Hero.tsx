@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -78,11 +77,11 @@ const Hero = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 parallax-mouse-layer" data-speed="1">
               {/* Gói HoverButton trong Link để có thể chuyển trang khi click */}
-              <Link to="">
+              <Link to="/courses">
                 <HoverButton />
               </Link>
               <Button variant="outline" className="interactive-button border-blue-500 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium px-6 py-2 h-auto rounded-md text-base" asChild>
-                <Link to="/demo">Thử Bài Học Demo</Link>
+                <Link to="/lesson-demo">Thử Bài Học Demo</Link>
               </Button>
             </div>
           </div>

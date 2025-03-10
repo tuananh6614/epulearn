@@ -1,160 +1,80 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, ChevronLeft, Menu, BookOpen, Check, FileText, Play, Award } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Menu, Check, FileText, Play, Award } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import CodeMirror from '@/components/CodeMirror';
+import { useToast } from "@/components/ui/use-toast";
 
-// Giả lập dữ liệu bài học (trong thực tế sẽ lấy từ API)
-const lessonData = {
-  id: "1-1",
-  title: "HTML là gì?",
-  type: "lesson",
-  duration: "10 phút",
-  content: `
-  <h1>HTML là gì?</h1>
-  <p>HTML (HyperText Markup Language) là ngôn ngữ đánh dấu siêu văn bản, là nền tảng cơ bản để tạo ra các trang web. HTML không phải là ngôn ngữ lập trình mà là ngôn ngữ đánh dấu, nó cho phép người dùng tạo và cấu trúc các phần của trang web như đoạn văn, tiêu đề, liên kết, trích dẫn và các thành phần khác.</p>
-  
-  <h2>Lịch sử HTML</h2>
-  <p>HTML được tạo ra bởi Tim Berners-Lee vào năm 1991. Phiên bản đầu tiên HTML 1.0 rất đơn giản và chỉ hỗ trợ một số lượng giới hạn các thẻ. Qua thời gian, HTML đã phát triển và HTML5 là phiên bản mới nhất, cung cấp nhiều tính năng hơn cho việc phát triển web hiện đại.</p>
-  
-  <h2>Cấu trúc cơ bản của HTML</h2>
-  <p>Một trang HTML cơ bản bao gồm các phần sau:</p>
-  <pre><code>&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-    &lt;title&gt;Tiêu đề trang&lt;/title&gt;
-&lt;/head&gt;
-&lt;body&gt;
-    &lt;h1&gt;Đây là tiêu đề&lt;/h1&gt;
-    &lt;p&gt;Đây là đoạn văn.&lt;/p&gt;
-&lt;/body&gt;
-&lt;/html&gt;</code></pre>
+// Interface cho dữ liệu bài học
+interface LessonData {
+  id: string;
+  title: string;
+  type: string;
+  duration: string;
+  content: string;
+  codeExample?: string;
+  completed: boolean;
+  courseId: string;
+  chapterId: number;
+  nextLesson: string | null;
+  prevLesson: string | null;
+  chapterTitle: string;
+}
 
-  <h2>Các thẻ HTML cơ bản</h2>
-  <ul>
-    <li><strong>&lt;html&gt;</strong>: Thẻ gốc của trang HTML</li>
-    <li><strong>&lt;head&gt;</strong>: Chứa thông tin về trang web</li>
-    <li><strong>&lt;title&gt;</strong>: Tiêu đề trang web</li>
-    <li><strong>&lt;body&gt;</strong>: Chứa nội dung hiển thị trên trang web</li>
-    <li><strong>&lt;h1&gt; đến &lt;h6&gt;</strong>: Các cấp độ tiêu đề</li>
-    <li><strong>&lt;p&gt;</strong>: Đoạn văn</li>
-    <li><strong>&lt;a&gt;</strong>: Liên kết</li>
-    <li><strong>&lt;img&gt;</strong>: Hình ảnh</li>
-  </ul>
-  
-  <h2>Ví dụ đơn giản</h2>
-  <p>Đây là một ví dụ đơn giản về HTML để tạo một trang "Hello World":</p>
-  `,
-  codeExample: `<!DOCTYPE html>
-<html>
-<head>
-    <title>Hello World</title>
-</head>
-<body>
-    <h1>Hello World!</h1>
-    <p>Đây là trang HTML đầu tiên của tôi.</p>
-</body>
-</html>`,
-  completed: false,
-  courseId: "html-basics",
-  chapterId: 1,
-  nextLesson: "1-2",
-  prevLesson: null,
-  chapterTitle: "Giới Thiệu HTML"
-};
+// Interface cho cấu trúc chương
+interface Chapter {
+  id: number;
+  title: string;
+  lessons: {
+    id: string;
+    title: string;
+    type: string;
+    completed: boolean;
+    current?: boolean;
+  }[];
+}
 
-// Dữ liệu của chương trình học (sidebar)
-const courseStructure = [
-  {
-    id: 1,
-    title: "Giới Thiệu HTML",
-    lessons: [
-      {
-        id: "1-1",
-        title: "HTML là gì?",
-        type: "lesson",
-        completed: true,
-        current: true
-      },
-      {
-        id: "1-2",
-        title: "Cấu trúc của một trang HTML",
-        type: "lesson",
-        completed: false
-      },
-      {
-        id: "1-3", 
-        title: "Cài đặt môi trường phát triển",
-        type: "lesson",
-        completed: false
-      },
-      {
-        id: "1-4",
-        title: "Bài test chương 1",
-        type: "test",
-        completed: false
-      }
-    ]
-  },
-  {
-    id: 2,
-    title: "Thẻ HTML Cơ Bản",
-    lessons: [
-      {
-        id: "2-1",
-        title: "Thẻ tiêu đề và đoạn văn",
-        type: "lesson",
-        completed: false
-      },
-      {
-        id: "2-2",
-        title: "Thẻ định dạng văn bản",
-        type: "lesson",
-        completed: false
-      },
-      {
-        id: "2-3",
-        title: "Thẻ danh sách",
-        type: "lesson",
-        completed: false
-      },
-      {
-        id: "2-4",
-        title: "Thẻ liên kết và hình ảnh",
-        type: "lesson",
-        completed: false
-      },
-      {
-        id: "2-5",
-        title: "Bài test chương 2",
-        type: "test",
-        completed: false
-      }
-    ]
-  }
-];
+// Định nghĩa kiểu cho câu hỏi bài kiểm tra
+interface TestQuestion {
+  question: string;
+  options: string[];
+  correctAnswer: string;
+}
+
+// Định nghĩa kiểu cho dữ liệu bài kiểm tra
+interface TestData {
+  title: string;
+  description: string;
+  timeLimit: number; // thời gian giới hạn theo phút
+  questions: TestQuestion[];
+}
 
 const LessonDetail = () => {
   const { courseId, chapterId, lessonId } = useParams<{ courseId: string, chapterId: string, lessonId: string }>();
   const navigate = useNavigate();
-  const [lesson, setLesson] = useState<any>(null);
+  const [lesson, setLesson] = useState<LessonData | null>(null);
+  const [courseStructure, setCourseStructure] = useState<Chapter[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [code, setCode] = useState('');
   const [result, setResult] = useState<string>('');
   const [runCount, setRunCount] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
+  const { toast: uiToast } = useToast();
+  
+  // API URLs
+  const LESSON_API_URL = `http://localhost:3000/api/courses/${courseId}/chapters/${chapterId}/lessons/${lessonId}`;
+  const COURSE_STRUCTURE_API_URL = `/api/courses/${courseId}/structure`;
   
   // Check if user tabs out (cheat detection)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden && lessonData.type === 'test') {
+      if (document.hidden && lesson?.type === 'test') {
         toast.warning("Chú ý! Việc chuyển tab sẽ bị ghi nhận là gian lận trong bài kiểm tra.", {
           duration: 5000,
         });
@@ -166,22 +86,68 @@ const LessonDetail = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [lesson]);
   
+  // Fetch lesson data và course structure
   useEffect(() => {
-    // Trong thực tế, sẽ fetch dữ liệu từ API
-    setLoading(true);
-    
-    // Giả lập API call
-    setTimeout(() => {
-      setLesson(lessonData);
-      setCode(lessonData.codeExample || '');
-      setLoading(false);
+    const fetchData = async () => {
+      setLoading(true);
       
-      // Scroll to top when lesson changes
-      window.scrollTo(0, 0);
-    }, 500);
-  }, [courseId, chapterId, lessonId]);
+      try {
+        // Fetch lesson data
+        console.log('Fetching lesson data from:', LESSON_API_URL);
+        const lessonResponse = await fetch(LESSON_API_URL);
+        
+        if (lessonResponse.ok) {
+          const contentType = lessonResponse.headers.get("content-type");
+          if (contentType && contentType.indexOf("application/json") !== -1) {
+            const lessonData = await lessonResponse.json();
+            setLesson(lessonData);
+            setCode(lessonData.codeExample || '');
+          } else {
+            console.error('Lesson response is not JSON:', await lessonResponse.text());
+            throw new Error('API response is not JSON');
+          }
+        } else {
+          throw new Error('Không thể tải bài học');
+        }
+        
+        // Fetch course structure
+        console.log('Fetching course structure from:', COURSE_STRUCTURE_API_URL);
+        const structureResponse = await fetch(COURSE_STRUCTURE_API_URL);
+        
+        if (structureResponse.ok) {
+          const contentType = structureResponse.headers.get("content-type");
+          if (contentType && contentType.indexOf("application/json") !== -1) {
+            const structureData = await structureResponse.json();
+            setCourseStructure(structureData);
+          } else {
+            console.error('Structure response is not JSON:', await structureResponse.text());
+            throw new Error('API response is not JSON');
+          }
+        } else {
+          throw new Error('Không thể tải cấu trúc khóa học');
+        }
+        
+        setLoading(false);
+        
+        // Scroll to top when lesson changes
+        window.scrollTo(0, 0);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setLoading(false);
+        uiToast({
+          title: "Lỗi tải dữ liệu",
+          description: error instanceof Error ? error.message : "Đã xảy ra lỗi khi tải dữ liệu",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    if (courseId && chapterId && lessonId) {
+      fetchData();
+    }
+  }, [courseId, chapterId, lessonId, LESSON_API_URL, COURSE_STRUCTURE_API_URL, uiToast]);
   
   const handleCodeChange = (value: string) => {
     setCode(value);
@@ -199,15 +165,41 @@ const LessonDetail = () => {
     }
   };
   
-  const markAsCompleted = () => {
-    // Trong thực tế, sẽ gửi API call để đánh dấu bài học đã hoàn thành
-    toast.success("Đã đánh dấu bài học là đã hoàn thành!");
-    
-    // Chuyển tới bài học tiếp theo
-    if (lesson.nextLesson) {
-      navigate(`/course/${courseId}/chapter/${chapterId}/lesson/${lesson.nextLesson}`);
-    } else {
-      navigate(`/course/${courseId}`);
+  const markAsCompleted = async () => {
+    try {
+      // Gửi API call để đánh dấu bài học đã hoàn thành
+      const markCompleteURL = `http://localhost:3000/api/courses/${courseId}/chapters/${chapterId}/lessons/${lessonId}/complete`;
+      console.log('Marking lesson as completed:', markCompleteURL);
+      
+      const response = await fetch(markCompleteURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Không thể đánh dấu bài học đã hoàn thành');
+      }
+      
+      toast.success("Đã đánh dấu bài học là đã hoàn thành!");
+      
+      // Chuyển tới bài học tiếp theo
+      if (lesson?.nextLesson) {
+        navigate(`/course/${courseId}/chapter/${chapterId}/lesson/${lesson.nextLesson}`);
+      } else {
+        navigate(`/course/${courseId}`);
+      }
+    } catch (error) {
+      console.error('Error marking lesson as completed:', error);
+      toast.error("Lỗi khi đánh dấu hoàn thành bài học!");
+      
+      // Proceed anyway in case of API error
+      if (lesson?.nextLesson) {
+        navigate(`/course/${courseId}/chapter/${chapterId}/lesson/${lesson.nextLesson}`);
+      } else {
+        navigate(`/course/${courseId}`);
+      }
     }
   };
   
@@ -219,6 +211,23 @@ const LessonDetail = () => {
           <div className="animate-pulse text-center">
             <div className="h-8 w-64 bg-gray-200 dark:bg-gray-700 rounded mb-4 mx-auto"></div>
             <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!lesson) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Không tìm thấy bài học</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">Bài học này không tồn tại hoặc bạn không có quyền truy cập.</p>
+            <Button onClick={() => navigate(`/course/${courseId}`)}>
+              Quay lại khóa học
+            </Button>
           </div>
         </div>
       </div>
@@ -329,43 +338,45 @@ const LessonDetail = () => {
                     dangerouslySetInnerHTML={{ __html: lesson.content }}
                   />
                   
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 mb-8">
-                    <h3 className="text-lg font-medium mb-4">Thử nghiệm code</h3>
-                    
-                    <div className="mb-4">
-                      <CodeMirror
-                        value={code}
-                        onChange={handleCodeChange}
-                        height="300px"
-                        theme="dark"
-                        lang="html"
-                      />
-                    </div>
-                    
-                    <div className="flex justify-end mb-4">
-                      <Button onClick={runCode}>
-                        Chạy Code
-                      </Button>
-                    </div>
-                    
-                    {runCount > 0 && (
-                      <div className="mt-4">
-                        <h4 className="font-medium mb-2">Kết quả:</h4>
-                        <div className="border rounded-md p-4 bg-white dark:bg-gray-900">
-                          {result ? (
-                            <iframe
-                              srcDoc={result}
-                              title="output"
-                              className="w-full min-h-[200px] border-0"
-                              sandbox="allow-scripts"
-                            />
-                          ) : (
-                            <p className="text-gray-500 dark:text-gray-400">Không có kết quả để hiển thị</p>
-                          )}
-                        </div>
+                  {lesson.codeExample && (
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 mb-8">
+                      <h3 className="text-lg font-medium mb-4">Thử nghiệm code</h3>
+                      
+                      <div className="mb-4">
+                        <CodeMirror
+                          value={code}
+                          onChange={handleCodeChange}
+                          height="300px"
+                          theme="dark"
+                          lang="html"
+                        />
                       </div>
-                    )}
-                  </div>
+                      
+                      <div className="flex justify-end mb-4">
+                        <Button onClick={runCode}>
+                          Chạy Code
+                        </Button>
+                      </div>
+                      
+                      {runCount > 0 && (
+                        <div className="mt-4">
+                          <h4 className="font-medium mb-2">Kết quả:</h4>
+                          <div className="border rounded-md p-4 bg-white dark:bg-gray-900">
+                            {result ? (
+                              <iframe
+                                srcDoc={result}
+                                title="output"
+                                className="w-full min-h-[200px] border-0"
+                                sandbox="allow-scripts"
+                              />
+                            ) : (
+                              <p className="text-gray-500 dark:text-gray-400">Không có kết quả để hiển thị</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   <div className="flex items-center justify-between">
                     <Button
@@ -394,137 +405,58 @@ const LessonDetail = () => {
 // Component bài kiểm tra
 const TestComponent = ({ courseId, chapterId, lessonId }: { courseId: string, chapterId: string, lessonId: string }) => {
   const navigate = useNavigate();
+  // Sử dụng kiểu TestData thay cho any
+  const [testData, setTestData] = useState<TestData | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<{[key: number]: string}>({});
-  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 phút
+  const [timeLeft, setTimeLeft] = useState(0);  // Sẽ được cập nhật từ API
   const [testSubmitted, setTestSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [cheatAttempts, setCheatAttempts] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const { toast: uiToast } = useToast();
   
-  // Dữ liệu bài kiểm tra mẫu (trong thực tế sẽ lấy từ API)
-  const testData = {
-    id: "1-4",
-    title: "Bài kiểm tra chương 1",
-    description: "Kiểm tra kiến thức về HTML cơ bản",
-    totalQuestions: 10,
-    timeLimit: 30, // phút
-    questions: [
-      {
-        id: 1,
-        question: "HTML là viết tắt của?",
-        options: [
-          "Hyper Text Markup Language",
-          "High Tech Modern Language",
-          "Hyper Transfer Markup Language",
-          "Hyperlink Text Management Language"
-        ],
-        correctAnswer: "Hyper Text Markup Language"
-      },
-      {
-        id: 2,
-        question: "Thẻ nào được sử dụng để tạo tiêu đề lớn nhất trong HTML?",
-        options: [
-          "<h6>",
-          "<heading>",
-          "<h1>",
-          "<head>"
-        ],
-        correctAnswer: "<h1>"
-      },
-      {
-        id: 3,
-        question: "Đâu là cách khai báo doctype chính xác cho HTML5?",
-        options: [
-          "<!DOCTYPE html>",
-          "<DOCTYPE HTML5>",
-          "<DOCTYPE html>",
-          "<!DOCTYPE HTML5>"
-        ],
-        correctAnswer: "<!DOCTYPE html>"
-      },
-      {
-        id: 4,
-        question: "Thẻ nào được sử dụng để thêm hình ảnh vào trang web?",
-        options: [
-          "<picture>",
-          "<image>",
-          "<img>",
-          "<src>"
-        ],
-        correctAnswer: "<img>"
-      },
-      {
-        id: 5,
-        question: "Thuộc tính nào được sử dụng để xác định URL của hình ảnh trong thẻ img?",
-        options: [
-          "link",
-          "href",
-          "url",
-          "src"
-        ],
-        correctAnswer: "src"
-      },
-      {
-        id: 6,
-        question: "Thẻ nào được sử dụng để tạo danh sách có thứ tự trong HTML?",
-        options: [
-          "<dl>",
-          "<ul>",
-          "<ol>",
-          "<list>"
-        ],
-        correctAnswer: "<ol>"
-      },
-      {
-        id: 7,
-        question: "Thẻ <br> được sử dụng để làm gì?",
-        options: [
-          "Tạo khoảng trắng",
-          "Tạo dòng mới",
-          "Tạo tab",
-          "Tạo đoạn văn mới"
-        ],
-        correctAnswer: "Tạo dòng mới"
-      },
-      {
-        id: 8,
-        question: "Đâu không phải là thẻ block-level trong HTML?",
-        options: [
-          "<div>",
-          "<span>",
-          "<p>",
-          "<h1>"
-        ],
-        correctAnswer: "<span>"
-      },
-      {
-        id: 9,
-        question: "Đâu là cách liên kết đến một trang web bên ngoài?",
-        options: [
-          "<a link='https://example.com'>Link</a>",
-          "<a src='https://example.com'>Link</a>",
-          "<a href='https://example.com'>Link</a>",
-          "<a url='https://example.com'>Link</a>"
-        ],
-        correctAnswer: "<a href='https://example.com'>Link</a>"
-      },
-      {
-        id: 10,
-        question: "Đâu là thuộc tính khai báo văn bản thay thế cho hình ảnh trong HTML?",
-        options: [
-          "title",
-          "alt",
-          "description",
-          "caption"
-        ],
-        correctAnswer: "alt"
+  // Fetch test data
+  useEffect(() => {
+    const fetchTestData = async () => {
+      try {
+        const testUrl = `http://localhost:3000/api/courses/${courseId}/chapters/${chapterId}/tests/${lessonId}`;
+        console.log('Fetching test data from:', testUrl);
+        
+        const response = await fetch(testUrl);
+        
+        if (response.ok) {
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.indexOf("application/json") !== -1) {
+            const data: TestData = await response.json();
+            setTestData(data);
+            setTimeLeft(data.timeLimit * 60); // Chuyển phút thành giây
+          } else {
+            console.error('Test response is not JSON:', await response.text());
+            throw new Error('API response is not JSON');
+          }
+        } else {
+          throw new Error('Không thể tải dữ liệu bài kiểm tra');
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching test data:', error);
+        setLoading(false);
+        uiToast({
+          title: "Lỗi tải bài kiểm tra",
+          description: error instanceof Error ? error.message : "Đã xảy ra lỗi khi tải bài kiểm tra",
+          variant: "destructive",
+        });
       }
-    ]
-  };
+    };
+    
+    fetchTestData();
+  }, [courseId, chapterId, lessonId, uiToast]);
   
   // Timer đếm ngược
   useEffect(() => {
-    if (testSubmitted) return;
+    if (testSubmitted || loading || !testData) return;
     
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -538,12 +470,12 @@ const TestComponent = ({ courseId, chapterId, lessonId }: { courseId: string, ch
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [testSubmitted]);
+  }, [testSubmitted, loading, testData]);
   
   // Check if user tabs out (cheat detection)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden && !testSubmitted) {
+      if (document.hidden && !testSubmitted && !loading) {
         setCheatAttempts(prev => prev + 1);
         toast.error("Cảnh báo! Bạn đã rời khỏi trang bài kiểm tra. Hành động này được ghi nhận là gian lận.", {
           duration: 5000,
@@ -556,7 +488,7 @@ const TestComponent = ({ courseId, chapterId, lessonId }: { courseId: string, ch
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [testSubmitted]);
+  }, [testSubmitted, loading]);
   
   // Format time từ giây sang mm:ss
   const formatTime = (seconds: number) => {
@@ -573,7 +505,7 @@ const TestComponent = ({ courseId, chapterId, lessonId }: { courseId: string, ch
   };
   
   const handleNext = () => {
-    if (currentQuestion < testData.questions.length - 1) {
+    if (testData && currentQuestion < testData.questions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
     }
   };
@@ -584,7 +516,9 @@ const TestComponent = ({ courseId, chapterId, lessonId }: { courseId: string, ch
     }
   };
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!testData) return;
+    
     // Tính điểm
     let correctAnswers = 0;
     
@@ -598,21 +532,66 @@ const TestComponent = ({ courseId, chapterId, lessonId }: { courseId: string, ch
     setScore(finalScore);
     setTestSubmitted(true);
     
-    // Lưu kết quả bài kiểm tra (trong thực tế sẽ gửi API call)
-    const testResult = {
-      courseId,
-      chapterId,
-      testId: lessonId,
-      score: finalScore,
-      timeSpent: testData.timeLimit * 60 - timeLeft,
-      cheatAttempts,
-      answers,
-      date: new Date().toISOString()
-    };
-    
-    console.log("Test result:", testResult);
-    // Trong thực tế, gửi API call để lưu kết quả
+    // Lưu kết quả bài kiểm tra
+    try {
+      const submitUrl = `http://localhost:3000/api/courses/${courseId}/chapters/${chapterId}/tests/${lessonId}/submit`;
+      console.log('Submitting test results to:', submitUrl);
+      
+      // Try to submit test results but continue if it fails
+      try {
+        const response = await fetch(submitUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            score: finalScore,
+            timeSpent: testData.timeLimit * 60 - timeLeft,
+            cheatAttempts,
+            answers,
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Không thể gửi kết quả bài kiểm tra');
+        }
+        
+        console.log('Test results submitted successfully');
+      } catch (error) {
+        console.error('Error submitting test results:', error);
+        toast.error("Lỗi khi gửi kết quả bài kiểm tra!");
+      }
+    } catch (error) {
+      console.error('Error in submit test logic:', error);
+      toast.error("Lỗi khi gửi kết quả bài kiểm tra!");
+    }
   };
+  
+  if (loading) {
+    return (
+      <div className="animate-pulse p-8">
+        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6"></div>
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-8"></div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  
+  if (!testData) {
+    return (
+      <div className="text-center py-10">
+        <h2 className="text-xl font-semibold mb-2">Không tìm thấy bài kiểm tra</h2>
+        <p className="text-gray-500 dark:text-gray-400 mb-4">Bài kiểm tra này không tồn tại hoặc bạn không có quyền truy cập.</p>
+        <Button onClick={() => navigate(`/course/${courseId}`)}>
+          Quay lại khóa học
+        </Button>
+      </div>
+    );
+  }
   
   // Hiển thị kết quả sau khi nộp bài
   if (testSubmitted) {
@@ -629,7 +608,7 @@ const TestComponent = ({ courseId, chapterId, lessonId }: { courseId: string, ch
           <div className="max-w-md mx-auto bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6 mb-8">
             <div className="text-4xl font-bold mb-2 text-blue-600 dark:text-blue-400">{score}%</div>
             <p className="text-muted-foreground">
-              Bạn trả lời đúng {Object.keys(answers).filter(q => answers[parseInt(q)] === testData.questions[parseInt(q)].correctAnswer).length}/{testData.questions.length} câu hỏi
+              Bạn trả lời đúng {Object.keys(answers).filter(q => testData.questions[parseInt(q)] && answers[parseInt(q)] === testData.questions[parseInt(q)].correctAnswer).length}/{testData.questions.length} câu hỏi
             </p>
             
             <Separator className="my-4" />
@@ -710,7 +689,7 @@ const TestComponent = ({ courseId, chapterId, lessonId }: { courseId: string, ch
           <h3 className="text-lg font-medium mb-4">Câu {currentQuestion + 1}: {currentQ.question}</h3>
           
           <div className="space-y-3">
-            {currentQ.options.map((option, index) => (
+            {currentQ.options.map((option: string, index: number) => (
               <div 
                 key={index}
                 className={`p-3 border rounded-md cursor-pointer transition-all ${

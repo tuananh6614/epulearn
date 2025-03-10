@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-import Buttonvip from "./Button";
+import { Button } from "@/components/ui/button";
 
 // Định nghĩa kiểu dữ liệu cho CourseCard
 interface CourseCardProps {
@@ -12,7 +11,7 @@ interface CourseCardProps {
   title: string;
   description: string;
   level: string;
-  chapters: number;
+  chapters?: number;
   duration: string;
   category: string;
   image: string;
@@ -25,7 +24,7 @@ const CourseCard = ({
   title, 
   description, 
   level, 
-  chapters, 
+  chapters = 0, 
   duration, 
   category,
   image,
@@ -63,10 +62,12 @@ const CourseCard = ({
       <CardContent className="pt-0">
         <p className="text-sm mb-4 text-foreground/80">{description}</p>
         <div className="flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <BookOpen className="h-4 w-4" />
-            <span>{chapters} chương</span>
-          </div>
+          {chapters > 0 && (
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <BookOpen className="h-4 w-4" />
+              <span>{chapters} chương</span>
+            </div>
+          )}
           <div className="flex items-center gap-1 text-muted-foreground">
             <Clock className="h-4 w-4" />
             <span>{duration}</span>
@@ -75,8 +76,8 @@ const CourseCard = ({
       </CardContent>
       
       <CardFooter className="flex justify-center">
-        <Link to={`/course/${id}`} className="w-full flex justify-center">
-          <Buttonvip />
+        <Link to={`/course/${id}`} className="w-full">
+          <Button variant="default" className="w-full">Xem Khóa Học</Button>
         </Link>
       </CardFooter>
     </Card>

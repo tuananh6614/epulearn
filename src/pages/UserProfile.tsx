@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -10,26 +9,17 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { FileText, Lock, User } from 'lucide-react';
 import UserSidebar from '@/components/UserSidebar';
-import ProfileForm from '@/components/ProfileForm';
+import ProfileForm from '@/components/ProfileForm'; // Đã cập nhật hỗ trợ avatar
 import SecurityForm from '@/components/SecurityForm';
 import CertificatesTab from '@/components/CertificatesTab';
-import { EnrolledCourse } from '@/models/lesson';
 
 // API URL
-const API_URL = 'http://localhost:3000/api';
-
-// Interface for certificate
-interface Certificate {
-  id: string;
-  title: string;
-  issueDate: string;
-  credential: string;
-}
+const API_URL = 'http://localhost:3000/api/users';
 
 const UserProfile = () => {
   const { currentUser } = useAuth();
 
-  // Fetch enrolled courses for the current user
+  // Fetch enrolled courses cho người dùng hiện tại
   const fetchUserCourses = async () => {
     if (!currentUser?.id) return [];
     
@@ -46,7 +36,7 @@ const UserProfile = () => {
     }
   };
 
-  // Fetch certificates for the current user
+  // Fetch certificates cho người dùng hiện tại
   const fetchUserCertificates = async () => {
     if (!currentUser?.id) return [];
     
@@ -63,14 +53,14 @@ const UserProfile = () => {
     }
   };
 
-  // Use React Query to fetch user courses
+  // Sử dụng React Query để lấy khóa học người dùng
   const { data: userCourses, isLoading: isLoadingCourses } = useQuery({
     queryKey: ['userCourses', currentUser?.id],
     queryFn: fetchUserCourses,
     enabled: !!currentUser?.id,
   });
 
-  // Use React Query to fetch user certificates
+  // Sử dụng React Query để lấy chứng chỉ người dùng
   const { data: userCertificates, isLoading: isLoadingCertificates } = useQuery({
     queryKey: ['userCertificates', currentUser?.id],
     queryFn: fetchUserCertificates,
@@ -112,7 +102,7 @@ const UserProfile = () => {
               isLoadingCourses={isLoadingCourses}
             />
             
-            {/* Main Content */}
+            {/* Nội dung chính */}
             <div className="flex-grow">
               <Tabs defaultValue="profile">
                 <TabsList className="mb-6 w-full justify-start">

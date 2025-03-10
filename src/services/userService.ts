@@ -1,4 +1,3 @@
-
 /**
  * Service for handling user profile operations with MySQL backend
  */
@@ -13,6 +12,21 @@ export interface UserProfile {
   lastName: string;
   bio?: string;
   password?: string; // Only used for password changes
+}
+
+// Interface for user certificates
+export interface UserCertificate {
+  id: string;
+  name: string;
+  issuedBy: string;
+  issuedDate: string;
+}
+
+// Interface for user course progress
+export interface UserCourseProgress {
+  courseId: string;
+  courseName: string;
+  progress: number; // Progress in percentage (0-100)
 }
 
 // Get user profile
@@ -79,34 +93,4 @@ export const changeUserPassword = async (
   }
 };
 
-// Get user certificates
-export const getUserCertificates = async (userId: string): Promise<any[]> => {
-  try {
-    const response = await fetch(`${API_URL}/users/${userId}/certificates`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch user certificates');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching user certificates:', error);
-    return [];
-  }
-};
-
-// Get user course progress
-export const getUserCourseProgress = async (userId: string): Promise<any[]> => {
-  try {
-    const response = await fetch(`${API_URL}/users/${userId}/progress`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch user progress');
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching user progress:', error);
-    return [];
-  }
-};
+// Get

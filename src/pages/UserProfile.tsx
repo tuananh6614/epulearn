@@ -12,10 +12,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Pencil, User, Lock, FileText, BookOpen, Eye, EyeOff } from 'lucide-react';
+import { Pencil, User, Lock, FileText, BookOpen, Eye, EyeOff, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Schema cho cập nhật hồ sơ
 const profileFormSchema = z.object({
@@ -58,7 +59,7 @@ interface Certificate {
 }
 
 const UserProfile = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, updateCurrentUser, logout } = useAuth();
   const [loading, setLoading] = useState(false);
   const [passwordChecked, setPasswordChecked] = useState(false);
   const [isCurrentPasswordValid, setIsCurrentPasswordValid] = useState(false);
@@ -67,6 +68,8 @@ const UserProfile = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Form hồ sơ
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
@@ -150,55 +153,87 @@ const UserProfile = () => {
     }
   }, [userCertificates]);
 
-  // Xử lý cập nhật hồ sơ
-  const onUpdateProfile = (values: z.infer<typeof profileFormSchema>) => {
-    if (!currentUser) return;
+  // Load avatar URL from user data
+  useEffect(() => {
+    if (currentUser?.avatarUrl) {
+      setAvatarUrl(currentUser.avatarUrl);
+    }
+  }, [currentUser]);
+
+  // Xử lý upload ảnh
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
     
-    setLoading(true);
-    
-    // For admin user (fixed account), handle updates locally
-    if (currentUser.email === 'admin@epu.edu.vn') {
-      // Just show success message for admin user
-      toast.success("Thông tin hồ sơ đã được cập nhật");
-      setLoading(false);
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Kích thước ảnh không được vượt quá 5MB");
       return;
     }
     
-    // For regular users, call the API
-    fetch(`${API_URL}/users/${currentUser.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(values),
+    // Check file type
+    if (!file.type.match('image.*')) {
+      toast.error("Chỉ chấp nhận file hình ảnh");
+      return;
+    }
+    
+    setUploadingAvatar(true);
+    
+    const formData = new FormData();
+    formData.append('avatar', file);
+    formData.append('userId', currentUser?.id || '');
+    
+    fetch(`${API_URL}/upload-avatar`, {
+      method: 'POST',
+      body: formData,
     })
       .then(response => {
         if (!response.ok) {
-          throw new Error('Không thể cập nhật thông tin');
+          throw new Error('Failed to upload avatar');
         }
         return response.json();
       })
       .then(data => {
-        toast.success("Thông tin hồ sơ đã được cập nhật");
+        setAvatarUrl(data.avatarUrl);
+        toast.success("Ảnh đại diện đã được cập nhật");
         
-        // Update localStorage with new user info
-        const updatedUser = {
-          ...currentUser,
-          firstName: values.firstName,
-          lastName: values.lastName
-        };
-        localStorage.setItem('epu_user', JSON.stringify(updatedUser));
-        
-        // Force reload to update header
-        window.location.reload();
+        // Update user data in AuthContext
+        if (currentUser) {
+          updateCurrentUser({ avatarUrl: data.avatarUrl });
+        }
       })
       .catch(error => {
-        toast.error(error.message || "Lỗi cập nhật thông tin");
-        console.error("Error updating profile:", error);
+        console.error('Error uploading avatar:', error);
+        toast.error("Không thể tải lên ảnh đại diện");
       })
       .finally(() => {
-        setLoading(false);
+        setUploadingAvatar(false);
       });
+  };
+
+  // Xử lý cập nhật hồ sơ
+  const onUpdateProfile = async (values: z.infer<typeof profileFormSchema>) => {
+    if (!currentUser) return;
+    
+    setLoading(true);
+    
+    try {
+      // Call the updateCurrentUser method from AuthContext
+      const success = await updateCurrentUser({
+        firstName: values.firstName,
+        lastName: values.lastName,
+        bio: values.bio
+      });
+      
+      if (success) {
+        toast.success("Thông tin hồ sơ đã được cập nhật");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Lỗi cập nhật thông tin");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Kiểm tra mật khẩu hiện tại
@@ -341,8 +376,32 @@ const UserProfile = () => {
             <div className="md:w-64 space-y-4">
               <Card>
                 <CardContent className="p-6 text-center">
-                  <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <User className="h-12 w-12 text-gray-500 dark:text-gray-400" />
+                  <div className="relative w-24 h-24 mx-auto mb-4">
+                    <Avatar className="w-24 h-24">
+                      <AvatarImage src={avatarUrl || undefined} alt={`${currentUser.firstName} ${currentUser.lastName}`} />
+                      <AvatarFallback className="text-2xl">
+                        {currentUser.firstName?.[0]}{currentUser.lastName?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute bottom-0 right-0">
+                      <label htmlFor="avatar-upload" className="cursor-pointer">
+                        <div className="bg-primary text-white p-1.5 rounded-full hover:bg-primary/90 transition-colors">
+                          {uploadingAvatar ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <Upload className="h-4 w-4" />
+                          )}
+                        </div>
+                        <input 
+                          id="avatar-upload" 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={handleAvatarUpload}
+                          disabled={uploadingAvatar}
+                        />
+                      </label>
+                    </div>
                   </div>
                   <h2 className="text-xl font-semibold">{currentUser.firstName} {currentUser.lastName}</h2>
                   <p className="text-muted-foreground text-sm">{currentUser.email}</p>

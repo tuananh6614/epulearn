@@ -22,11 +22,22 @@ interface User {
   lastNameChanged?: string; // Track when name was last changed
 }
 
+// Define fixed account type to match User type
+interface FixedAccount extends User {
+  password: string;
+}
+
 // Base API URL for your MySQL backend
 const API_URL = 'http://localhost:3000/api';
 
-// Fixed account credentials
-const FIXED_ACCOUNT = {
+// Fixed account credentials - initialize with empty string values
+// This will be used only if you decide to enable a demo account
+const FIXED_ACCOUNT: FixedAccount = {
+  id: "",
+  email: "",
+  firstName: "",
+  lastName: "",
+  password: ""
 };
 
 // Define the auth context type
@@ -162,12 +173,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Login with fixed account
+  // Login with fixed account - if demo account is set up
   const loginWithFixedAccount = () => {
+    // Check if fixed account is configured
+    if (!FIXED_ACCOUNT.email || !FIXED_ACCOUNT.password) {
+      toast.error("Không có tài khoản cố định được thiết lập");
+      return;
+    }
+    
     setLoading(true);
     
     // Create user object from fixed account (without password)
-    const user = {
+    const user: User = {
       id: FIXED_ACCOUNT.id,
       email: FIXED_ACCOUNT.email,
       firstName: FIXED_ACCOUNT.firstName,
@@ -193,9 +210,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Check for fixed account first
-      if (email === FIXED_ACCOUNT.email && password === FIXED_ACCOUNT.password) {
-        const user = {
+      // Check for fixed account first (if configured)
+      if (FIXED_ACCOUNT.email && FIXED_ACCOUNT.password && 
+          email === FIXED_ACCOUNT.email && password === FIXED_ACCOUNT.password) {
+        const user: User = {
           id: FIXED_ACCOUNT.id,
           email: FIXED_ACCOUNT.email,
           firstName: FIXED_ACCOUNT.firstName,
@@ -256,8 +274,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Check if trying to register with fixed account email
-      if (email === FIXED_ACCOUNT.email) {
+      // Check if trying to register with fixed account email (if configured)
+      if (FIXED_ACCOUNT.email && email === FIXED_ACCOUNT.email) {
         toast.error("Email này đã được sử dụng");
         return false;
       }

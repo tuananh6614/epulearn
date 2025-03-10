@@ -8,52 +8,45 @@ import { Button } from "@/components/ui/button";
 import { BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// Dữ liệu giả lập khóa học đã đăng ký
-const enrolledCoursesData = [
-  {
-    id: "html-basics",
-    title: "HTML Cơ Bản",
-    description: "Học những kiến thức nền tảng của HTML để tạo trang web có cấu trúc",
-    level: "Người Mới",
-    chapters: 8,
-    duration: "4 tuần",
-    category: "Phát Triển Web",
-    image: "/placeholder.svg",
-    color: "linear-gradient(90deg, #48BB78 0%, #38A169 100%)",
-    progress: 25
-  },
-  {
-    id: "css-basics",
-    title: "CSS Cơ Bản",
-    description: "Làm chủ CSS để tạo các thiết kế web đẹp mắt",
-    level: "Người Mới",
-    chapters: 10,
-    duration: "5 tuần",
-    category: "Phát Triển Web",
-    image: "/placeholder.svg",
-    color: "linear-gradient(90deg, #4299E1 0%, #3182CE 100%)",
-    progress: 10
-  }
-];
+// Empty placeholder for enrolled courses - will be populated from API
+const enrolledCoursesData = [];
 
 const MyCourses = () => {
   const { currentUser } = useAuth();
-  const [enrolledCourses, setEnrolledCourses] = useState(enrolledCoursesData);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Giả lập load dữ liệu
-    const loadCourses = () => {
+    // Fetch user's enrolled courses from API
+    const loadCourses = async () => {
       setLoading(true);
-      // Trong thực tế sẽ fetch từ API
-      setTimeout(() => {
-        setEnrolledCourses(enrolledCoursesData);
+      
+      try {
+        if (currentUser) {
+          // In a real implementation, this would be an API call
+          // For now, we're showing an empty list for new users
+          const response = await fetch(`http://localhost:3000/api/users/${currentUser.id}/courses`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            setEnrolledCourses(data.courses || []);
+          } else {
+            // If API fails, show empty state
+            setEnrolledCourses([]);
+          }
+        } else {
+          setEnrolledCourses([]);
+        }
+      } catch (error) {
+        console.error('Error fetching enrolled courses:', error);
+        setEnrolledCourses([]);
+      } finally {
         setLoading(false);
-      }, 800);
+      }
     };
 
     loadCourses();
-  }, []);
+  }, [currentUser]);
 
   if (loading) {
     return (

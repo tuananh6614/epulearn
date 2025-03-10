@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -7,12 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Pencil, User, Lock, FileText, BookOpen, Eye, EyeOff, Camera, CheckCircle, XCircle } from 'lucide-react';
+import { Pencil, User, Lock, FileText, BookOpen, Eye, EyeOff, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
@@ -59,8 +59,10 @@ interface Certificate {
 }
 
 const UserProfile = () => {
-  const { currentUser, updateCurrentUser, logout, changePassword, verifyCurrentPassword, uploadAvatar } = useAuth();
+  const { currentUser, updateCurrentUser, logout } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [passwordChecked, setPasswordChecked] = useState(false);
+  const [isCurrentPasswordValid, setIsCurrentPasswordValid] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -68,8 +70,6 @@ const UserProfile = () => {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [currentPasswordValid, setCurrentPasswordValid] = useState<boolean | null>(null);
-  const [passwordVerifying, setPasswordVerifying] = useState(false);
 
   // Form hồ sơ
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
@@ -78,11 +78,11 @@ const UserProfile = () => {
       firstName: currentUser?.firstName || "",
       lastName: currentUser?.lastName || "",
       email: currentUser?.email || "",
-      bio: currentUser?.bio || "",
+      bio: "",
     },
   });
 
-  // Form mật khẩu - with auto-verification
+  // Form mật khẩu
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
     resolver: zodResolver(passwordFormSchema),
     defaultValues: {
@@ -105,7 +105,6 @@ const UserProfile = () => {
       return data.courses || [];
     } catch (error) {
       console.error('Error fetching user courses:', error);
-      // Return empty array
       return [];
     }
   };
@@ -161,41 +160,55 @@ const UserProfile = () => {
     }
   }, [currentUser]);
 
-  // Update form values when currentUser changes
-  useEffect(() => {
-    if (currentUser) {
-      profileForm.reset({
-        firstName: currentUser.firstName || "",
-        lastName: currentUser.lastName || "",
-        email: currentUser.email || "",
-        bio: currentUser.bio || "",
-      });
-    }
-  }, [currentUser, profileForm]);
-
   // Xử lý upload ảnh
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Kích thước ảnh không được vượt quá 5MB");
+      return;
+    }
+    
+    // Check file type
+    if (!file.type.match('image.*')) {
+      toast.error("Chỉ chấp nhận file hình ảnh");
+      return;
+    }
+    
     setUploadingAvatar(true);
     
-    try {
-      // Upload avatar using the new method in AuthContext
-      const result = await uploadAvatar(file);
-      
-      if (result.success) {
-        setAvatarUrl(result.avatarUrl || null);
+    const formData = new FormData();
+    formData.append('avatar', file);
+    formData.append('userId', currentUser?.id || '');
+    
+    fetch(`${API_URL}/upload-avatar`, {
+      method: 'POST',
+      body: formData,
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to upload avatar');
+        }
+        return response.json();
+      })
+      .then(data => {
+        setAvatarUrl(data.avatarUrl);
         toast.success("Ảnh đại diện đã được cập nhật");
-      } else {
-        toast.error(result.message || "Không thể cập nhật ảnh đại diện");
-      }
-    } catch (error) {
-      console.error('Error handling avatar:', error);
-      toast.error("Không thể xử lý ảnh đại diện");
-    } finally {
-      setUploadingAvatar(false);
-    }
+        
+        // Update user data in AuthContext
+        if (currentUser) {
+          updateCurrentUser({ avatarUrl: data.avatarUrl });
+        }
+      })
+      .catch(error => {
+        console.error('Error uploading avatar:', error);
+        toast.error("Không thể tải lên ảnh đại diện");
+      })
+      .finally(() => {
+        setUploadingAvatar(false);
+      });
   };
 
   // Xử lý cập nhật hồ sơ
@@ -223,64 +236,110 @@ const UserProfile = () => {
     }
   };
 
-  // Auto-verify password as user types
-  const handleCurrentPasswordChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const password = e.target.value;
-    passwordForm.setValue("currentPassword", password);
+  // Kiểm tra mật khẩu hiện tại
+  const checkCurrentPassword = () => {
+    const currentPassword = passwordForm.getValues("currentPassword");
     
-    // Only proceed with verification if password is at least 6 chars long
-    if (password.length >= 6) {
-      setPasswordVerifying(true);
-      setCurrentPasswordValid(null);
-      
-      try {
-        // Use the new verifyCurrentPassword method
-        const result = await verifyCurrentPassword(password);
-        
-        if (result.success) {
-          setCurrentPasswordValid(true);
-          toast.success("Mật khẩu hợp lệ, bạn có thể tiếp tục", {
-            id: "password-verify",
-            duration: 2000,
-          });
-          
-          // Enable the rest of the form
-          const inputElements = document.querySelectorAll('input[name="newPassword"], input[name="confirmPassword"]');
-          inputElements.forEach((element) => {
-            (element as HTMLInputElement).disabled = false;
-          });
-        } else {
-          setCurrentPasswordValid(false);
-          toast.error("Mật khẩu không đúng", {
-            id: "password-verify",
-            duration: 2000,
-          });
-        }
-      } catch (error) {
-        console.error("Error verifying password:", error);
-        setCurrentPasswordValid(false);
-      } finally {
-        setPasswordVerifying(false);
-      }
-    } else {
-      setCurrentPasswordValid(null);
+    if (!currentPassword) {
+      toast.error("Vui lòng nhập mật khẩu hiện tại");
+      return;
     }
+    
+    setLoading(true);
+    
+    // For admin user (fixed account), allow password change with fixed password
+    if (currentUser?.email === 'admin@epu.edu.vn') {
+      if (currentPassword === 'admin123') {
+        setIsCurrentPasswordValid(true);
+        setPasswordChecked(true);
+        toast.success("Mật khẩu chính xác");
+      } else {
+        setIsCurrentPasswordValid(false);
+        setPasswordChecked(true);
+        toast.error("Mật khẩu không chính xác");
+      }
+      setLoading(false);
+      return;
+    }
+    
+    // For regular users, call the API
+    fetch(`${API_URL}/check-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: currentUser?.id,
+        password: currentPassword
+      }),
+    })
+      .then(response => {
+        if (response.ok) {
+          setIsCurrentPasswordValid(true);
+          setPasswordChecked(true);
+          toast.success("Mật khẩu chính xác");
+          return response.json();
+        } else {
+          throw new Error('Mật khẩu không chính xác');
+        }
+      })
+      .catch(error => {
+        setIsCurrentPasswordValid(false);
+        setPasswordChecked(true);
+        toast.error(error.message || "Mật khẩu không chính xác");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   // Xử lý đổi mật khẩu
   const onChangePassword = (values: z.infer<typeof passwordFormSchema>) => {
+    if (!passwordChecked || !isCurrentPasswordValid) {
+      toast.error("Vui lòng kiểm tra mật khẩu hiện tại trước");
+      return;
+    }
+    
     setLoading(true);
     
-    changePassword(values.currentPassword, values.newPassword)
-      .then(success => {
-        if (success) {
-          // No need to do anything here, the AuthContext will handle the logout
-          passwordForm.reset();
+    // For admin user (fixed account), just show success message
+    if (currentUser?.email === 'admin@epu.edu.vn') {
+      toast.success("Mật khẩu đã được cập nhật thành công");
+      passwordForm.reset();
+      setPasswordChecked(false);
+      setIsCurrentPasswordValid(false);
+      setLoading(false);
+      return;
+    }
+    
+    // For regular users, call the API
+    fetch(`${API_URL}/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: currentUser?.id,
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword
+      }),
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Không thể thay đổi mật khẩu');
         }
+        return response.json();
+      })
+      .then(data => {
+        toast.success("Mật khẩu đã được cập nhật thành công");
+        passwordForm.reset();
+        setPasswordChecked(false);
+        setIsCurrentPasswordValid(false);
       })
       .catch(error => {
-        toast.error("Lỗi thay đổi mật khẩu");
-        console.error("Error changing password:", error);
+        toast.error(error.message || "Lỗi thay đổi mật khẩu");
+      })
+      .finally(() => {
         setLoading(false);
       });
   };
@@ -318,9 +377,9 @@ const UserProfile = () => {
               <Card>
                 <CardContent className="p-6 text-center">
                   <div className="relative w-24 h-24 mx-auto mb-4">
-                    <Avatar className="w-24 h-24 border-2 border-primary">
-                      <AvatarImage src={avatarUrl || undefined} alt={`${currentUser.firstName || ''} ${currentUser.lastName || ''}`} />
-                      <AvatarFallback className="text-2xl bg-primary/10">
+                    <Avatar className="w-24 h-24">
+                      <AvatarImage src={avatarUrl || undefined} alt={`${currentUser.firstName} ${currentUser.lastName}`} />
+                      <AvatarFallback className="text-2xl">
                         {currentUser.firstName?.[0]}{currentUser.lastName?.[0]}
                       </AvatarFallback>
                     </Avatar>
@@ -330,7 +389,7 @@ const UserProfile = () => {
                           {uploadingAvatar ? (
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                           ) : (
-                            <Camera className="h-4 w-4" />
+                            <Upload className="h-4 w-4" />
                           )}
                         </div>
                         <input 
@@ -505,23 +564,11 @@ const UserProfile = () => {
                                       <Input 
                                         type={showCurrentPassword ? "text" : "password"} 
                                         placeholder="••••••" 
-                                        className={`${currentPasswordValid === true ? 'border-green-500' : currentPasswordValid === false ? 'border-red-500' : ''}`}
                                         {...field} 
-                                        onChange={(e) => {
-                                          field.onChange(e);
-                                          handleCurrentPasswordChange(e);
-                                        }}
+                                        disabled={passwordChecked && isCurrentPasswordValid}
+                                        className={passwordChecked ? (isCurrentPasswordValid ? "border-green-500" : "border-red-500") : ""}
                                       />
                                     </FormControl>
-                                    <div className="absolute right-10 top-1/2 -translate-y-1/2">
-                                      {passwordVerifying ? (
-                                        <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
-                                      ) : currentPasswordValid === true ? (
-                                        <CheckCircle className="h-4 w-4 text-green-500" />
-                                      ) : currentPasswordValid === false ? (
-                                        <XCircle className="h-4 w-4 text-red-500" />
-                                      ) : null}
-                                    </div>
                                     <button 
                                       type="button" 
                                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
@@ -531,6 +578,17 @@ const UserProfile = () => {
                                     </button>
                                   </div>
                                   <FormMessage />
+                                  <div className="flex justify-end mt-1">
+                                    <Button 
+                                      type="button" 
+                                      variant="outline" 
+                                      size="sm" 
+                                      onClick={checkCurrentPassword}
+                                      disabled={loading || (passwordChecked && isCurrentPasswordValid)}
+                                    >
+                                      {passwordChecked && isCurrentPasswordValid ? "Đã xác nhận" : "Kiểm tra mật khẩu"}
+                                    </Button>
+                                  </div>
                                 </FormItem>
                               )}
                             />
@@ -548,7 +606,7 @@ const UserProfile = () => {
                                       type={showNewPassword ? "text" : "password"} 
                                       placeholder="••••••" 
                                       {...field} 
-                                      disabled={!currentPasswordValid}
+                                      disabled={!passwordChecked || !isCurrentPasswordValid}
                                     />
                                   </FormControl>
                                   <button 
@@ -576,7 +634,7 @@ const UserProfile = () => {
                                       type={showConfirmPassword ? "text" : "password"} 
                                       placeholder="••••••" 
                                       {...field} 
-                                      disabled={!currentPasswordValid}
+                                      disabled={!passwordChecked || !isCurrentPasswordValid}
                                     />
                                   </FormControl>
                                   <button 
@@ -594,7 +652,7 @@ const UserProfile = () => {
                           
                           <Button 
                             type="submit" 
-                            disabled={loading || !currentPasswordValid}
+                            disabled={loading || !passwordChecked || !isCurrentPasswordValid}
                           >
                             {loading ? "Đang cập nhật..." : "Thay đổi mật khẩu"}
                           </Button>

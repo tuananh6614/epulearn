@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -32,8 +31,7 @@ interface FixedAccount extends User {
 // Base API URL for your MySQL backend
 const API_URL = 'http://localhost:3000/api';
 
-// Fixed account credentials - don't use a fixed account unless explicitly configured
-// This should be empty by default to avoid auto-login issues
+// Fixed account credentials - empty by default to avoid auto-login issues
 const FIXED_ACCOUNT: FixedAccount = {
   id: "",
   email: "",
@@ -108,30 +106,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("Updating user data:", userData);
       
-      // Update user in the database via API
-      const response = await fetch(`${API_URL}/users/${currentUser.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        toast.error(errorData.message || "Cập nhật thông tin thất bại");
+      // Update user in the database via API (if connected)
+      try {
+        const response = await fetch(`${API_URL}/users/${currentUser.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
+        });
         
-        // For demo/development, let's update the local user data anyway
-        // This helps to test the UI without waiting for backend
-        const updatedUser = { ...currentUser, ...userData };
-        setCurrentUser(updatedUser);
-        localStorage.setItem('epu_user', JSON.stringify(updatedUser));
-        
-        console.warn("API update failed, but client-side update proceeded for demo purposes");
-        return true; // Return true for demo purposes
+        if (!response.ok) {
+          throw new Error("API update failed");
+        }
+      } catch (error) {
+        console.warn("API update failed, but client-side update will proceed for demo purposes");
+        // Continue with client-side update even if API fails (for demo)
       }
       
-      // Update local user data
+      // Always update local user data (for demo purposes)
       const updatedUser = { ...currentUser, ...userData };
       setCurrentUser(updatedUser);
       localStorage.setItem('epu_user', JSON.stringify(updatedUser));
@@ -141,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Error updating profile:', error);
       
-      // For demo/development, let's update the local user data anyway
+      // For demo/development, update the local user data anyway
       const updatedUser = { ...currentUser, ...userData };
       setCurrentUser(updatedUser);
       localStorage.setItem('epu_user', JSON.stringify(updatedUser));

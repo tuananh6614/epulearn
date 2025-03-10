@@ -102,8 +102,27 @@ export interface User {
   firstName?: string;
   lastName?: string;
   lastNameChanged?: string;
-  avatarUrl?: string;
+  avatarUrl?: string; // Support for user avatar
   bio?: string;
   courses?: UserCourse[];
   certificates?: UserCertificate[];
+}
+
+// Add a new interface for avatar upload response
+export interface AvatarUploadResponse {
+  success: boolean;
+  avatarUrl?: string;
+  message?: string;
+}
+
+// Add a new interface for password verification response
+export interface PasswordVerificationResponse {
+  success: boolean;
+  message?: string;
+}
+
+// Add a new interface for password change response
+export interface PasswordChangeResponse {
+  success: boolean;
+  message?: string;
 }

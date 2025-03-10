@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -11,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AvatarUploadResponse, PasswordVerificationResponse, PasswordChangeResponse } from '@/models/lesson';
 
 // Define the user type
 interface User {
@@ -18,9 +20,9 @@ interface User {
   email: string;
   firstName?: string;
   lastName?: string;
-  lastNameChanged?: string; // Track when name was last changed
-  avatarUrl?: string; // Add support for user avatar
-  bio?: string; // User bio information
+  lastNameChanged?: string;
+  avatarUrl?: string;
+  bio?: string;
 }
 
 // Define fixed account type to match User type
@@ -53,6 +55,8 @@ interface AuthContextType {
   loginWithFixedAccount: () => void;
   updateCurrentUser: (userData: Partial<User>) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
+  verifyCurrentPassword: (password: string) => Promise<PasswordVerificationResponse>;
+  uploadAvatar: (file: File) => Promise<AvatarUploadResponse>;
 }
 
 // Create the auth context
@@ -78,6 +82,87 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setLoading(false);
   }, []);
+
+  // Upload avatar to server and update user data
+  const uploadAvatar = async (file: File): Promise<AvatarUploadResponse> => {
+    if (!currentUser) {
+      return { success: false, message: "Bạn chưa đăng nhập" };
+    }
+    
+    try {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        return { success: false, message: "Kích thước ảnh không được vượt quá 5MB" };
+      }
+      
+      // Check file type
+      if (!file.type.match('image.*')) {
+        return { success: false, message: "Chỉ chấp nhận file hình ảnh" };
+      }
+      
+      // Create FormData to send the file
+      const formData = new FormData();
+      formData.append('avatar', file);
+      formData.append('userId', currentUser.id);
+      
+      // Upload to server
+      const response = await fetch(`${API_URL}/users/${currentUser.id}/avatar`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        return { success: false, message: data.message || "Không thể tải ảnh lên" };
+      }
+      
+      // Update local user data with the new avatar URL
+      const updatedUser = { ...currentUser, avatarUrl: data.avatarUrl };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('epu_user', JSON.stringify(updatedUser));
+      
+      return { success: true, avatarUrl: data.avatarUrl };
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      return { success: false, message: "Lỗi kết nối đến máy chủ. Vui lòng thử lại sau" };
+    }
+  };
+
+  // Verify current password
+  const verifyCurrentPassword = async (password: string): Promise<PasswordVerificationResponse> => {
+    if (!currentUser) {
+      return { success: false, message: "Bạn chưa đăng nhập" };
+    }
+    
+    try {
+      // Check for fixed account first (if configured)
+      if (FIXED_ACCOUNT.email && 
+          currentUser.email === FIXED_ACCOUNT.email && 
+          password === FIXED_ACCOUNT.password) {
+        return { success: true };
+      }
+      
+      // Call verify password API
+      const response = await fetch(`${API_URL}/users/${currentUser.id}/verify-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+      
+      const data = await response.json();
+      
+      return { 
+        success: response.ok, 
+        message: data.message || (response.ok ? "Mật khẩu hợp lệ" : "Mật khẩu không đúng") 
+      };
+    } catch (error) {
+      console.error('Password verification error:', error);
+      return { success: false, message: "Lỗi kết nối đến máy chủ. Vui lòng thử lại sau" };
+    }
+  };
 
   // Method to update current user data
   const updateCurrentUser = async (userData: Partial<User>): Promise<boolean> => {
@@ -135,7 +220,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Password change method
+  // Password change method with auto logout
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     if (!currentUser) return false;
     
@@ -166,7 +251,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      toast.success("Mật khẩu đã được thay đổi thành công");
+      toast.success("Mật khẩu đã được thay đổi thành công. Bạn sẽ được đăng xuất.");
+      
+      // Auto logout after successful password change
+      setTimeout(() => {
+        performLogout();
+      }, 2000);
+      
       return true;
     } catch (error) {
       console.error('Error changing password:', error);
@@ -335,7 +426,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShowLogoutConfirm,
     loginWithFixedAccount,
     updateCurrentUser,
-    changePassword
+    changePassword,
+    verifyCurrentPassword,
+    uploadAvatar
   };
 
   return (

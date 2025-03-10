@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -11,7 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Pencil, User, Lock, FileText, BookOpen, Eye, EyeOff, Upload, Camera } from 'lucide-react';
+import { Pencil, User, Lock, FileText, BookOpen, Eye, EyeOff, Camera, CheckCircle, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
@@ -58,7 +59,7 @@ interface Certificate {
 }
 
 const UserProfile = () => {
-  const { currentUser, updateCurrentUser, logout, changePassword } = useAuth();
+  const { currentUser, updateCurrentUser, logout, changePassword, verifyCurrentPassword, uploadAvatar } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -67,6 +68,8 @@ const UserProfile = () => {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [currentPasswordValid, setCurrentPasswordValid] = useState<boolean | null>(null);
+  const [passwordVerifying, setPasswordVerifying] = useState(false);
 
   // Form hồ sơ
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
@@ -102,23 +105,8 @@ const UserProfile = () => {
       return data.courses || [];
     } catch (error) {
       console.error('Error fetching user courses:', error);
-      // Return mock data for demo
-      return [
-        { 
-          id: "course-1", 
-          title: "Lập trình Web cơ bản", 
-          progress: 75, 
-          image: "/courses/web-basic.jpg",
-          color: "blue" 
-        },
-        { 
-          id: "course-2", 
-          title: "JavaScript nâng cao", 
-          progress: 45, 
-          image: "/courses/js-advanced.jpg",
-          color: "yellow" 
-        }
-      ];
+      // Return empty array
+      return [];
     }
   };
 
@@ -186,47 +174,26 @@ const UserProfile = () => {
   }, [currentUser, profileForm]);
 
   // Xử lý upload ảnh
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
-    // Check file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Kích thước ảnh không được vượt quá 5MB");
-      return;
-    }
-    
-    // Check file type
-    if (!file.type.match('image.*')) {
-      toast.error("Chỉ chấp nhận file hình ảnh");
-      return;
-    }
-    
     setUploadingAvatar(true);
     
-    // For demo purposes, we'll generate a fake URL and update directly
     try {
-      // Create a blob URL for the image (for demo purposes)
-      const imageUrl = URL.createObjectURL(file);
-      setAvatarUrl(imageUrl);
+      // Upload avatar using the new method in AuthContext
+      const result = await uploadAvatar(file);
       
-      // Update user data in AuthContext
-      if (currentUser) {
-        updateCurrentUser({ avatarUrl: imageUrl })
-          .then(() => {
-            toast.success("Ảnh đại diện đã được cập nhật");
-          })
-          .catch(err => {
-            console.error("Error updating avatar:", err);
-            toast.error("Không thể cập nhật ảnh đại diện");
-          })
-          .finally(() => {
-            setUploadingAvatar(false);
-          });
+      if (result.success) {
+        setAvatarUrl(result.avatarUrl || null);
+        toast.success("Ảnh đại diện đã được cập nhật");
+      } else {
+        toast.error(result.message || "Không thể cập nhật ảnh đại diện");
       }
     } catch (error) {
       console.error('Error handling avatar:', error);
       toast.error("Không thể xử lý ảnh đại diện");
+    } finally {
       setUploadingAvatar(false);
     }
   };
@@ -257,25 +224,46 @@ const UserProfile = () => {
   };
 
   // Auto-verify password as user types
-  const handleCurrentPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCurrentPasswordChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const password = e.target.value;
     passwordForm.setValue("currentPassword", password);
     
     // Only proceed with verification if password is at least 6 chars long
     if (password.length >= 6) {
-      // For demo purposes, we'll consider it valid if it's 6+ characters
-      // In a real app, this would call an API endpoint to verify
+      setPasswordVerifying(true);
+      setCurrentPasswordValid(null);
       
-      // Enable the rest of the form
-      const inputElements = document.querySelectorAll('input[name="newPassword"], input[name="confirmPassword"]');
-      inputElements.forEach((element) => {
-        (element as HTMLInputElement).disabled = false;
-      });
-      
-      toast.success("Mật khẩu hợp lệ, bạn có thể tiếp tục", {
-        id: "password-verify",
-        duration: 2000,
-      });
+      try {
+        // Use the new verifyCurrentPassword method
+        const result = await verifyCurrentPassword(password);
+        
+        if (result.success) {
+          setCurrentPasswordValid(true);
+          toast.success("Mật khẩu hợp lệ, bạn có thể tiếp tục", {
+            id: "password-verify",
+            duration: 2000,
+          });
+          
+          // Enable the rest of the form
+          const inputElements = document.querySelectorAll('input[name="newPassword"], input[name="confirmPassword"]');
+          inputElements.forEach((element) => {
+            (element as HTMLInputElement).disabled = false;
+          });
+        } else {
+          setCurrentPasswordValid(false);
+          toast.error("Mật khẩu không đúng", {
+            id: "password-verify",
+            duration: 2000,
+          });
+        }
+      } catch (error) {
+        console.error("Error verifying password:", error);
+        setCurrentPasswordValid(false);
+      } finally {
+        setPasswordVerifying(false);
+      }
+    } else {
+      setCurrentPasswordValid(null);
     }
   };
 
@@ -286,17 +274,13 @@ const UserProfile = () => {
     changePassword(values.currentPassword, values.newPassword)
       .then(success => {
         if (success) {
-          toast.success("Mật khẩu đã được cập nhật thành công");
+          // No need to do anything here, the AuthContext will handle the logout
           passwordForm.reset();
-        } else {
-          toast.error("Không thể thay đổi mật khẩu");
         }
       })
       .catch(error => {
         toast.error("Lỗi thay đổi mật khẩu");
         console.error("Error changing password:", error);
-      })
-      .finally(() => {
         setLoading(false);
       });
   };
@@ -521,6 +505,7 @@ const UserProfile = () => {
                                       <Input 
                                         type={showCurrentPassword ? "text" : "password"} 
                                         placeholder="••••••" 
+                                        className={`${currentPasswordValid === true ? 'border-green-500' : currentPasswordValid === false ? 'border-red-500' : ''}`}
                                         {...field} 
                                         onChange={(e) => {
                                           field.onChange(e);
@@ -528,6 +513,15 @@ const UserProfile = () => {
                                         }}
                                       />
                                     </FormControl>
+                                    <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                                      {passwordVerifying ? (
+                                        <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
+                                      ) : currentPasswordValid === true ? (
+                                        <CheckCircle className="h-4 w-4 text-green-500" />
+                                      ) : currentPasswordValid === false ? (
+                                        <XCircle className="h-4 w-4 text-red-500" />
+                                      ) : null}
+                                    </div>
                                     <button 
                                       type="button" 
                                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
@@ -554,7 +548,7 @@ const UserProfile = () => {
                                       type={showNewPassword ? "text" : "password"} 
                                       placeholder="••••••" 
                                       {...field} 
-                                      disabled={passwordForm.getValues('currentPassword').length < 6}
+                                      disabled={!currentPasswordValid}
                                     />
                                   </FormControl>
                                   <button 
@@ -582,7 +576,7 @@ const UserProfile = () => {
                                       type={showConfirmPassword ? "text" : "password"} 
                                       placeholder="••••••" 
                                       {...field} 
-                                      disabled={passwordForm.getValues('currentPassword').length < 6}
+                                      disabled={!currentPasswordValid}
                                     />
                                   </FormControl>
                                   <button 
@@ -600,7 +594,7 @@ const UserProfile = () => {
                           
                           <Button 
                             type="submit" 
-                            disabled={loading || passwordForm.getValues('currentPassword').length < 6}
+                            disabled={loading || !currentPasswordValid}
                           >
                             {loading ? "Đang cập nhật..." : "Thay đổi mật khẩu"}
                           </Button>

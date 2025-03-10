@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
@@ -12,6 +12,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, loading, currentUser } = useAuth();
   const [apiChecked, setApiChecked] = useState(false);
   const [apiConnected, setApiConnected] = useState(true);
+  const navigate = useNavigate();
   
   // Check API connectivity
   useEffect(() => {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -8,35 +9,10 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ArrowRight, CheckCircle, Clock, Play, PlayCircle, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useToast } from "@/components/ui/use-toast";
-
-interface DemoLessonData {
-  id: string;
-  title: string;
-  content: string;
-  course: string;
-  duration: string;
-  description: string;
-  courseStructure: {
-    id: number;
-    title: string;
-    lessons: {
-      id: string;
-      title: string;
-      type: string;
-      completed: boolean;
-      current?: boolean;
-    }[];
-  }[];
-  quiz?: {
-    question: string;
-    options: string[];
-    correctAnswer: number;
-  }[];
-  videoUrl?: string;
-}
+import { LessonData } from '@/models/lesson';
 
 const LessonDemo = () => {
-  const [lessonData, setLessonData] = useState<DemoLessonData | null>(null);
+  const [lessonData, setLessonData] = useState<LessonData | null>(null);
   const [activeTab, setActiveTab] = useState("content");
   const [quizAnswers, setQuizAnswers] = useState<number[]>([]);
   const [quizSubmitted, setQuizSubmitted] = useState(false);
@@ -74,6 +50,41 @@ const LessonDemo = () => {
           description: err instanceof Error ? err.message : "Đã xảy ra lỗi khi tải bài học demo",
           variant: "destructive",
         });
+        
+        // Fallback to dummy data if API fails
+        const dummyLesson: LessonData = {
+          id: "demo-lesson",
+          title: "Bài Học Demo",
+          content: "<h2>Đây là nội dung bài học demo</h2><p>Nội dung bài học sẽ hiển thị ở đây.</p>",
+          course: "Khóa học demo",
+          courseId: "demo-course",
+          duration: "15 phút",
+          description: "Bài học demo để giới thiệu giao diện học tập",
+          courseStructure: [
+            {
+              id: "1",
+              title: "Chương Demo",
+              lessons: [
+                {
+                  id: "1",
+                  title: "Bài 1: Giới thiệu",
+                  type: "lesson",
+                  completed: false,
+                  current: true
+                },
+                {
+                  id: "2",
+                  title: "Bài 2: Nâng cao",
+                  type: "lesson",
+                  completed: false
+                }
+              ]
+            }
+          ],
+          videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+        };
+        
+        setLessonData(dummyLesson);
       } finally {
         setLoading(false);
       }

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,7 +17,16 @@ import UserProfile from "./pages/UserProfile";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-const queryClient = new QueryClient();
+// Configure query client with error handling
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -51,7 +61,11 @@ const App = () => (
             } />
             
             {/* Course lessons */}
-            <Route path="/course/:courseId/chapter/:chapterId/lesson/:lessonId" element={<LessonDetail />} />
+            <Route path="/course/:courseId/chapter/:chapterId/lesson/:lessonId" element={
+              <ProtectedRoute>
+                <LessonDetail />
+              </ProtectedRoute>
+            } />
             <Route path="/lesson-demo" element={<LessonDemo />} />
             <Route path="/demo" element={<LessonDemo />} />
             

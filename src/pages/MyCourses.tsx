@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -88,7 +89,7 @@ const MyCourses = () => {
           </p>
           
           {enrolledCourses.length > 0 ? (
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {enrolledCourses.map((course) => (
                 <div key={course.id} className="flex flex-col h-full">
                   <CourseCard key={course.id} {...course} />
@@ -127,4 +128,4 @@ const MyCourses = () => {
   );
 };
 
-export default MyCourses;git 
+export default MyCourses;

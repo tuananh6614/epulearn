@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -18,9 +19,10 @@ interface User {
   email: string;
   firstName?: string;
   lastName?: string;
+  lastNameChanged?: string; // Track when name was last changed
 }
 
-// Base API URL - thay đổi nếu server của bạn chạy ở cổng khác
+// Base API URL for your MySQL backend
 const API_URL = 'http://localhost:3000/api';
 
 // Fixed account credentials
@@ -38,7 +40,8 @@ interface AuthContextType {
   showLogoutConfirm: boolean;
   setShowLogoutConfirm: (show: boolean) => void;
   loginWithFixedAccount: () => void;
-  updateCurrentUser: (userData: Partial<User>) => void;
+  updateCurrentUser: (userData: Partial<User>) => Promise<boolean>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
 }
 
 // Create the auth context
@@ -66,12 +69,97 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Method to update current user data
-  const updateCurrentUser = (userData: Partial<User>) => {
-    if (!currentUser) return;
+  const updateCurrentUser = async (userData: Partial<User>): Promise<boolean> => {
+    if (!currentUser) return false;
     
-    const updatedUser = { ...currentUser, ...userData };
-    setCurrentUser(updatedUser);
-    localStorage.setItem('epu_user', JSON.stringify(updatedUser));
+    try {
+      // Handle name change restrictions (once every 5 days)
+      if ((userData.firstName !== undefined && userData.firstName !== currentUser.firstName) ||
+          (userData.lastName !== undefined && userData.lastName !== currentUser.lastName)) {
+        
+        const lastChanged = currentUser.lastNameChanged ? new Date(currentUser.lastNameChanged) : null;
+        const now = new Date();
+        
+        if (lastChanged) {
+          const diffDays = Math.floor((now.getTime() - lastChanged.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (diffDays < 5) {
+            toast.error(`Bạn chỉ có thể thay đổi tên mỗi 5 ngày. Vui lòng thử lại sau ${5 - diffDays} ngày.`);
+            return false;
+          }
+        }
+        
+        // Set the name change timestamp
+        userData.lastNameChanged = now.toISOString();
+      }
+      
+      // Update user in the database via API
+      const response = await fetch(`${API_URL}/users/${currentUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Cập nhật thông tin thất bại");
+        return false;
+      }
+      
+      // Update local user data
+      const updatedUser = { ...currentUser, ...userData };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('epu_user', JSON.stringify(updatedUser));
+      
+      toast.success("Thông tin đã được cập nhật");
+      return true;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error("Cập nhật thông tin thất bại. Vui lòng kiểm tra kết nối mạng");
+      return false;
+    }
+  };
+
+  // Password change method
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
+    if (!currentUser) return false;
+    
+    try {
+      // Validate input
+      if (!currentPassword || !newPassword) {
+        toast.error("Vui lòng nhập đầy đủ thông tin");
+        return false;
+      }
+      
+      if (newPassword.length < 6) {
+        toast.error("Mật khẩu mới phải có ít nhất 6 ký tự");
+        return false;
+      }
+      
+      // Call API to change password
+      const response = await fetch(`${API_URL}/users/${currentUser.id}/change-password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Thay đổi mật khẩu thất bại");
+        return false;
+      }
+      
+      toast.success("Mật khẩu đã được thay đổi thành công");
+      return true;
+    } catch (error) {
+      console.error('Error changing password:', error);
+      toast.error("Thay đổi mật khẩu thất bại. Vui lòng kiểm tra kết nối mạng");
+      return false;
+    }
   };
 
   // Login with fixed account
@@ -121,7 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       }
       
-      // Gọi API đăng nhập
+      // Call login API
       const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {
@@ -137,7 +225,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Lưu thông tin người dùng vào localStorage
+      // Save user info to localStorage
       localStorage.setItem('epu_user', JSON.stringify(data.user));
       setCurrentUser(data.user);
       
@@ -157,7 +245,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     
     try {
-      // Kiểm tra đầu vào
+      // Validate input
       if (!email || !password || !firstName || !lastName) {
         toast.error("Vui lòng điền đầy đủ thông tin");
         return false;
@@ -174,7 +262,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Gọi API đăng ký
+      // Call signup API
       const response = await fetch(`${API_URL}/signup`, {
         method: 'POST',
         headers: {
@@ -226,6 +314,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShowLogoutConfirm,
     loginWithFixedAccount,
     updateCurrentUser,
+    changePassword
   };
 
   return (

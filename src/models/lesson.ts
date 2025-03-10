@@ -84,11 +84,3 @@ export interface UserCertificate {
   issueDate: string;
   courseName: string;
 }
-
-export interface EnrolledCourse {
-  id: string;
-  title: string;
-  progress: number;
-  image: string;
-  color: string;
-}

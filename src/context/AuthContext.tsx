@@ -30,8 +30,8 @@ interface FixedAccount extends User {
 // Base API URL for your MySQL backend
 const API_URL = 'http://localhost:3000/api';
 
-// Fixed account credentials - initialize with empty string values
-// This will be used only if you decide to enable a demo account
+// Fixed account credentials - don't use a fixed account unless explicitly configured
+// This should be empty by default to avoid auto-login issues
 const FIXED_ACCOUNT: FixedAccount = {
   id: "",
   email: "",
@@ -307,7 +307,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Logout function
+  // Logout function - just show confirmation dialog
   const logout = () => {
     setShowLogoutConfirm(true);
   };
@@ -316,7 +316,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const performLogout = () => {
     localStorage.removeItem('epu_user');
     setCurrentUser(null);
-    navigate('/');
+    // Changed: First clear user data, then navigate
+    navigate('/login');
     toast.info("Đã đăng xuất. Hẹn gặp lại bạn!");
     setShowLogoutConfirm(false);
   };

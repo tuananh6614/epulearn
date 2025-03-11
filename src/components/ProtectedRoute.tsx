@@ -17,7 +17,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   useEffect(() => {
     const checkApiHealth = async () => {
       try {
-        // In production or when running as standalone app, skip the health check
+        // Always assume API is available in production
         const isProduction = import.meta.env.PROD;
         const hostname = window.location.hostname;
         
@@ -30,53 +30,40 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         }
         
         // Only perform health checks in development environment
-        const response = await fetch('http://localhost:3000/api/health-check', { 
-          signal: AbortSignal.timeout(3000) // 3 second timeout
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
         
-        if (response.ok) {
-          setApiAvailable(true);
-          setHealthCheckAttempted(true);
-          return;
-        }
-        
-        throw new Error('Primary health check failed');
-      } catch (primaryError) {
-        console.warn('Primary health check failed, trying fallback', primaryError);
-        
-        // Try the fallback endpoint only in development
         try {
-          // Skip additional checks if not in development
-          if (import.meta.env.PROD || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
-            setApiAvailable(true);
-            setHealthCheckAttempted(true);
-            return;
-          }
-          
-          const fallbackResponse = await fetch('http://localhost:3000/api/ping', { 
-            signal: AbortSignal.timeout(3000) // 3 second timeout
+          const response = await fetch('http://localhost:3000/api/health-check', { 
+            signal: controller.signal
           });
           
-          if (fallbackResponse.ok) {
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
             setApiAvailable(true);
             setHealthCheckAttempted(true);
             return;
           }
           
-          throw new Error('Fallback health check failed');
-        } catch (fallbackError) {
-          console.error('API health check failed', fallbackError);
+          throw new Error('Primary health check failed');
+        } catch (primaryError) {
+          clearTimeout(timeoutId);
+          console.warn('Primary health check failed, assuming API unavailable', primaryError);
           
-          // For production environment, assume API is available
-          if (import.meta.env.PROD || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
-            console.log("Assuming API is available in production despite failed health check");
-            setApiAvailable(true);
-          } else {
-            setApiAvailable(false);
-            toast.error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.");
-          }
+          // For demo purposes, assume API is available even when check fails
+          setApiAvailable(false);
           setHealthCheckAttempted(true);
+          
+          // Show a more friendly message
+          toast.warning("Không thể kết nối đến máy chủ. Ứng dụng sẽ chạy ở chế độ offline.", {
+            duration: 5000,
+          });
         }
+      } catch (error) {
+        console.error('API health check error:', error);
+        setApiAvailable(false);
+        setHealthCheckAttempted(true);
       }
     };
     
@@ -92,22 +79,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
   
-  // If API is not available, show a message (only in development)
+  // If API is not available but we are in development, allow user to continue with limited functionality
   if (apiAvailable === false) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center p-6 max-w-md">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Lỗi kết nối máy chủ</h2>
-          <p className="mb-6">Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại sau.</p>
-          <button 
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            onClick={() => window.location.reload()}
-          >
-            Thử lại
-          </button>
-        </div>
-      </div>
-    );
+    // Use toast instead of blocking access
+    toast.warning("Ứng dụng đang chạy ở chế độ offline, một số tính năng có thể không hoạt động.", {
+      duration: 10000,
+      id: "offline-mode-warning", // prevent duplicates
+    });
+    
+    // Continue to app instead of blocking
+    if (!isAuthenticated) {
+      toast.error("Bạn cần đăng nhập để truy cập trang này");
+      return <Navigate to="/login" replace />;
+    }
+    
+    return <>{children}</>;
   }
   
   // Redirect to login if not authenticated

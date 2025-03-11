@@ -49,29 +49,41 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     setIsUploading(true);
     
     try {
-      const formData = new FormData();
-      formData.append('avatar', file);
+      // Create object URL for local preview without server
+      const localImageUrl = URL.createObjectURL(file);
       
-      const API_URL = 'http://localhost:3000/api';
-      
-      const response = await fetch(`${API_URL}/upload-avatar`, {
-        method: 'POST',
-        body: formData,
-        signal: AbortSignal.timeout(30000) // Increase timeout for large files
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to upload avatar');
+      try {
+        // Try to upload to server first
+        const formData = new FormData();
+        formData.append('avatar', file);
+        
+        const API_URL = 'http://localhost:3000/api';
+        
+        const response = await fetch(`${API_URL}/upload-avatar`, {
+          method: 'POST',
+          body: formData,
+          signal: AbortSignal.timeout(5000) // Reduce timeout to quickly detect connection issues
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to upload avatar to server');
+        }
+        
+        const data = await response.json();
+        
+        // Update user data in AuthContext with server URL
+        await updateCurrentUser({ avatarUrl: data.avatarUrl });
+        toast.success("Ảnh đại diện đã được cập nhật và đồng bộ với CSDL");
+      } catch (error) {
+        console.error('Error uploading avatar to server:', error);
+        
+        // Fall back to local URL if server upload fails
+        await updateCurrentUser({ avatarUrl: localImageUrl });
+        toast.warning("Không thể kết nối đến máy chủ. Ảnh đã được lưu cục bộ.");
       }
-      
-      const data = await response.json();
-      
-      // Update user data in AuthContext
-      await updateCurrentUser({ avatarUrl: data.avatarUrl });
-      toast.success("Ảnh đại diện đã được cập nhật và đồng bộ với CSDL");
     } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast.error("Không thể tải lên ảnh đại diện. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
+      console.error('Error handling avatar upload:', error);
+      toast.error("Không thể tải lên ảnh đại diện. Vui lòng thử lại sau.");
     } finally {
       setIsUploading(false);
     }

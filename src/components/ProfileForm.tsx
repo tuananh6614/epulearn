@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Pencil, Database, CheckCircle2 } from 'lucide-react';
+import { Pencil, Database, CheckCircle2, WifiOff } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -24,7 +24,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 const ProfileForm: React.FC = () => {
   const { currentUser, updateCurrentUser } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<'none' | 'synced'>('none');
+  const [syncStatus, setSyncStatus] = useState<'none' | 'synced' | 'offline'>('none');
   
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -52,10 +52,15 @@ const ProfileForm: React.FC = () => {
       
       if (success) {
         setSyncStatus('synced');
+        toast.success("Thông tin đã được cập nhật thành công");
+      } else {
+        // If we couldn't sync to database but local storage was updated
+        setSyncStatus('offline');
+        toast.warning("Thông tin đã được lưu cục bộ, nhưng chưa đồng bộ với CSDL do lỗi kết nối");
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("Lỗi cập nhật thông tin");
+      toast.error("Lỗi cập nhật thông tin. Vui lòng thử lại sau.");
       setSyncStatus('none');
     } finally {
       setLoading(false);
@@ -157,6 +162,15 @@ const ProfileForm: React.FC = () => {
                 <span className="flex items-center text-green-600">
                   <CheckCircle2 className="h-4 w-4 mr-1" />
                   Đã đồng bộ với CSDL
+                </span>
+              </div>
+            )}
+            
+            {syncStatus === 'offline' && (
+              <div className="flex items-center text-sm">
+                <WifiOff className="h-4 w-4 mr-1 text-amber-500" />
+                <span className="text-amber-600">
+                  Đã lưu cục bộ (Chưa đồng bộ CSDL)
                 </span>
               </div>
             )}

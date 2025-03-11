@@ -43,7 +43,7 @@ const ProfileForm: React.FC = () => {
     setSyncStatus('none');
     
     try {
-      // Call the API to update user profile
+      // Call the API to update user profile with timeout
       const success = await updateCurrentUser({
         firstName: values.firstName,
         lastName: values.lastName,
@@ -51,12 +51,11 @@ const ProfileForm: React.FC = () => {
       });
       
       if (success) {
-        // Check toast message to determine sync status
-        // This is a workaround - in a real app, you'd get this from the API response
-        if (document.body.textContent?.includes("đồng bộ với máy chủ")) {
-          setSyncStatus('synced');
-        } else {
+        // Check if the toast message indicates a failed API but successful local update
+        if (document.body.textContent?.includes("chưa đồng bộ")) {
           setSyncStatus('local');
+        } else {
+          setSyncStatus('synced');
         }
       }
     } catch (error) {
@@ -163,12 +162,12 @@ const ProfileForm: React.FC = () => {
                 {syncStatus === 'synced' ? (
                   <span className="flex items-center text-green-600">
                     <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Đã đồng bộ với máy chủ
+                    Đã đồng bộ với CSDL
                   </span>
                 ) : (
                   <span className="flex items-center text-amber-600">
                     <AlertTriangle className="h-4 w-4 mr-1" />
-                    Đã lưu cục bộ, chưa đồng bộ
+                    Đã lưu cục bộ, chưa đồng bộ với CSDL
                   </span>
                 )}
               </div>

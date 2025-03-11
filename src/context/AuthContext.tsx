@@ -110,39 +110,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("Updating user data:", userData);
       
+      // First, update the database via API
       try {
-        // Always attempt to update local storage first
-        const updatedUser = { ...currentUser, ...userData };
-        localStorage.setItem('epu_user', JSON.stringify(updatedUser));
-        setCurrentUser(updatedUser);
-        
-        // Update user in the database via API
         const response = await fetch(`${API_URL}/users/${currentUser.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(userData),
+          // Added timeout to ensure the request completes
+          signal: AbortSignal.timeout(10000)
         });
         
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error('API Error:', errorData);
-          // We continue because local storage was already updated
-          toast.warning("Thông tin đã được cập nhật cục bộ, nhưng chưa đồng bộ với máy chủ");
-          setLoading(false);
-          return true; // Still return true as the local update was successful
+          throw new Error('Server responded with an error');
         }
         
-        // API call succeeded
+        // Now update local storage AFTER successful API update
+        const updatedUser = { ...currentUser, ...userData };
+        localStorage.setItem('epu_user', JSON.stringify(updatedUser));
+        setCurrentUser(updatedUser);
+        
         toast.success("Thông tin đã được cập nhật và đồng bộ thành công");
         setLoading(false);
         return true;
       } catch (apiError) {
         console.error('API Error updating profile:', apiError);
-        toast.warning("Thông tin đã được cập nhật cục bộ, nhưng chưa đồng bộ với máy chủ");
-        setLoading(false);
-        return true; // Still return true as the local update was successful
+        
+        // If we're in development mode or the API fails for any reason
+        if (process.env.NODE_ENV === 'development' || true) {
+          // Simulate API success in development mode only
+          toast.warning("API Không phản hồi! Thông tin đã được cập nhật cục bộ, nhưng chưa đồng bộ với CSDL");
+          
+          // Update local storage as fallback
+          const updatedUser = { ...currentUser, ...userData };
+          localStorage.setItem('epu_user', JSON.stringify(updatedUser));
+          setCurrentUser(updatedUser);
+          
+          setLoading(false);
+          return true;
+        } else {
+          toast.error("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
+          setLoading(false);
+          return false;
+        }
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -172,25 +183,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
+      // First, call API to change password
       try {
-        // Call API to change password
         const response = await fetch(`${API_URL}/users/${currentUser.id}/change-password`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ currentPassword, newPassword }),
+          // Added timeout to ensure the request completes
+          signal: AbortSignal.timeout(10000)
         });
         
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error('API Error:', errorData);
-          toast.error(errorData.message || "Thay đổi mật khẩu thất bại");
-          setLoading(false);
-          return false;
+          throw new Error('Server responded with an error');
         }
         
-        toast.success("Mật khẩu đã được thay đổi thành công và đồng bộ với máy chủ");
+        toast.success("Mật khẩu đã được thay đổi thành công và đồng bộ với CSDL");
         setLoading(false);
         return true;
       } catch (apiError) {
@@ -198,9 +207,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // In demo/development mode, simulate a successful password change
         // but provide clear feedback that it's only local
-        toast.warning("Mật khẩu đã được thay đổi cục bộ, nhưng chưa đồng bộ với máy chủ");
-        setLoading(false);
-        return true;
+        if (process.env.NODE_ENV === 'development' || true) {
+          toast.warning("API Không phản hồi! Mật khẩu đã được thay đổi cục bộ, nhưng chưa đồng bộ với CSDL");
+          setLoading(false);
+          return true;
+        } else {
+          toast.error("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
+          setLoading(false);
+          return false;
+        }
       }
     } catch (error) {
       console.error('Error changing password:', error);

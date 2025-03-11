@@ -53,20 +53,38 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       formData.append('avatar', file);
       
       const API_URL = 'http://localhost:3000/api';
-      const response = await fetch(`${API_URL}/upload-avatar`, {
-        method: 'POST',
-        body: formData,
-      });
       
-      if (!response.ok) {
-        throw new Error('Failed to upload avatar');
+      try {
+        const response = await fetch(`${API_URL}/upload-avatar`, {
+          method: 'POST',
+          body: formData,
+          signal: AbortSignal.timeout(10000) // Add 10s timeout
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to upload avatar');
+        }
+        
+        const data = await response.json();
+        
+        // Update user data in AuthContext
+        await updateCurrentUser({ avatarUrl: data.avatarUrl });
+        toast.success("Ảnh đại diện đã được cập nhật và đồng bộ với CSDL");
+      } catch (error) {
+        console.error('API Error uploading avatar:', error);
+        
+        // In development/demo mode, simulate a successful upload
+        // We'll convert the image to a base64 string as temporary solution
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+          const base64Image = reader.result as string;
+          
+          // Update user data with the base64 avatar
+          await updateCurrentUser({ avatarUrl: base64Image });
+          toast.warning("API Không phản hồi! Ảnh đại diện đã được cập nhật cục bộ, nhưng chưa đồng bộ với CSDL");
+        };
       }
-      
-      const data = await response.json();
-      
-      // Update user data in AuthContext
-      await updateCurrentUser({ avatarUrl: data.avatarUrl });
-      toast.success("Ảnh đại diện đã được cập nhật");
     } catch (error) {
       console.error('Error uploading avatar:', error);
       toast.error("Không thể tải lên ảnh đại diện");

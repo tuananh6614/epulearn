@@ -60,7 +60,7 @@ const SecurityForm: React.FC = () => {
       // For development/demo purposes - simulate password check
       const API_URL = 'http://localhost:3000/api';
       try {
-        // Try to call the API
+        // Try to call the API with timeout
         const response = await fetch(`${API_URL}/check-password`, {
           method: 'POST',
           headers: {
@@ -70,6 +70,7 @@ const SecurityForm: React.FC = () => {
             userId: currentUser?.id,
             password: currentPassword
           }),
+          signal: AbortSignal.timeout(10000) // 10 second timeout
         });
         
         if (response.ok) {
@@ -90,7 +91,7 @@ const SecurityForm: React.FC = () => {
           setIsCurrentPasswordValid(true);
           setPasswordChecked(true);
           setSyncStatus('local');
-          toast.success("Mật khẩu chính xác (Chế độ demo)");
+          toast.warning("API Không phản hồi! Mật khẩu được kiểm tra cục bộ (chế độ demo)");
         } else {
           toast.error("Mật khẩu không chính xác (Chế độ demo)");
           setIsCurrentPasswordValid(false);
@@ -124,13 +125,12 @@ const SecurityForm: React.FC = () => {
       
       if (success) {
         // Check toast message to determine sync status
-        // This is a workaround - in a real app, you'd get this from the API response
-        if (document.body.textContent?.includes("đồng bộ với máy chủ")) {
-          setSyncStatus('synced');
-          toast.success("Mật khẩu đã được cập nhật thành công và đồng bộ với máy chủ. Vui lòng đăng nhập lại.");
-        } else {
+        if (document.body.textContent?.includes("chưa đồng bộ")) {
           setSyncStatus('local');
-          toast.warning("Mật khẩu đã được cập nhật cục bộ, nhưng chưa đồng bộ với máy chủ. Vui lòng đăng nhập lại.");
+          toast.warning("Mật khẩu đã được cập nhật cục bộ, nhưng chưa đồng bộ với CSDL. Vui lòng đăng nhập lại.");
+        } else {
+          setSyncStatus('synced');
+          toast.success("Mật khẩu đã được cập nhật thành công và đồng bộ với CSDL. Vui lòng đăng nhập lại.");
         }
         
         // Clear form
@@ -281,12 +281,12 @@ const SecurityForm: React.FC = () => {
                 {syncStatus === 'synced' ? (
                   <span className="flex items-center text-green-600">
                     <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Xác thực với máy chủ
+                    Xác thực với CSDL
                   </span>
                 ) : (
                   <span className="flex items-center text-amber-600">
                     <AlertTriangle className="h-4 w-4 mr-1" />
-                    Chế độ demo (không có máy chủ)
+                    Chế độ demo (chưa đồng bộ CSDL)
                   </span>
                 )}
               </div>

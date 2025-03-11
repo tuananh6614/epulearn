@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import UserAvatar from './UserAvatar';
+import { checkApiHealth } from '@/services/apiUtils';
 
 // Schema for profile update
 const profileFormSchema = z.object({
@@ -43,6 +44,9 @@ const ProfileForm: React.FC = () => {
     setSyncStatus('none');
     
     try {
+      // Check API availability before update
+      const isApiAvailable = await checkApiHealth();
+      
       // Call the API to update user profile
       const success = await updateCurrentUser({
         firstName: values.firstName,
@@ -50,7 +54,7 @@ const ProfileForm: React.FC = () => {
         bio: values.bio
       });
       
-      if (success) {
+      if (success && isApiAvailable) {
         setSyncStatus('synced');
         toast.success("Thông tin đã được cập nhật thành công");
       } else {

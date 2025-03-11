@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { checkApiHealth } from '@/services/apiUtils';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -15,47 +16,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   
   // Check API health on component mount
   useEffect(() => {
-    const checkApiHealth = async () => {
+    const performHealthCheck = async () => {
       try {
-        // Always assume API is available in production
-        const isProduction = import.meta.env.PROD;
-        const hostname = window.location.hostname;
+        const isAvailable = await checkApiHealth();
+        setApiAvailable(isAvailable);
         
-        // Skip API health check if we're not on localhost
-        if (isProduction || (hostname !== 'localhost' && hostname !== '127.0.0.1')) {
-          console.log("Skipping API health check in production environment");
-          setApiAvailable(true);
-          setHealthCheckAttempted(true);
-          return;
-        }
-        
-        // Only perform health checks in development environment
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-        
-        try {
-          const response = await fetch('http://localhost:3000/api/health-check', { 
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (response.ok) {
-            setApiAvailable(true);
-            setHealthCheckAttempted(true);
-            return;
-          }
-          
-          throw new Error('Primary health check failed');
-        } catch (primaryError) {
-          clearTimeout(timeoutId);
-          console.warn('Primary health check failed, assuming API unavailable', primaryError);
-          
-          // For demo purposes, assume API is available even when check fails
-          setApiAvailable(false);
-          setHealthCheckAttempted(true);
-          
-          // Show a more friendly message
+        if (!isAvailable) {
           toast.warning("Không thể kết nối đến máy chủ. Ứng dụng sẽ chạy ở chế độ offline.", {
             duration: 5000,
           });
@@ -63,11 +29,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       } catch (error) {
         console.error('API health check error:', error);
         setApiAvailable(false);
+        toast.error("Lỗi kết nối đến máy chủ", {
+          duration: 5000,
+        });
+      } finally {
         setHealthCheckAttempted(true);
       }
     };
     
-    checkApiHealth();
+    performHealthCheck();
   }, []);
   
   // Show loading state if auth is still being determined or we're checking API health

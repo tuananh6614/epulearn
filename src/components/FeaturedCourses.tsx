@@ -1,24 +1,27 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, RefreshCw } from "lucide-react";
 import CourseCard from './CourseCard';
 import { Link } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from 'sonner';
+import { API_URL, fetchWithTimeout } from '@/services/apiUtils';
 
 // Component hiển thị các khóa học nổi bật
 const FeaturedCourses = () => {
   const [featuredCourses, setFeaturedCourses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { toast } = useToast();
 
   const fetchFeaturedCourses = async () => {
     try {
       console.log('Fetching featured courses from API...');
-      const response = await fetch('http://localhost:3000/api/featured-courses');
+      const response = await fetchWithTimeout(`${API_URL}/featured-courses`, {}, 8000);
+      
       if (!response.ok) {
         throw new Error('Không thể tải khóa học nổi bật');
       }
+      
       const data = await response.json();
       console.log('Featured courses data received:', data);
       setFeaturedCourses(data);
@@ -28,17 +31,13 @@ const FeaturedCourses = () => {
       setError(err.message);
       setIsLoading(false);
       
-      toast({
-        title: "Không thể kết nối đến máy chủ",
-        description: "Vui lòng kiểm tra kết nối của bạn hoặc thử lại sau.",
-        variant: "destructive",
-      });
+      toast.error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối của bạn hoặc thử lại sau.");
     }
   };
 
   useEffect(() => {
     fetchFeaturedCourses();
-  }, [toast]);
+  }, []);
 
   // Thử lại khi gặp lỗi
   const handleRetry = () => {

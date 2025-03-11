@@ -4,6 +4,7 @@ import { Upload } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { API_URL, fetchWithTimeout } from '@/services/apiUtils';
 
 interface UserAvatarProps {
   avatarUrl: string | null;
@@ -57,13 +58,10 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         const formData = new FormData();
         formData.append('avatar', file);
         
-        const API_URL = 'http://localhost:3000/api';
-        
-        const response = await fetch(`${API_URL}/upload-avatar`, {
+        const response = await fetchWithTimeout(`${API_URL}/upload-avatar`, {
           method: 'POST',
           body: formData,
-          signal: AbortSignal.timeout(5000) // Reduce timeout to quickly detect connection issues
-        });
+        }, 8000);
         
         if (!response.ok) {
           throw new Error('Failed to upload avatar to server');

@@ -45,7 +45,7 @@ const SecurityForm: React.FC = () => {
     },
   });
   
-  // Validate current password
+  // Validate current password - Simplified without encryption
   const checkCurrentPassword = async () => {
     const currentPassword = form.getValues("currentPassword");
     
@@ -91,7 +91,7 @@ const SecurityForm: React.FC = () => {
     }
   };
   
-  // Handle password change
+  // Handle password change - Simplified without encryption
   const onSubmit = async (values: PasswordFormValues) => {
     if (!passwordChecked || !isCurrentPasswordValid) {
       toast.error("Vui lòng kiểm tra mật khẩu hiện tại trước");

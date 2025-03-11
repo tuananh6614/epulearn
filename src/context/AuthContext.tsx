@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -108,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
-  // Method to update current user data with improved error handling
+  // Method to update current user data
   const updateCurrentUser = async (userData: Partial<User>): Promise<boolean> => {
     if (!currentUser) return false;
     
@@ -195,7 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Password change method with improved error handling
+  // Password change method without encryption
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     if (!currentUser) return false;
     
@@ -218,7 +217,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check if API is available
       if (apiConnectionState === 'available') {
         try {
-          // First verify current password
+          // First verify current password - without encryption
           const verifyResponse = await fetch(`${API_URL}/check-password`, {
             method: 'POST',
             headers: {
@@ -226,7 +225,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             },
             body: JSON.stringify({ 
               userId: currentUser.id, 
-              password: currentPassword 
+              password: currentPassword // Plain text password
             }),
             signal: AbortSignal.timeout(3000)
           });
@@ -237,13 +236,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return false;
           }
           
-          // If verification passed, try to change password
+          // If verification passed, try to change password - without encryption
           const changeResponse = await fetch(`${API_URL}/users/${currentUser.id}/change-password`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ currentPassword, newPassword }),
+            body: JSON.stringify({ 
+              currentPassword, // Plain text password
+              newPassword      // Plain text password
+            }),
             signal: AbortSignal.timeout(3000)
           });
           
@@ -256,8 +258,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               },
               body: JSON.stringify({ 
                 userId: currentUser.id, 
-                currentPassword, 
-                newPassword 
+                currentPassword, // Plain text password
+                newPassword      // Plain text password
               }),
               signal: AbortSignal.timeout(3000)
             });
@@ -289,6 +291,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Login with fixed account
   const loginWithFixedAccount = () => {
     // Check if fixed account is configured
     if (!FIXED_ACCOUNT.email || !FIXED_ACCOUNT.password) {
@@ -315,7 +318,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   };
 
-  // Login function with improved error handling
+  // Login function without encryption
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     
@@ -325,7 +328,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Check for fixed account first (for development/offline use)
+      // Check for fixed account first (for development/offline use) - plain text comparison
       if (FIXED_ACCOUNT.email && FIXED_ACCOUNT.password && 
           email === FIXED_ACCOUNT.email && password === FIXED_ACCOUNT.password) {
         const user: User = {
@@ -345,7 +348,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Try to connect to API if available
       if (apiConnectionState === 'available') {
         try {
-          // Call login API with timeout
+          // Call login API with timeout - plain text password
           const response = await fetch(`${API_URL}/login`, {
             method: 'POST',
             headers: {
@@ -419,7 +422,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Signup function with improved error handling
+  // Signup function without encryption
   const signup = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
     setLoading(true);
     
@@ -444,7 +447,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check if API is available
       if (apiConnectionState === 'available') {
         try {
-          // Call signup API with timeout
+          // Call signup API with timeout - plain text password
           const response = await fetch(`${API_URL}/signup`, {
             method: 'POST',
             headers: {

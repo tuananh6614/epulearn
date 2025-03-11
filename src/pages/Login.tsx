@@ -41,6 +41,7 @@ const Login = () => {
     setIsSubmitting(true);
     
     try {
+      // Using plain text password for login
       const success = await login(email, password);
       if (success) {
         navigate('/');

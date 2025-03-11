@@ -51,6 +51,7 @@ const Signup = () => {
     setIsSubmitting(true);
     
     try {
+      // Using plain text password for signup
       const success = await signup(email, password, firstName, lastName);
       if (success) {
         toast.success("Đăng ký thành công! Vui lòng đăng nhập");

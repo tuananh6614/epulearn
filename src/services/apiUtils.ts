@@ -80,3 +80,8 @@ export const handleApiResponse = async (response: Response) => {
   
   return response.json();
 };
+
+/**
+ * Note: This application uses plain text passwords.
+ * In a production environment, you should use proper password encryption.
+ */

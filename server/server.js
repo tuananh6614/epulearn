@@ -55,7 +55,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'password',
+  password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'epu_learning'
 };
 
@@ -71,6 +71,11 @@ async function testConnection() {
     return true;
   } catch (error) {
     console.error('❌ Database connection failed:', error.message);
+    console.log('\nTroubleshooting tips:');
+    console.log('1. Make sure your MySQL server is running');
+    console.log('2. Check your database credentials in the .env file');
+    console.log('3. Create the database using: mysql -u YOUR_USERNAME -p < database.sql');
+    console.log('4. If using root without password, try DB_PASSWORD= (empty string) in .env\n');
     return false;
   }
 }
@@ -273,59 +278,6 @@ app.put('/api/users/:id/change-password', async (req, res) => {
     return res.status(200).json({ message: 'Mật khẩu đã được thay đổi thành công' });
   } catch (error) {
     console.error('Password change error:', error);
-    return res.status(500).json({ message: 'Lỗi máy chủ, vui lòng thử lại sau' });
-  }
-});
-
-// Password check endpoint (for verification purposes)
-app.post('/api/check-password', async (req, res) => {
-  const { userId, password } = req.body;
-  
-  if (!userId || !password) {
-    return res.status(400).json({ message: 'UserId và mật khẩu là bắt buộc' });
-  }
-  
-  try {
-    const [rows] = await pool.execute(
-      'SELECT password FROM users WHERE id = ?',
-      [userId]
-    );
-    
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'Người dùng không tồn tại' });
-    }
-    
-    const user = rows[0];
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    
-    if (isValidPassword) {
-      return res.status(200).json({ message: 'Mật khẩu chính xác' });
-    } else {
-      return res.status(401).json({ message: 'Mật khẩu không chính xác' });
-    }
-  } catch (error) {
-    console.error('Check password error:', error);
-    return res.status(500).json({ message: 'Lỗi máy chủ, vui lòng thử lại sau' });
-  }
-});
-
-// Avatar upload endpoint
-app.post('/api/upload-avatar', upload.single('avatar'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: 'Không có file nào được tải lên' });
-  }
-  
-  try {
-    // In a real application, you would associate this with a user
-    // Here we'll just return the path to the uploaded file
-    const avatarUrl = `/uploads/${req.file.filename}`;
-    
-    return res.status(200).json({ 
-      message: 'Avatar uploaded successfully',
-      avatarUrl: avatarUrl
-    });
-  } catch (error) {
-    console.error('Avatar upload error:', error);
     return res.status(500).json({ message: 'Lỗi máy chủ, vui lòng thử lại sau' });
   }
 });

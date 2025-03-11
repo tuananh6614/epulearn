@@ -14,7 +14,7 @@ export const API_URL = import.meta.env.PROD
 export const fetchWithTimeout = async (
   url: string, 
   options: RequestInit = {}, 
-  timeoutMs: number = 5000
+  timeoutMs: number = 10000 // Increased timeout to 10 seconds
 ): Promise<Response> => {
   try {
     const controller = new AbortController();
@@ -49,10 +49,34 @@ export const checkApiHealth = async (): Promise<boolean> => {
       }
     }
     
-    const response = await fetchWithTimeout(`${API_URL}/health-check`, {}, 2000);
+    console.log("Checking API health at:", `${API_URL}/health-check`);
+    const response = await fetchWithTimeout(`${API_URL}/health-check`, {}, 5000);
+    
+    const data = await response.json();
+    console.log("API health check response:", data);
+    
     return response.ok;
   } catch (error) {
     console.warn('API health check failed:', error);
     return false;
   }
+};
+
+/**
+ * Handle API response
+ */
+export const handleApiResponse = async (response: Response) => {
+  if (!response.ok) {
+    const errorText = await response.text();
+    try {
+      // Try to parse as JSON
+      const errorJson = JSON.parse(errorText);
+      throw new Error(errorJson.message || `API error: ${response.status}`);
+    } catch (e) {
+      // If parsing fails, use the text directly
+      throw new Error(`API error: ${response.status} - ${errorText || 'Unknown error'}`);
+    }
+  }
+  
+  return response.json();
 };

@@ -18,19 +18,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   useEffect(() => {
     const performHealthCheck = async () => {
       try {
+        console.log("ProtectedRoute: Starting API health check");
         const isAvailable = await checkApiHealth();
+        console.log("ProtectedRoute: API available:", isAvailable);
         setApiAvailable(isAvailable);
         
         if (!isAvailable) {
-          toast.warning("Không thể kết nối đến máy chủ. Ứng dụng sẽ chạy ở chế độ offline.", {
-            duration: 5000,
+          toast.warning("Không thể kết nối đến máy chủ. Kiểm tra kết nối mạng và cài đặt máy chủ MySQL.", {
+            duration: 8000,
           });
         }
       } catch (error) {
         console.error('API health check error:', error);
         setApiAvailable(false);
-        toast.error("Lỗi kết nối đến máy chủ", {
-          duration: 5000,
+        toast.error("Lỗi kết nối đến máy chủ. Hãy kiểm tra xem máy chủ đã chạy chưa và cấu hình database đã đúng chưa.", {
+          duration: 8000,
         });
       } finally {
         setHealthCheckAttempted(true);
@@ -52,7 +54,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // If API is not available but we are in development, allow user to continue with limited functionality
   if (apiAvailable === false) {
     // Use toast instead of blocking access
-    toast.warning("Ứng dụng đang chạy ở chế độ offline, một số tính năng có thể không hoạt động.", {
+    toast.warning("Máy chủ không khả dụng. Hãy chạy server MySQL và chạy lệnh 'npm run dev' trong thư mục server.", {
       duration: 10000,
       id: "offline-mode-warning", // prevent duplicates
     });

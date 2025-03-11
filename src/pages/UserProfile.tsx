@@ -14,9 +14,7 @@ import ProfileForm from '@/components/ProfileForm';
 import SecurityForm from '@/components/SecurityForm';
 import CertificatesTab from '@/components/CertificatesTab';
 import { toast } from 'sonner';
-
-// API URL
-const API_URL = 'http://localhost:3000/api';
+import { API_URL, fetchWithTimeout, handleApiResponse } from '@/services/apiUtils';
 
 const UserProfile = () => {
   const { currentUser } = useAuth();
@@ -26,21 +24,31 @@ const UserProfile = () => {
   useEffect(() => {
     const checkApiConnection = async () => {
       try {
-        const response = await fetch(`${API_URL}/health-check`, { 
+        console.log("UserProfile: Checking API connection");
+        setApiConnectionStatus('checking');
+        
+        const response = await fetchWithTimeout(`${API_URL}/health-check`, { 
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(5000)
-        });
+        }, 5000); // 5 second timeout
         
         if (response.ok) {
           setApiConnectionStatus('connected');
+          console.log("UserProfile: API connection successful");
         } else {
           setApiConnectionStatus('disconnected');
-          console.warn('API health check failed:', await response.text());
+          const text = await response.text();
+          console.warn('API health check failed:', text);
+          toast.error("Máy chủ không phản hồi đúng. Hãy kiểm tra cài đặt của máy chủ MySQL.", { 
+            duration: 8000 
+          });
         }
       } catch (error) {
         console.error('API connection error:', error);
         setApiConnectionStatus('disconnected');
+        toast.error("Không thể kết nối đến máy chủ. Hãy kiểm tra xem máy chủ đã chạy chưa.", { 
+          duration: 8000 
+        });
       }
     };
     
@@ -52,15 +60,17 @@ const UserProfile = () => {
     if (!currentUser?.id) return [];
     
     try {
-      const response = await fetch(`${API_URL}/users/${currentUser.id}/courses`, {
-        signal: AbortSignal.timeout(15000)
-      });
+      console.log("Fetching user courses for ID:", currentUser.id);
+      const response = await fetchWithTimeout(`${API_URL}/users/${currentUser.id}/courses`, {}, 8000);
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to fetch enrolled courses:', errorText);
         throw new Error('Failed to fetch enrolled courses');
       }
       
       const data = await response.json();
+      console.log("Received user courses:", data);
       return data.courses || [];
     } catch (error) {
       console.error('Error fetching user courses:', error);
@@ -74,15 +84,17 @@ const UserProfile = () => {
     if (!currentUser?.id) return [];
     
     try {
-      const response = await fetch(`${API_URL}/users/${currentUser.id}/certificates`, {
-        signal: AbortSignal.timeout(15000)
-      });
+      console.log("Fetching user certificates for ID:", currentUser.id);
+      const response = await fetchWithTimeout(`${API_URL}/users/${currentUser.id}/certificates`, {}, 8000);
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to fetch certificates:', errorText);
         throw new Error('Failed to fetch certificates');
       }
       
       const data = await response.json();
+      console.log("Received user certificates:", data);
       return data.certificates || [];
     } catch (error) {
       console.error('Error fetching user certificates:', error);
@@ -95,14 +107,18 @@ const UserProfile = () => {
   const { data: userCourses, isLoading: isLoadingCourses } = useQuery({
     queryKey: ['userCourses', currentUser?.id],
     queryFn: fetchUserCourses,
-    enabled: !!currentUser?.id,
+    enabled: !!currentUser?.id && apiConnectionStatus === 'connected',
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   // Use React Query to fetch user certificates
   const { data: userCertificates, isLoading: isLoadingCertificates } = useQuery({
     queryKey: ['userCertificates', currentUser?.id],
     queryFn: fetchUserCertificates,
-    enabled: !!currentUser?.id,
+    enabled: !!currentUser?.id && apiConnectionStatus === 'connected',
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   if (!currentUser) {
@@ -136,7 +152,7 @@ const UserProfile = () => {
           <div className="container mx-auto flex items-center text-amber-800 text-sm">
             <AlertTriangle className="h-4 w-4 mr-2" />
             <span>
-              Không thể kết nối với máy chủ. Vui lòng kiểm tra kết nối mạng và làm mới trang.
+              Không thể kết nối với máy chủ. Vui lòng kiểm tra máy chủ MySQL đã được cài đặt đúng chưa và máy chủ Express đã chạy chưa. Hãy xem file .env.example để biết cách cấu hình và tạo file .env.
             </span>
           </div>
         </div>
@@ -148,7 +164,7 @@ const UserProfile = () => {
             {/* Sidebar Component */}
             <UserSidebar 
               enrolledCourses={userCourses || []} 
-              isLoadingCourses={isLoadingCourses}
+              isLoadingCourses={isLoadingCourses || apiConnectionStatus !== 'connected'}
             />
             
             {/* Nội dung chính */}
@@ -165,7 +181,7 @@ const UserProfile = () => {
                     ) : apiConnectionStatus === 'checking' ? (
                       <span className="text-blue-600">Đang kiểm tra kết nối...</span>
                     ) : (
-                      <span className="text-amber-600">Không có kết nối, vui lòng kiểm tra mạng</span>
+                      <span className="text-amber-600">Không có kết nối, vui lòng kiểm tra máy chủ MySQL</span>
                     )}
                   </span>
                 </div>
@@ -206,7 +222,7 @@ const UserProfile = () => {
                 <TabsContent value="certificates">
                   <CertificatesTab 
                     certificates={userCertificates || []} 
-                    isLoading={isLoadingCertificates}
+                    isLoading={isLoadingCertificates || apiConnectionStatus !== 'connected'}
                   />
                 </TabsContent>
               </Tabs>

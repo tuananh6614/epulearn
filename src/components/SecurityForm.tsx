@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Lock, Eye, EyeOff, Database, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Lock, Eye, EyeOff, Database, CheckCircle2 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ const SecurityForm: React.FC = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<'none' | 'synced' | 'local'>('none');
+  const [syncStatus, setSyncStatus] = useState<'none' | 'synced'>('none');
   const navigate = useNavigate();
   
   const form = useForm<PasswordFormValues>({
@@ -57,47 +57,28 @@ const SecurityForm: React.FC = () => {
     setLoading(true);
     
     try {
-      // For development/demo purposes - simulate password check
       const API_URL = 'http://localhost:3000/api';
-      try {
-        // Try to call the API with timeout
-        const response = await fetch(`${API_URL}/check-password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: currentUser?.id,
-            password: currentPassword
-          }),
-          signal: AbortSignal.timeout(10000) // 10 second timeout
-        });
-        
-        if (response.ok) {
-          setIsCurrentPasswordValid(true);
-          setPasswordChecked(true);
-          setSyncStatus('synced');
-          toast.success("Mật khẩu chính xác");
-        } else {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Mật khẩu không chính xác');
-        }
-      } catch (apiError) {
-        console.error('API error checking password:', apiError);
-        // For demo purposes, allow password check without a backend
-        console.log('Using mock password validation');
-        // For demo, accept any password with at least 6 characters
-        if (currentPassword.length >= 6) {
-          setIsCurrentPasswordValid(true);
-          setPasswordChecked(true);
-          setSyncStatus('local');
-          toast.warning("API Không phản hồi! Mật khẩu được kiểm tra cục bộ (chế độ demo)");
-        } else {
-          toast.error("Mật khẩu không chính xác (Chế độ demo)");
-          setIsCurrentPasswordValid(false);
-          setPasswordChecked(true);
-          setSyncStatus('none');
-        }
+      
+      const response = await fetch(`${API_URL}/check-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser?.id,
+          password: currentPassword
+        }),
+        signal: AbortSignal.timeout(15000) // 15 second timeout
+      });
+      
+      if (response.ok) {
+        setIsCurrentPasswordValid(true);
+        setPasswordChecked(true);
+        setSyncStatus('synced');
+        toast.success("Mật khẩu chính xác");
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Mật khẩu không chính xác');
       }
     } catch (error) {
       console.error('Error checking password:', error);
@@ -124,14 +105,8 @@ const SecurityForm: React.FC = () => {
       const success = await changePassword(values.currentPassword, values.newPassword);
       
       if (success) {
-        // Check toast message to determine sync status
-        if (document.body.textContent?.includes("chưa đồng bộ")) {
-          setSyncStatus('local');
-          toast.warning("Mật khẩu đã được cập nhật cục bộ, nhưng chưa đồng bộ với CSDL. Vui lòng đăng nhập lại.");
-        } else {
-          setSyncStatus('synced');
-          toast.success("Mật khẩu đã được cập nhật thành công và đồng bộ với CSDL. Vui lòng đăng nhập lại.");
-        }
+        setSyncStatus('synced');
+        toast.success("Mật khẩu đã được cập nhật thành công và đồng bộ với CSDL. Vui lòng đăng nhập lại.");
         
         // Clear form
         form.reset();
@@ -275,20 +250,13 @@ const SecurityForm: React.FC = () => {
               {loading ? "Đang cập nhật..." : "Thay đổi mật khẩu"}
             </Button>
             
-            {syncStatus !== 'none' && (
+            {syncStatus === 'synced' && (
               <div className="flex items-center text-sm">
                 <Database className="h-4 w-4 mr-1 text-blue-500" />
-                {syncStatus === 'synced' ? (
-                  <span className="flex items-center text-green-600">
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Xác thực với CSDL
-                  </span>
-                ) : (
-                  <span className="flex items-center text-amber-600">
-                    <AlertTriangle className="h-4 w-4 mr-1" />
-                    Chế độ demo (chưa đồng bộ CSDL)
-                  </span>
-                )}
+                <span className="flex items-center text-green-600">
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Xác thực với CSDL
+                </span>
               </div>
             )}
           </div>

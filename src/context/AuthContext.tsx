@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -111,53 +112,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Updating user data:", userData);
       
       // First, update the database via API
-      try {
-        const response = await fetch(`${API_URL}/users/${currentUser.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(userData),
-          // Added timeout to ensure the request completes
-          signal: AbortSignal.timeout(10000)
-        });
-        
-        if (!response.ok) {
-          throw new Error('Server responded with an error');
-        }
-        
-        // Now update local storage AFTER successful API update
-        const updatedUser = { ...currentUser, ...userData };
-        localStorage.setItem('epu_user', JSON.stringify(updatedUser));
-        setCurrentUser(updatedUser);
-        
-        toast.success("Thông tin đã được cập nhật và đồng bộ thành công");
-        setLoading(false);
-        return true;
-      } catch (apiError) {
-        console.error('API Error updating profile:', apiError);
-        
-        // If we're in development mode or the API fails for any reason
-        if (process.env.NODE_ENV === 'development' || true) {
-          // Simulate API success in development mode only
-          toast.warning("API Không phản hồi! Thông tin đã được cập nhật cục bộ, nhưng chưa đồng bộ với CSDL");
-          
-          // Update local storage as fallback
-          const updatedUser = { ...currentUser, ...userData };
-          localStorage.setItem('epu_user', JSON.stringify(updatedUser));
-          setCurrentUser(updatedUser);
-          
-          setLoading(false);
-          return true;
-        } else {
-          toast.error("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
-          setLoading(false);
-          return false;
-        }
+      const response = await fetch(`${API_URL}/users/${currentUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+        // Added timeout to ensure the request completes
+        signal: AbortSignal.timeout(15000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Server responded with an error');
       }
+      
+      // Now update local storage AFTER successful API update
+      const updatedUser = { ...currentUser, ...userData };
+      localStorage.setItem('epu_user', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+      
+      toast.success("Thông tin đã được cập nhật và đồng bộ thành công");
+      setLoading(false);
+      return true;
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error("Không thể cập nhật thông tin. Vui lòng thử lại sau.");
+      toast.error("Không thể cập nhật thông tin. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
       setLoading(false);
       return false;
     }
@@ -183,43 +162,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // First, call API to change password
-      try {
-        const response = await fetch(`${API_URL}/users/${currentUser.id}/change-password`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ currentPassword, newPassword }),
-          // Added timeout to ensure the request completes
-          signal: AbortSignal.timeout(10000)
-        });
-        
-        if (!response.ok) {
-          throw new Error('Server responded with an error');
-        }
-        
-        toast.success("Mật khẩu đã được thay đổi thành công và đồng bộ với CSDL");
-        setLoading(false);
-        return true;
-      } catch (apiError) {
-        console.error('API Error changing password:', apiError);
-        
-        // In demo/development mode, simulate a successful password change
-        // but provide clear feedback that it's only local
-        if (process.env.NODE_ENV === 'development' || true) {
-          toast.warning("API Không phản hồi! Mật khẩu đã được thay đổi cục bộ, nhưng chưa đồng bộ với CSDL");
-          setLoading(false);
-          return true;
-        } else {
-          toast.error("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
-          setLoading(false);
-          return false;
-        }
+      // Call API to change password
+      const response = await fetch(`${API_URL}/users/${currentUser.id}/change-password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+        // Added timeout to ensure the request completes
+        signal: AbortSignal.timeout(15000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Server responded with an error');
       }
+      
+      toast.success("Mật khẩu đã được thay đổi thành công và đồng bộ với CSDL");
+      setLoading(false);
+      return true;
     } catch (error) {
       console.error('Error changing password:', error);
-      toast.error("Không thể thay đổi mật khẩu. Vui lòng thử lại sau.");
+      toast.error("Không thể thay đổi mật khẩu. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
       setLoading(false);
       return false;
     }
@@ -278,53 +241,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       }
       
-      try {
-        // Call login API
-        const response = await fetch(`${API_URL}/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password }),
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          toast.error(data.message || "Đăng nhập thất bại");
-          return false;
-        }
-        
-        // Save user info to localStorage
-        localStorage.setItem('epu_user', JSON.stringify(data.user));
-        setCurrentUser(data.user);
-        
-        toast.success("Đăng nhập thành công");
-        return true;
-      } catch (apiError) {
-        console.error('API login error:', apiError);
-        console.log('Falling back to demo login');
-        
-        // For demo, allow login with any email/password
-        if (email && password.length >= 6) {
-          // Create a demo user
-          const demoUser: User = {
-            id: '2', // Demo user ID
-            email: email,
-            firstName: 'Người',
-            lastName: 'Dùng',
-          };
-          
-          localStorage.setItem('epu_user', JSON.stringify(demoUser));
-          setCurrentUser(demoUser);
-          
-          toast.success("Đăng nhập thành công (chế độ demo)");
-          return true;
-        } else {
-          toast.error("Email hoặc mật khẩu không hợp lệ");
-          return false;
-        }
+      // Call login API
+      const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        toast.error(data.message || "Đăng nhập thất bại");
+        return false;
       }
+      
+      // Save user info to localStorage
+      localStorage.setItem('epu_user', JSON.stringify(data.user));
+      setCurrentUser(data.user);
+      
+      toast.success("Đăng nhập thành công");
+      return true;
     } catch (error) {
       console.error('Login error:', error);
       toast.error("Đăng nhập thất bại. Vui lòng kiểm tra kết nối mạng");
@@ -356,39 +294,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      try {
-        // Call signup API
-        const response = await fetch(`${API_URL}/signup`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email, password, firstName, lastName }),
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          toast.error(data.message || "Đăng ký thất bại");
-          return false;
-        }
-        
-        toast.success("Đăng ký thành công");
-        return true;
-      } catch (apiError) {
-        console.error('API signup error:', apiError);
-        console.log('Falling back to demo signup');
-        
-        // For demo, allow signup with any valid input
-        toast.success("Đăng ký thành công (chế độ demo)");
-        return true;
+      // Call signup API
+      const response = await fetch(`${API_URL}/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, firstName, lastName }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        toast.error(data.message || "Đăng ký thất bại");
+        return false;
       }
+      
+      toast.success("Đăng ký thành công");
+      return true;
     } catch (error) {
       console.error('Signup error:', error);
-      
-      // For demo, allow signup anyway
-      toast.success("Đăng ký thành công (chế độ demo)");
-      return true;
+      toast.error("Đăng ký thất bại. Vui lòng kiểm tra kết nối mạng");
+      return false;
     } finally {
       setLoading(false);
     }

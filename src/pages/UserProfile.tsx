@@ -15,7 +15,7 @@ import SecurityForm from '@/components/SecurityForm';
 import CertificatesTab from '@/components/CertificatesTab';
 import { toast } from 'sonner';
 
-// API URL - updated to use a fallback when API is unavailable
+// API URL
 const API_URL = 'http://localhost:3000/api';
 
 const UserProfile = () => {
@@ -29,8 +29,7 @@ const UserProfile = () => {
         const response = await fetch(`${API_URL}/health-check`, { 
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
-          // Short timeout to not block the UI for too long
-          signal: AbortSignal.timeout(3000)
+          signal: AbortSignal.timeout(5000)
         });
         
         if (response.ok) {
@@ -48,84 +47,58 @@ const UserProfile = () => {
     checkApiConnection();
   }, []);
 
-  // Fetch enrolled courses cho người dùng hiện tại
+  // Fetch enrolled courses from the database
   const fetchUserCourses = async () => {
     if (!currentUser?.id) return [];
     
     try {
-      // First try API
-      try {
-        const response = await fetch(`${API_URL}/users/${currentUser.id}/courses`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch enrolled courses');
-        }
-        const data = await response.json();
-        return data.courses || [];
-      } catch (apiError) {
-        console.error('API Error fetching user courses:', apiError);
-        // Fallback to mock data if API fails
-        console.log('Using mock course data due to API failure');
-        return [
-          { id: "c1", title: "React Fundamentals", progress: 80, imageUrl: "/placeholder.svg" },
-          { id: "c2", title: "TypeScript Advanced", progress: 45, imageUrl: "/placeholder.svg" }
-        ];
+      const response = await fetch(`${API_URL}/users/${currentUser.id}/courses`, {
+        signal: AbortSignal.timeout(15000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch enrolled courses');
       }
+      
+      const data = await response.json();
+      return data.courses || [];
     } catch (error) {
       console.error('Error fetching user courses:', error);
-      return [];
+      toast.error("Không thể tải dữ liệu khóa học. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
+      return []; // Return empty array on error
     }
   };
 
-  // Fetch certificates cho người dùng hiện tại
+  // Fetch certificates from the database
   const fetchUserCertificates = async () => {
     if (!currentUser?.id) return [];
     
     try {
-      // First try API
-      try {
-        const response = await fetch(`${API_URL}/users/${currentUser.id}/certificates`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch certificates');
-        }
-        const data = await response.json();
-        return data.certificates || [];
-      } catch (apiError) {
-        console.error('API Error fetching user certificates:', apiError);
-        // Fallback to mock data if API fails
-        console.log('Using mock certificate data due to API failure');
-        return [
-          { 
-            id: "cert1", 
-            title: "React Developer", 
-            issueDate: "2025-01-15", 
-            courseName: "React Mastery", 
-            credentialId: "REACT-123456",
-            imageUrl: "/placeholder.svg" 
-          },
-          { 
-            id: "cert2", 
-            title: "TypeScript Expert", 
-            issueDate: "2025-02-20", 
-            courseName: "TypeScript Advanced", 
-            credentialId: "TS-789012",
-            imageUrl: "/placeholder.svg" 
-          }
-        ];
+      const response = await fetch(`${API_URL}/users/${currentUser.id}/certificates`, {
+        signal: AbortSignal.timeout(15000)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch certificates');
       }
+      
+      const data = await response.json();
+      return data.certificates || [];
     } catch (error) {
       console.error('Error fetching user certificates:', error);
-      return [];
+      toast.error("Không thể tải dữ liệu chứng chỉ. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
+      return []; // Return empty array on error
     }
   };
 
-  // Sử dụng React Query để lấy khóa học người dùng
+  // Use React Query to fetch user courses
   const { data: userCourses, isLoading: isLoadingCourses } = useQuery({
     queryKey: ['userCourses', currentUser?.id],
     queryFn: fetchUserCourses,
     enabled: !!currentUser?.id,
   });
 
-  // Sử dụng React Query để lấy chứng chỉ người dùng
+  // Use React Query to fetch user certificates
   const { data: userCertificates, isLoading: isLoadingCertificates } = useQuery({
     queryKey: ['userCertificates', currentUser?.id],
     queryFn: fetchUserCertificates,
@@ -163,7 +136,7 @@ const UserProfile = () => {
           <div className="container mx-auto flex items-center text-amber-800 text-sm">
             <AlertTriangle className="h-4 w-4 mr-2" />
             <span>
-              Không thể kết nối với máy chủ. Dữ liệu sẽ được lưu cục bộ và đồng bộ khi kết nối được khôi phục.
+              Không thể kết nối với máy chủ. Vui lòng kiểm tra kết nối mạng và làm mới trang.
             </span>
           </div>
         </div>
@@ -192,7 +165,7 @@ const UserProfile = () => {
                     ) : apiConnectionStatus === 'checking' ? (
                       <span className="text-blue-600">Đang kiểm tra kết nối...</span>
                     ) : (
-                      <span className="text-amber-600">Không có kết nối, dữ liệu được lưu cục bộ</span>
+                      <span className="text-amber-600">Không có kết nối, vui lòng kiểm tra mạng</span>
                     )}
                   </span>
                 </div>

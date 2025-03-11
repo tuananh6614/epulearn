@@ -54,40 +54,24 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       
       const API_URL = 'http://localhost:3000/api';
       
-      try {
-        const response = await fetch(`${API_URL}/upload-avatar`, {
-          method: 'POST',
-          body: formData,
-          signal: AbortSignal.timeout(10000) // Add 10s timeout
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to upload avatar');
-        }
-        
-        const data = await response.json();
-        
-        // Update user data in AuthContext
-        await updateCurrentUser({ avatarUrl: data.avatarUrl });
-        toast.success("Ảnh đại diện đã được cập nhật và đồng bộ với CSDL");
-      } catch (error) {
-        console.error('API Error uploading avatar:', error);
-        
-        // In development/demo mode, simulate a successful upload
-        // We'll convert the image to a base64 string as temporary solution
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async () => {
-          const base64Image = reader.result as string;
-          
-          // Update user data with the base64 avatar
-          await updateCurrentUser({ avatarUrl: base64Image });
-          toast.warning("API Không phản hồi! Ảnh đại diện đã được cập nhật cục bộ, nhưng chưa đồng bộ với CSDL");
-        };
+      const response = await fetch(`${API_URL}/upload-avatar`, {
+        method: 'POST',
+        body: formData,
+        signal: AbortSignal.timeout(30000) // Increase timeout for large files
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload avatar');
       }
+      
+      const data = await response.json();
+      
+      // Update user data in AuthContext
+      await updateCurrentUser({ avatarUrl: data.avatarUrl });
+      toast.success("Ảnh đại diện đã được cập nhật và đồng bộ với CSDL");
     } catch (error) {
       console.error('Error uploading avatar:', error);
-      toast.error("Không thể tải lên ảnh đại diện");
+      toast.error("Không thể tải lên ảnh đại diện. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
     } finally {
       setIsUploading(false);
     }

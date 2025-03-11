@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Pencil, Database, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Pencil, Database, CheckCircle2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -24,7 +24,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 const ProfileForm: React.FC = () => {
   const { currentUser, updateCurrentUser } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<'none' | 'synced' | 'local'>('none');
+  const [syncStatus, setSyncStatus] = useState<'none' | 'synced'>('none');
   
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -43,7 +43,7 @@ const ProfileForm: React.FC = () => {
     setSyncStatus('none');
     
     try {
-      // Call the API to update user profile with timeout
+      // Call the API to update user profile
       const success = await updateCurrentUser({
         firstName: values.firstName,
         lastName: values.lastName,
@@ -51,12 +51,7 @@ const ProfileForm: React.FC = () => {
       });
       
       if (success) {
-        // Check if the toast message indicates a failed API but successful local update
-        if (document.body.textContent?.includes("chưa đồng bộ")) {
-          setSyncStatus('local');
-        } else {
-          setSyncStatus('synced');
-        }
+        setSyncStatus('synced');
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -156,20 +151,13 @@ const ProfileForm: React.FC = () => {
               {loading ? "Đang cập nhật..." : "Cập nhật thông tin"}
             </Button>
             
-            {syncStatus !== 'none' && (
+            {syncStatus === 'synced' && (
               <div className="flex items-center text-sm">
                 <Database className="h-4 w-4 mr-1 text-blue-500" />
-                {syncStatus === 'synced' ? (
-                  <span className="flex items-center text-green-600">
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Đã đồng bộ với CSDL
-                  </span>
-                ) : (
-                  <span className="flex items-center text-amber-600">
-                    <AlertTriangle className="h-4 w-4 mr-1" />
-                    Đã lưu cục bộ, chưa đồng bộ với CSDL
-                  </span>
-                )}
+                <span className="flex items-center text-green-600">
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Đã đồng bộ với CSDL
+                </span>
               </div>
             )}
           </div>

@@ -50,12 +50,22 @@ export const checkApiHealth = async (): Promise<boolean> => {
     }
     
     console.log("Checking API health at:", `${API_URL}/health-check`);
-    const response = await fetchWithTimeout(`${API_URL}/health-check`, {}, 5000);
     
-    const data = await response.json();
-    console.log("API health check response:", data);
+    // Thử truy cập với thời gian timeout ngắn hơn (3 giây)
+    const response = await fetchWithTimeout(`${API_URL}/health-check`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-cache' // Tránh cache khi kiểm tra sức khỏe API
+    }, 3000);
     
-    return response.ok;
+    if (response.ok) {
+      console.log("API health check successful");
+      return true;
+    }
+    
+    const data = await response.json().catch(() => ({ status: 'error' }));
+    console.warn("API health check response:", data);
+    return false;
   } catch (error) {
     console.warn('API health check failed:', error);
     return false;
@@ -79,6 +89,41 @@ export const handleApiResponse = async (response: Response) => {
   }
   
   return response.json();
+};
+
+/**
+ * Kiểm tra kết nối API và trả về chi tiết lỗi
+ */
+export const getDetailedApiStatus = async (): Promise<{
+  connected: boolean;
+  message: string;
+  statusCode?: number;
+}> => {
+  try {
+    const response = await fetchWithTimeout(`${API_URL}/health-check`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-cache'
+    }, 3000);
+    
+    if (response.ok) {
+      return {
+        connected: true,
+        message: "Kết nối thành công với máy chủ"
+      };
+    } else {
+      return {
+        connected: false,
+        message: `Lỗi kết nối: ${response.status} ${response.statusText}`,
+        statusCode: response.status
+      };
+    }
+  } catch (error) {
+    return {
+      connected: false,
+      message: `Không thể kết nối với máy chủ: ${(error as Error).message}`
+    };
+  }
 };
 
 /**

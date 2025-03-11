@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { FileText, Lock, User, AlertTriangle, Database } from 'lucide-react';
+import { FileText, Lock, User, AlertTriangle, Database, Loader2, CheckCircle2 } from 'lucide-react';
 import UserSidebar from '@/components/UserSidebar';
 import ProfileForm from '@/components/ProfileForm';
 import SecurityForm from '@/components/SecurityForm';
@@ -18,9 +18,10 @@ import { API_URL, fetchWithTimeout, handleApiResponse } from '@/services/apiUtil
 
 const UserProfile = () => {
   const { currentUser } = useAuth();
-  const [apiConnectionStatus, setApiConnectionStatus] = React.useState<'connected' | 'disconnected' | 'checking'>('checking');
+  const [apiConnectionStatus, setApiConnectionStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
+  const [connectionDetails, setConnectionDetails] = useState<string | null>(null);
 
-  // Check API connection on mount
+  // Check API connection on mount and on interval
   useEffect(() => {
     const checkApiConnection = async () => {
       try {
@@ -30,14 +31,17 @@ const UserProfile = () => {
         const response = await fetchWithTimeout(`${API_URL}/health-check`, { 
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
+          cache: 'no-cache' // Tránh cache khi kiểm tra sức khỏe API
         }, 5000); // 5 second timeout
         
         if (response.ok) {
           setApiConnectionStatus('connected');
+          setConnectionDetails(null);
           console.log("UserProfile: API connection successful");
         } else {
           setApiConnectionStatus('disconnected');
           const text = await response.text();
+          setConnectionDetails(`Máy chủ phản hồi với lỗi: ${response.status} ${response.statusText}`);
           console.warn('API health check failed:', text);
           toast.error("Máy chủ không phản hồi đúng. Hãy kiểm tra cài đặt của máy chủ MySQL.", { 
             duration: 8000 
@@ -46,6 +50,7 @@ const UserProfile = () => {
       } catch (error) {
         console.error('API connection error:', error);
         setApiConnectionStatus('disconnected');
+        setConnectionDetails(`Lỗi: ${(error as Error).message}`);
         toast.error("Không thể kết nối đến máy chủ. Hãy kiểm tra xem máy chủ đã chạy chưa.", { 
           duration: 8000 
         });
@@ -53,7 +58,42 @@ const UserProfile = () => {
     };
     
     checkApiConnection();
+    
+    // Thiết lập kiểm tra lại định kỳ
+    const intervalId = setInterval(checkApiConnection, 15000); // Kiểm tra mỗi 15 giây
+    
+    return () => clearInterval(intervalId);
   }, []);
+
+  // Manualy retry connection
+  const retryConnection = async () => {
+    try {
+      setApiConnectionStatus('checking');
+      toast.info("Đang kiểm tra kết nối với máy chủ...");
+      
+      const response = await fetchWithTimeout(`${API_URL}/health-check`, { 
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-cache'
+      }, 5000);
+      
+      if (response.ok) {
+        setApiConnectionStatus('connected');
+        setConnectionDetails(null);
+        toast.success("Đã kết nối thành công với máy chủ");
+      } else {
+        setApiConnectionStatus('disconnected');
+        const text = await response.text();
+        setConnectionDetails(`Máy chủ phản hồi với lỗi: ${response.status} ${response.statusText}`);
+        throw new Error(`Máy chủ không phản hồi đúng: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Retry connection failed:', error);
+      setApiConnectionStatus('disconnected');
+      setConnectionDetails(`Lỗi: ${(error as Error).message}`);
+      toast.error(`Không thể kết nối đến máy chủ: ${(error as Error).message}`);
+    }
+  };
 
   // Fetch enrolled courses from the database
   const fetchUserCourses = async () => {
@@ -61,7 +101,11 @@ const UserProfile = () => {
     
     try {
       console.log("Fetching user courses for ID:", currentUser.id);
-      const response = await fetchWithTimeout(`${API_URL}/users/${currentUser.id}/courses`, {}, 8000);
+      const response = await fetchWithTimeout(`${API_URL}/users/${currentUser.id}/courses`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-cache'
+      }, 8000);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -85,7 +129,11 @@ const UserProfile = () => {
     
     try {
       console.log("Fetching user certificates for ID:", currentUser.id);
-      const response = await fetchWithTimeout(`${API_URL}/users/${currentUser.id}/certificates`, {}, 8000);
+      const response = await fetchWithTimeout(`${API_URL}/users/${currentUser.id}/certificates`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-cache'
+      }, 8000);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -105,7 +153,7 @@ const UserProfile = () => {
 
   // Use React Query to fetch user courses
   const { data: userCourses, isLoading: isLoadingCourses } = useQuery({
-    queryKey: ['userCourses', currentUser?.id],
+    queryKey: ['userCourses', currentUser?.id, apiConnectionStatus],
     queryFn: fetchUserCourses,
     enabled: !!currentUser?.id && apiConnectionStatus === 'connected',
     retry: 1,
@@ -114,7 +162,7 @@ const UserProfile = () => {
 
   // Use React Query to fetch user certificates
   const { data: userCertificates, isLoading: isLoadingCertificates } = useQuery({
-    queryKey: ['userCertificates', currentUser?.id],
+    queryKey: ['userCertificates', currentUser?.id, apiConnectionStatus],
     queryFn: fetchUserCertificates,
     enabled: !!currentUser?.id && apiConnectionStatus === 'connected',
     retry: 1,
@@ -177,15 +225,52 @@ const UserProfile = () => {
                   <span>
                     Trạng thái: {' '}
                     {apiConnectionStatus === 'connected' ? (
-                      <span className="text-green-600">Đã kết nối với máy chủ</span>
+                      <span className="text-green-600 flex items-center">
+                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                        Đã kết nối với máy chủ
+                      </span>
                     ) : apiConnectionStatus === 'checking' ? (
-                      <span className="text-blue-600">Đang kiểm tra kết nối...</span>
+                      <span className="text-blue-600 flex items-center">
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        Đang kiểm tra kết nối...
+                      </span>
                     ) : (
-                      <span className="text-amber-600">Không có kết nối, vui lòng kiểm tra máy chủ MySQL</span>
+                      <span className="text-amber-600 flex items-center">
+                        <AlertTriangle className="h-4 w-4 mr-1" />
+                        Không có kết nối
+                        <Button 
+                          variant="link" 
+                          size="sm" 
+                          className="text-blue-600 p-0 ml-2 h-auto" 
+                          onClick={retryConnection}
+                        >
+                          Thử lại
+                        </Button>
+                      </span>
                     )}
                   </span>
                 </div>
               </div>
+              
+              {apiConnectionStatus === 'disconnected' && connectionDetails && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-md">
+                  <h3 className="text-amber-800 font-medium mb-2 flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Chi tiết lỗi kết nối
+                  </h3>
+                  <p className="text-amber-700 text-sm">{connectionDetails}</p>
+                  <div className="mt-2 text-sm text-amber-700">
+                    <p className="font-medium">Vui lòng kiểm tra:</p>
+                    <ul className="list-disc pl-5 space-y-1 mt-1">
+                      <li>Máy chủ MySQL đã được cài đặt và đang chạy</li>
+                      <li>Tên người dùng và mật khẩu trong file .env là chính xác</li>
+                      <li>Cổng 3000 không bị chặn bởi tường lửa</li>
+                      <li>Đã tạo database theo hướng dẫn trong file .env.example</li>
+                      <li>Máy chủ Express Node.js đang chạy (node server.js hoặc npm run dev)</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
               
               <Tabs defaultValue="profile">
                 <TabsList className="mb-6 w-full justify-start">

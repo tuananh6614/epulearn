@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -11,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { API_URL, fetchWithTimeout } from '@/services/apiUtils';
 
 // Define the user type
 interface User {
@@ -27,9 +29,6 @@ interface User {
 interface FixedAccount extends User {
   password: string;
 }
-
-// Base API URL for your MySQL backend
-const API_URL = 'http://localhost:3000/api';
 
 // Fixed account credentials for development/demo purposes
 const FIXED_ACCOUNT: FixedAccount = {
@@ -70,18 +69,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkApiConnection = async () => {
       try {
+        console.log("Checking API connection...");
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
         
         const response = await fetch(`${API_URL}/health-check`, {
-          signal: controller.signal
+          signal: controller.signal,
+          cache: 'no-cache' // Tránh cache khi kiểm tra sức khỏe API
         });
         
         clearTimeout(timeoutId);
         
         if (response.ok) {
+          console.log("API connection successful");
           setApiConnectionState('available');
         } else {
+          console.warn("API responded with error:", response.status, response.statusText);
           setApiConnectionState('unavailable');
         }
       } catch (error) {
@@ -91,6 +94,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     checkApiConnection();
+    
+    // Kiểm tra lại kết nối mỗi 30 giây
+    const intervalId = setInterval(checkApiConnection, 30000);
+    
+    return () => clearInterval(intervalId);
   }, []);
 
   // Check if there's a logged-in user in localStorage on initial load
@@ -140,22 +148,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Try to update the database if API is available
       if (apiConnectionState === 'available') {
         try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3000);
+          // Kiểm tra kết nối trước
+          const healthCheck = await fetchWithTimeout(`${API_URL}/health-check`, {
+            method: 'GET',
+            cache: 'no-cache'
+          }, 3000);
           
-          const response = await fetch(`${API_URL}/users/${currentUser.id}`, {
+          if (!healthCheck.ok) {
+            throw new Error(`Máy chủ không phản hồi: ${healthCheck.status}`);
+          }
+          
+          // Tiếp tục cập nhật
+          const response = await fetchWithTimeout(`${API_URL}/users/${currentUser.id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify(userData),
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
+          }, 5000);
           
           if (!response.ok) {
-            throw new Error('Server responded with an error');
+            const errorData = await response.json().catch(() => ({ message: 'Lỗi phản hồi từ máy chủ' }));
+            throw new Error(errorData.message || 'Máy chủ phản hồi lỗi');
           }
           
           // Update local storage AFTER successful API update
@@ -168,11 +182,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error) {
           console.error('Error updating profile on server:', error);
           
+          // Cập nhật trạng thái API connection
+          if ((error as Error).message.includes('fetch') || (error as Error).message.includes('network')) {
+            setApiConnectionState('unavailable');
+          }
+          
           // Fall back to local storage update only
           const updatedUser = { ...currentUser, ...userData };
           localStorage.setItem('epu_user', JSON.stringify(updatedUser));
           setCurrentUser(updatedUser);
           
+          toast.warning("Đã lưu thay đổi cục bộ, nhưng không thể đồng bộ với CSDL. Lỗi: " + (error as Error).message);
           setLoading(false);
           return false; // Return false to indicate DB sync failed
         }
@@ -194,7 +214,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Password change method without encryption
+  // Password change method - plain text
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     if (!currentUser) return false;
     
@@ -217,8 +237,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check if API is available
       if (apiConnectionState === 'available') {
         try {
-          // First verify current password - without encryption
-          const verifyResponse = await fetch(`${API_URL}/check-password`, {
+          // Kiểm tra kết nối trước
+          const healthCheck = await fetchWithTimeout(`${API_URL}/health-check`, {
+            method: 'GET',
+            cache: 'no-cache'
+          }, 3000);
+          
+          if (!healthCheck.ok) {
+            throw new Error(`Máy chủ không phản hồi: ${healthCheck.status}`);
+          }
+          
+          // First verify current password - plain text
+          console.log("Verifying current password for user ID:", currentUser.id);
+          const verifyResponse = await fetchWithTimeout(`${API_URL}/check-password`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -227,17 +258,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               userId: currentUser.id, 
               password: currentPassword // Plain text password
             }),
-            signal: AbortSignal.timeout(3000)
-          });
+          }, 5000);
           
           if (!verifyResponse.ok) {
-            toast.error("Mật khẩu hiện tại không chính xác");
-            setLoading(false);
-            return false;
+            const errorData = await verifyResponse.json().catch(() => ({ message: 'Lỗi phản hồi từ máy chủ' }));
+            throw new Error(errorData.message || "Mật khẩu hiện tại không chính xác");
           }
           
-          // If verification passed, try to change password - without encryption
-          const changeResponse = await fetch(`${API_URL}/users/${currentUser.id}/change-password`, {
+          // If verification passed, try to change password - plain text
+          console.log("Changing password for user ID:", currentUser.id);
+          const changeResponse = await fetchWithTimeout(`${API_URL}/users/${currentUser.id}/change-password`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -246,12 +276,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               currentPassword, // Plain text password
               newPassword      // Plain text password
             }),
-            signal: AbortSignal.timeout(3000)
-          });
+          }, 5000);
           
           if (!changeResponse.ok) {
             // Try fallback endpoint if main one fails
-            const fallbackResponse = await fetch(`${API_URL}/change-password`, {
+            console.log("Primary endpoint failed, trying fallback endpoint...");
+            const fallbackResponse = await fetchWithTimeout(`${API_URL}/change-password`, {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
@@ -261,12 +291,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 currentPassword, // Plain text password
                 newPassword      // Plain text password
               }),
-              signal: AbortSignal.timeout(3000)
-            });
+            }, 5000);
             
             if (!fallbackResponse.ok) {
-              throw new Error('Không thể cập nhật mật khẩu trên máy chủ');
+              const errorData = await fallbackResponse.json().catch(() => ({ message: 'Lỗi phản hồi từ máy chủ' }));
+              throw new Error(errorData.message || "Không thể cập nhật mật khẩu trên máy chủ");
             }
+            
+            const successData = await fallbackResponse.json().catch(() => ({ message: 'Đã cập nhật mật khẩu thành công' }));
+            console.log("Password change success via fallback endpoint:", successData);
+          } else {
+            const successData = await changeResponse.json().catch(() => ({ message: 'Đã cập nhật mật khẩu thành công' }));
+            console.log("Password change success:", successData);
           }
           
           toast.success("Mật khẩu đã được thay đổi thành công và đồng bộ với CSDL");
@@ -274,7 +310,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return true;
         } catch (error) {
           console.error('Error changing password:', error);
-          toast.error("Không thể thay đổi mật khẩu. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
+          
+          // Cập nhật trạng thái API connection
+          if ((error as Error).message.includes('fetch') || (error as Error).message.includes('network')) {
+            setApiConnectionState('unavailable');
+          }
+          
+          toast.error((error as Error).message || "Không thể thay đổi mật khẩu. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
           setLoading(false);
           return false;
         }
@@ -285,7 +327,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Error changing password:', error);
-      toast.error("Không thể thay đổi mật khẩu. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
+      toast.error((error as Error).message || "Không thể thay đổi mật khẩu. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
       setLoading(false);
       return false;
     }
@@ -318,7 +360,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   };
 
-  // Login function without encryption
+  // Login function with plain text passwords
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     
@@ -348,17 +390,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Try to connect to API if available
       if (apiConnectionState === 'available') {
         try {
-          // Call login API with timeout - plain text password
-          const response = await fetch(`${API_URL}/login`, {
+          // Kiểm tra kết nối trước
+          const healthCheck = await fetchWithTimeout(`${API_URL}/health-check`, {
+            method: 'GET',
+            cache: 'no-cache'
+          }, 3000);
+          
+          if (!healthCheck.ok) {
+            throw new Error(`Máy chủ không phản hồi: ${healthCheck.status}`);
+          }
+          
+          // Call login API - plain text password
+          console.log("Attempting API login for email:", email);
+          const response = await fetchWithTimeout(`${API_URL}/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ email, password }),
-            signal: AbortSignal.timeout(3000)
-          });
+          }, 5000);
           
-          const data = await response.json();
+          const data = await response.json().catch(() => ({ message: 'Lỗi phản hồi từ máy chủ' }));
           
           if (!response.ok) {
             toast.error(data.message || "Đăng nhập thất bại");
@@ -373,6 +425,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return true;
         } catch (error) {
           console.error('Login error with API:', error);
+          
+          // Cập nhật trạng thái API connection
+          if ((error as Error).message.includes('fetch') || (error as Error).message.includes('network')) {
+            setApiConnectionState('unavailable');
+          }
           
           // If API fails and email matches fixed account for demo, allow login
           if (email === FIXED_ACCOUNT.email && password === FIXED_ACCOUNT.password) {
@@ -390,7 +447,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return true;
           }
           
-          toast.error("Đăng nhập thất bại. Không thể kết nối đến máy chủ");
+          toast.error((error as Error).message || "Đăng nhập thất bại. Không thể kết nối đến máy chủ");
           return false;
         }
       } else {
@@ -415,14 +472,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error("Đăng nhập thất bại. Vui lòng kiểm tra kết nối mạng");
+      toast.error((error as Error).message || "Đăng nhập thất bại. Vui lòng kiểm tra kết nối mạng");
       return false;
     } finally {
       setLoading(false);
     }
   };
 
-  // Signup function without encryption
+  // Signup function with plain text passwords
   const signup = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
     setLoading(true);
     
@@ -447,17 +504,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check if API is available
       if (apiConnectionState === 'available') {
         try {
-          // Call signup API with timeout - plain text password
-          const response = await fetch(`${API_URL}/signup`, {
+          // Kiểm tra kết nối trước
+          const healthCheck = await fetchWithTimeout(`${API_URL}/health-check`, {
+            method: 'GET',
+            cache: 'no-cache'
+          }, 3000);
+          
+          if (!healthCheck.ok) {
+            throw new Error(`Máy chủ không phản hồi: ${healthCheck.status}`);
+          }
+          
+          // Call signup API - plain text password
+          console.log("Attempting API signup for email:", email);
+          const response = await fetchWithTimeout(`${API_URL}/signup`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ email, password, firstName, lastName }),
-            signal: AbortSignal.timeout(3000)
-          });
+          }, 5000);
           
-          const data = await response.json();
+          const data = await response.json().catch(() => ({ message: 'Lỗi phản hồi từ máy chủ' }));
           
           if (!response.ok) {
             toast.error(data.message || "Đăng ký thất bại");
@@ -468,7 +535,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return true;
         } catch (error) {
           console.error('Signup error with API:', error);
-          toast.error("Đăng ký thất bại. Không thể kết nối đến máy chủ");
+          
+          // Cập nhật trạng thái API connection
+          if ((error as Error).message.includes('fetch') || (error as Error).message.includes('network')) {
+            setApiConnectionState('unavailable');
+          }
+          
+          toast.error((error as Error).message || "Đăng ký thất bại. Không thể kết nối đến máy chủ");
           return false;
         }
       } else {
@@ -477,7 +550,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Signup error:', error);
-      toast.error("Đăng ký thất bại. Vui lòng kiểm tra kết nối mạng");
+      toast.error((error as Error).message || "Đăng ký thất bại. Vui lòng kiểm tra kết nối mạng");
       return false;
     } finally {
       setLoading(false);

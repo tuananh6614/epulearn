@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -25,7 +24,7 @@ const VipCourses = () => {
     queryKey: ['vipCourses'],
     queryFn: async () => {
       const courses = await fetchCourses();
-      return courses.filter((course: SupabaseCourseResponse) => course.is_premium);
+      return courses.filter((course) => course.is_premium);
     },
   });
 
@@ -68,7 +67,6 @@ const VipCourses = () => {
     );
   }
 
-  // Sample chapter data for preview
   const sampleChapters = [
     {
       id: 1,
@@ -151,7 +149,6 @@ const VipCourses = () => {
                       ))}
                     </div>
                     
-                    {/* Course Content Preview Section - Improved with expandable chapters */}
                     <div className="mt-12">
                       <h2 className="text-2xl font-bold mb-6">Xem trước nội dung khóa học</h2>
                       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
@@ -208,7 +205,6 @@ const VipCourses = () => {
                       </div>
                     </div>
                     
-                    {/* Chapter Test Preview */}
                     <div className="mt-12">
                       <h2 className="text-2xl font-bold mb-6">Bài kiểm tra kiến thức</h2>
                       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
@@ -255,7 +251,6 @@ const VipCourses = () => {
                     </div>
                   </div>
                   
-                  {/* Subscription sidebar - Direct link to purchase tab */}
                   <div className="lg:col-span-1">
                     <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6 sticky top-24">
                       <h3 className="text-xl font-bold mb-2 flex items-center gap-2">

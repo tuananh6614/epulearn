@@ -113,18 +113,18 @@ export interface SupabaseCourseResponse {
   id: string;
   title: string;
   description: string;
+  status: string;
   thumbnail_url: string | null;
+  category: string;
+  created_at: string;
+  updated_at: string;
+  is_featured: boolean;
   instructor: string;
   duration: string;
   level: string;
-  category: string;
   price: number | null;
   discount_price: number | null;
   is_premium: boolean;
-  is_featured: boolean;
-  created_at: string;
-  updated_at: string;
-  chapters?: SupabaseChapterResponse[];
 }
 
 export interface SupabaseChapterResponse {

@@ -1,22 +1,8 @@
 import { supabase } from '@/integrations/supabase/client';
+import { SupabaseCourseResponse as ModelSupabaseCourseResponse } from '@/models/lesson';
 
-export interface SupabaseCourseResponse {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  thumbnail_url?: string;
-  category: string;
-  created_at: string;
-  updated_at: string;
-  is_featured?: boolean;
-  instructor: string;
-  duration: string;
-  level: string;
-  price: number | null;
-  discount_price: number | null;
-  is_premium: boolean;
-}
+// Re-export the interface from models/lesson to avoid duplication
+export type { SupabaseCourseResponse } from '@/models/lesson';
 
 export interface UserCertificate {
   id: string;
@@ -133,7 +119,7 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
 };
 
 // Function to fetch courses
-export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
+export const fetchCourses = async (): Promise<ModelSupabaseCourseResponse[]> => {
   try {
     const { data, error } = await supabase
       .from('courses')
@@ -147,6 +133,7 @@ export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
 
     return data?.map(course => ({
       ...course,
+      thumbnail_url: course.thumbnail_url || null,
       status: 'published'
     })) || [];
   } catch (error) {
@@ -156,7 +143,7 @@ export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
 };
 
 // Function to fetch featured courses
-export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> => {
+export const fetchFeaturedCourses = async (): Promise<ModelSupabaseCourseResponse[]> => {
   try {
     const { data, error } = await supabase
       .from('courses')
@@ -172,6 +159,7 @@ export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> 
 
     return data?.map(course => ({
       ...course,
+      thumbnail_url: course.thumbnail_url || null,
       status: 'published'
     })) || [];
   } catch (error) {

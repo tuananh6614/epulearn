@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, RefreshCw } from "lucide-react";
@@ -20,7 +21,7 @@ const FeaturedCourses = () => {
       const coursesData = await fetchFeaturedCourses();
       
       // Transform data to match Course interface
-      const formattedCourses: Course[] = coursesData.map((course: SupabaseCourseResponse) => ({
+      const formattedCourses: Course[] = coursesData.map((course) => ({
         id: course.id,
         title: course.title,
         description: course.description,

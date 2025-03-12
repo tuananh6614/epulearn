@@ -36,7 +36,7 @@ const Courses = () => {
         console.log('Fetched courses data:', data);
         
         // Transform data to match Course interface
-        const formattedCourses: Course[] = data.map((course: SupabaseCourseResponse) => ({
+        const formattedCourses: Course[] = data.map((course) => ({
           id: course.id,
           title: course.title,
           description: course.description,
@@ -115,7 +115,7 @@ const Courses = () => {
         const data = await fetchCourses();
         
         // Transform data to match Course interface
-        const formattedCourses: Course[] = data.map((course: SupabaseCourseResponse) => ({
+        const formattedCourses: Course[] = data.map((course) => ({
           id: course.id,
           title: course.title,
           description: course.description,

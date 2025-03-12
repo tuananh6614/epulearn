@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Upload } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { Upload, Crown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { API_URL, fetchWithTimeout } from '@/services/apiUtils';
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface UserAvatarProps {
   avatarUrl: string | null;
@@ -12,6 +14,7 @@ interface UserAvatarProps {
   lastName?: string;
   size?: 'sm' | 'md' | 'lg';
   editable?: boolean;
+  showVipStatus?: boolean;
 }
 
 const UserAvatar: React.FC<UserAvatarProps> = ({ 
@@ -19,9 +22,13 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   firstName, 
   lastName, 
   size = 'md',
-  editable = false 
+  editable = false,
+  showVipStatus = true
 }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [isVip, setIsVip] = useState(false);
+  const [vipExpirationDate, setVipExpirationDate] = useState<string | null>(null);
+  const [remainingDays, setRemainingDays] = useState<number | null>(null);
   const { updateCurrentUser, currentUser } = useAuth();
   
   const sizeClasses = {
@@ -29,6 +36,63 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     md: 'w-16 h-16',
     lg: 'w-24 h-24'
   };
+
+  useEffect(() => {
+    // Fetch VIP status from profile if user is logged in
+    const fetchVipStatus = async () => {
+      if (!currentUser) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('is_vip, vip_expiration_date')
+          .eq('id', currentUser.id)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching VIP status:', error);
+          return;
+        }
+        
+        if (data) {
+          setIsVip(!!data.is_vip);
+          setVipExpirationDate(data.vip_expiration_date);
+          
+          // Calculate remaining days if expiration date exists
+          if (data.vip_expiration_date) {
+            const expirationDate = new Date(data.vip_expiration_date);
+            const today = new Date();
+            const timeDiff = expirationDate.getTime() - today.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            
+            // Only show positive days remaining
+            if (daysDiff > 0) {
+              setRemainingDays(daysDiff);
+            } else {
+              // VIP expired
+              setIsVip(false);
+              setRemainingDays(null);
+              
+              // Update profile to remove VIP status if expired
+              if (data.is_vip) {
+                supabase
+                  .from('profiles')
+                  .update({ is_vip: false })
+                  .eq('id', currentUser.id)
+                  .then(({ error }) => {
+                    if (error) console.error('Error updating expired VIP status:', error);
+                  });
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error in fetchVipStatus:', err);
+      }
+    };
+    
+    fetchVipStatus();
+  }, [currentUser]);
   
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -124,6 +188,21 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           {firstName?.[0]}{lastName?.[0]}
         </AvatarFallback>
       </Avatar>
+      
+      {showVipStatus && isVip && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="absolute -top-2 -right-2 bg-yellow-500 rounded-full p-1">
+                <Crown className={`${size === 'sm' ? 'h-3 w-3' : size === 'md' ? 'h-4 w-4' : 'h-5 w-5'} text-white`} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Thành viên VIP - còn {remainingDays} ngày</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
       
       {editable && (
         <div className="absolute bottom-0 right-0">

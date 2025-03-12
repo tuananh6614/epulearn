@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { Crown, CheckCircle, Clock, QrCode, Download, Share2 } from 'lucide-reac
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from "@/integrations/supabase/client";
 
-const QR_CODE_IMAGE = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=VIB-339435005-NGUYENTUANANH";
+const QR_CODE_IMAGE = "/lovable-uploads/df571914-fa9f-49ba-a991-8777a7ca7726.png";
 
 interface VipPlanProps {
   duration: string;
@@ -16,6 +17,7 @@ interface VipPlanProps {
   discount?: number;
   features: string[];
   isPopular?: boolean;
+  isTrial?: boolean;
   onSelect: () => void;
 }
 
@@ -26,6 +28,7 @@ const VipPlan: React.FC<VipPlanProps> = ({
   discount = 0, 
   features, 
   isPopular = false,
+  isTrial = false,
   onSelect
 }) => {
   const finalPrice = discount > 0 ? price - (price * discount / 100) : price;
@@ -37,10 +40,15 @@ const VipPlan: React.FC<VipPlanProps> = ({
           Phổ biến nhất
         </div>
       )}
+      {isTrial && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+          Dùng thử
+        </div>
+      )}
       
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Crown className={`h-5 w-5 ${isPopular ? 'text-yellow-500' : 'text-blue-500'}`} />
+          <Crown className={`h-5 w-5 ${isPopular ? 'text-yellow-500' : isTrial ? 'text-blue-500' : 'text-blue-500'}`} />
           <span>Gói {duration}</span>
         </CardTitle>
         <CardDescription>Truy cập tất cả khóa học VIP trong {months} tháng</CardDescription>
@@ -85,35 +93,62 @@ const VipPlan: React.FC<VipPlanProps> = ({
 const VipPurchaseForm = () => {
   const { toast } = useToast();
   const { currentUser } = useAuth();
-  const [selectedPlan, setSelectedPlan] = useState<string>("3-months");
+  const [selectedPlan, setSelectedPlan] = useState<string>("6-months");
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   
   const plans = {
+    "1-month": {
+      title: "1 Tháng (Dùng thử)",
+      months: 1,
+      price: 99000,
+      discount: 0,
+      isTrial: true,
+      features: [
+        "Truy cập đầy đủ tất cả khóa học VIP",
+        "Bài kiểm tra cơ bản",
+        "Hỗ trợ email",
+      ]
+    },
     "3-months": {
       title: "3 Tháng",
       months: 3,
       price: 500000,
       discount: 0,
       features: [
-        "Truy cập đ��y đủ tất cả khóa học VIP",
+        "Truy cập đầy đủ tất cả khóa học VIP",
         "Bài kiểm tra và đánh giá chuyên sâu",
         "Hỗ trợ trực tiếp từ giảng viên",
         "Chứng chỉ hoàn thành khóa học"
+      ]
+    },
+    "6-months": {
+      title: "6 Tháng",
+      months: 6,
+      price: 900000,
+      discount: 10,
+      isPopular: true,
+      features: [
+        "Truy cập đầy đủ tất cả khóa học VIP",
+        "Bài kiểm tra và đánh giá chuyên sâu",
+        "Hỗ trợ trực tiếp từ giảng viên",
+        "Chứng chỉ hoàn thành khóa học",
+        "Ưu tiên tiếp cận khóa học mới"
       ]
     },
     "1-year": {
       title: "1 Năm",
       months: 12,
       price: 2000000,
-      discount: 10,
+      discount: 20,
       features: [
         "Truy cập đầy đủ tất cả khóa học VIP",
         "Bài kiểm tra và đánh giá chuyên sâu",
         "Hỗ trợ trực tiếp từ giảng viên",
         "Chứng chỉ hoàn thành khóa học",
         "Ưu tiên tiếp cận khóa học mới",
-        "Tài liệu bổ sung độc quyền"
+        "Tài liệu bổ sung độc quyền",
+        "Tư vấn học tập 1-1"
       ]
     }
   };
@@ -133,19 +168,42 @@ const VipPurchaseForm = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      const plan = plans[selectedPlan as keyof typeof plans];
+      const finalPrice = plan.discount > 0 
+        ? plan.price - (plan.price * plan.discount / 100) 
+        : plan.price;
+      
+      // Calculate expiration date based on selected plan
+      const expirationDate = new Date();
+      expirationDate.setMonth(expirationDate.getMonth() + plan.months);
+      
       const { error } = await supabase
         .from('user_courses')
         .insert({
           user_id: currentUser.id,
-          course_id: selectedPlan === "3-months" ? "vip-3-months" : "vip-1-year",
+          course_id: `vip-${selectedPlan}`,
           has_paid: false,
-          payment_amount: selectedPlan === "3-months" ? 500000 : 1800000,
+          payment_amount: finalPrice,
           progress_percentage: 0,
-          enrolled_at: new Date().toISOString()
+          enrolled_at: new Date().toISOString(),
+          vip_expiration_date: expirationDate.toISOString() // Add expiration date
         })
         .select();
       
       if (error) throw error;
+      
+      // Update user profile to mark as VIP
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+          is_vip: true,
+          vip_expiration_date: expirationDate.toISOString()
+        })
+        .eq('id', currentUser.id);
+      
+      if (profileError) {
+        console.error("Error updating profile:", profileError);
+      }
       
       setShowSuccessMessage(true);
       toast({
@@ -210,14 +268,34 @@ const VipPurchaseForm = () => {
       <h2 className="text-2xl font-bold mb-6 text-center">Đăng ký gói học VIP</h2>
       
       <div className="max-w-4xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <VipPlan
+            duration={plans["1-month"].title}
+            months={plans["1-month"].months}
+            price={plans["1-month"].price}
+            features={plans["1-month"].features}
+            onSelect={() => handleSelectPlan("1-month")}
+            isPopular={false}
+            isTrial={true}
+          />
+          
           <VipPlan
             duration={plans["3-months"].title}
             months={plans["3-months"].months}
             price={plans["3-months"].price}
             features={plans["3-months"].features}
             onSelect={() => handleSelectPlan("3-months")}
-            isPopular={selectedPlan === "3-months"}
+            isPopular={false}
+          />
+          
+          <VipPlan
+            duration={plans["6-months"].title}
+            months={plans["6-months"].months}
+            price={plans["6-months"].price}
+            discount={plans["6-months"].discount}
+            features={plans["6-months"].features}
+            onSelect={() => handleSelectPlan("6-months")}
+            isPopular={true}
           />
           
           <VipPlan
@@ -227,7 +305,7 @@ const VipPurchaseForm = () => {
             discount={plans["1-year"].discount}
             features={plans["1-year"].features}
             onSelect={() => handleSelectPlan("1-year")}
-            isPopular={selectedPlan === "1-year"}
+            isPopular={false}
           />
         </div>
         
@@ -260,7 +338,12 @@ const VipPurchaseForm = () => {
                     Tải mã QR
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => {
-                    navigator.clipboard.writeText(`VIB - 339435005 - NGUYEN TUAN ANH - ${selectedPlan === "3-months" ? "500,000đ" : "1,800,000đ"}`);
+                    const selectedPlanDetails = plans[selectedPlan as keyof typeof plans];
+                    const finalPrice = selectedPlanDetails.discount > 0 
+                      ? selectedPlanDetails.price - (selectedPlanDetails.price * selectedPlanDetails.discount / 100) 
+                      : selectedPlanDetails.price;
+                    
+                    navigator.clipboard.writeText(`VIB - 339435005 - NGUYEN TUAN ANH - ${finalPrice.toLocaleString('vi-VN')}đ`);
                     toast({ title: "Đã sao chép" });
                   }}>
                     <Share2 className="h-4 w-4 mr-2" />
@@ -290,9 +373,13 @@ const VipPurchaseForm = () => {
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Số tiền</p>
                       <p className="text-sm bg-muted p-2 rounded font-medium">
-                        {selectedPlan === "3-months" 
-                          ? "500,000đ" 
-                          : `${(plans["1-year"].price - (plans["1-year"].price * plans["1-year"].discount / 100)).toLocaleString('vi-VN')}đ`}
+                        {(() => {
+                          const selectedPlanDetails = plans[selectedPlan as keyof typeof plans];
+                          const finalPrice = selectedPlanDetails.discount > 0 
+                            ? selectedPlanDetails.price - (selectedPlanDetails.price * selectedPlanDetails.discount / 100) 
+                            : selectedPlanDetails.price;
+                          return `${finalPrice.toLocaleString('vi-VN')}đ`;
+                        })()}
                       </p>
                     </div>
                   </div>

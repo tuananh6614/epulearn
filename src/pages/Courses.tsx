@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -5,8 +6,10 @@ import CourseCard from '@/components/CourseCard';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, X, RefreshCw } from 'lucide-react';
+import { Search, Filter, X, RefreshCw, Crown } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { fetchCourses } from '@/services/apiUtils';
+import { Course, SupabaseCourseResponse } from '@/models/lesson';
 
 // Component trang khóa học
 const Courses = () => {
@@ -14,34 +17,48 @@ const Courses = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [levelFilter, setLevelFilter] = useState('all');
-  const [coursesData, setCoursesData] = useState([]);
-  const [filteredCourses, setFilteredCourses] = useState([]);
+  const [premiumFilter, setPremiumFilter] = useState('all');
+  const [coursesData, setCoursesData] = useState<Course[]>([]);
+  const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  
-  // Server API URL from environment or use a relative path
-  const API_URL = 'http://localhost:3000/api/courses';
   
   // Fetch courses from database
   useEffect(() => {
-    const fetchCourses = async () => {
+    const loadCourses = async () => {
       try {
         setIsLoading(true);
-        console.log('Fetching courses from API:', API_URL);
-        const response = await fetch(API_URL);
-        if (!response.ok) {
-          throw new Error('Không thể tải danh sách khóa học');
-        }
-        const data = await response.json();
+        console.log('Fetching courses from Supabase');
+        
+        const data = await fetchCourses();
         console.log('Fetched courses data:', data);
-        setCoursesData(data);
-        setFilteredCourses(data);
+        
+        // Transform data to match Course interface
+        const formattedCourses: Course[] = data.map((course: SupabaseCourseResponse) => ({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          level: course.level,
+          duration: course.duration,
+          category: course.category,
+          image: course.thumbnail_url || '/placeholder.svg',
+          color: course.is_premium ? '#ffd700' : '#4f46e5', // Gold for premium, blue for regular
+          isPremium: course.is_premium,
+          price: course.price || undefined,
+          discountPrice: course.discount_price || undefined,
+          isFeatured: course.is_featured,
+          instructor: course.instructor,
+          chapters: [],  // Chapters will be loaded separately when viewing course details
+        }));
+        
+        setCoursesData(formattedCourses);
+        setFilteredCourses(formattedCourses);
         setIsLoading(false);
       } catch (err) {
         console.error('Lỗi khi tải khóa học:', err);
-        setError(err.message);
+        setError((err as Error).message);
         setIsLoading(false);
         
         toast({
@@ -52,7 +69,7 @@ const Courses = () => {
       }
     };
 
-    fetchCourses();
+    loadCourses();
   }, [toast]);
   
   // Effect áp dụng bộ lọc khi các điều kiện thay đổi
@@ -64,12 +81,15 @@ const Courses = () => {
                           course.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = categoryFilter === 'all' || course.category === categoryFilter;
       const matchesLevel = levelFilter === 'all' || course.level === levelFilter;
+      const matchesPremium = premiumFilter === 'all' 
+                          || (premiumFilter === 'premium' && course.isPremium) 
+                          || (premiumFilter === 'free' && !course.isPremium);
       
-      return matchesSearch && matchesCategory && matchesLevel;
+      return matchesSearch && matchesCategory && matchesLevel && matchesPremium;
     });
     
     setFilteredCourses(filtered);
-  }, [searchTerm, categoryFilter, levelFilter, coursesData]);
+  }, [searchTerm, categoryFilter, levelFilter, premiumFilter, coursesData]);
   
   // Lấy danh sách các danh mục và cấp độ độc nhất
   const categories = coursesData.length > 0 ? [...new Set(coursesData.map(course => course.category))] : [];
@@ -80,6 +100,7 @@ const Courses = () => {
     setSearchTerm('');
     setCategoryFilter('all');
     setLevelFilter('all');
+    setPremiumFilter('all');
   };
   
   // Thử lại khi gặp lỗi
@@ -87,20 +108,36 @@ const Courses = () => {
     setError(null);
     setIsLoading(true);
     
-    const fetchCourses = async () => {
+    const loadCourses = async () => {
       try {
-        console.log('Retrying fetch courses from API:', API_URL);
-        const response = await fetch(API_URL);
-        if (!response.ok) {
-          throw new Error('Không thể tải danh sách khóa học');
-        }
-        const data = await response.json();
-        setCoursesData(data);
-        setFilteredCourses(data);
+        console.log('Retrying fetch courses from Supabase');
+        
+        const data = await fetchCourses();
+        
+        // Transform data to match Course interface
+        const formattedCourses: Course[] = data.map((course: SupabaseCourseResponse) => ({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          level: course.level,
+          duration: course.duration,
+          category: course.category,
+          image: course.thumbnail_url || '/placeholder.svg',
+          color: course.is_premium ? '#ffd700' : '#4f46e5', // Gold for premium, blue for regular
+          isPremium: course.is_premium,
+          price: course.price || undefined,
+          discountPrice: course.discount_price || undefined,
+          isFeatured: course.is_featured,
+          instructor: course.instructor,
+          chapters: [],  // Chapters will be loaded separately when viewing course details
+        }));
+        
+        setCoursesData(formattedCourses);
+        setFilteredCourses(formattedCourses);
         setIsLoading(false);
       } catch (err) {
         console.error('Lỗi khi tải khóa học:', err);
-        setError(err.message);
+        setError((err as Error).message);
         setIsLoading(false);
         
         toast({
@@ -111,7 +148,7 @@ const Courses = () => {
       }
     };
 
-    fetchCourses();
+    loadCourses();
   };
   
   // Chuyển đổi hiển thị bộ lọc trên điện thoại
@@ -182,7 +219,25 @@ const Courses = () => {
                   </Select>
                 </div>
                 
-                {(categoryFilter !== 'all' || levelFilter !== 'all' || searchTerm) && (
+                <div className="w-full md:w-48">
+                  <Select value={premiumFilter} onValueChange={setPremiumFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Loại Khóa Học" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tất Cả Khóa Học</SelectItem>
+                      <SelectItem value="free">Khóa Học Thường</SelectItem>
+                      <SelectItem value="premium">
+                        <div className="flex items-center gap-1">
+                          <Crown className="h-4 w-4 text-yellow-500" />
+                          Khóa Học VIP
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {(categoryFilter !== 'all' || levelFilter !== 'all' || premiumFilter !== 'all' || searchTerm) && (
                   <Button variant="outline" onClick={handleClearFilters} className="flex items-center justify-center">
                     <X className="h-4 w-4 mr-2" />
                     Xóa Bộ Lọc
@@ -210,7 +265,20 @@ const Courses = () => {
           ) : filteredCourses.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredCourses.map((course) => (
-                <CourseCard key={course.id} {...course} />
+                <CourseCard 
+                  key={course.id} 
+                  id={course.id}
+                  title={course.title}
+                  description={course.description}
+                  level={course.level}
+                  duration={course.duration}
+                  category={course.category}
+                  image={course.image}
+                  color={course.color}
+                  isPremium={course.isPremium}
+                  price={course.price}
+                  discountPrice={course.discountPrice}
+                />
               ))}
             </div>
           ) : (

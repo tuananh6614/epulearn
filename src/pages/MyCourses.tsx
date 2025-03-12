@@ -7,39 +7,33 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from "@/components/ui/button";
 import { BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-// Empty placeholder for enrolled courses - will be populated from API
-const enrolledCoursesData = [];
+import { EnrolledCourse } from '@/models/lesson';
+import { fetchUserEnrolledCourses } from '@/services/apiUtils';
+import { toast } from 'sonner';
 
 const MyCourses = () => {
   const { currentUser } = useAuth();
-  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch user's enrolled courses from API
+    // Fetch user's enrolled courses from Supabase
     const loadCourses = async () => {
       setLoading(true);
       
       try {
         if (currentUser) {
-          // In a real implementation, this would be an API call
-          // For now, we're showing an empty list for new users
-          const response = await fetch(`http://localhost:3000/api/users/${currentUser.id}/courses`);
-          
-          if (response.ok) {
-            const data = await response.json();
-            setEnrolledCourses(data.courses || []);
-          } else {
-            // If API fails, show empty state
-            setEnrolledCourses([]);
-          }
+          console.log('Fetching enrolled courses for user:', currentUser.id);
+          const courses = await fetchUserEnrolledCourses(currentUser.id);
+          setEnrolledCourses(courses);
         } else {
           setEnrolledCourses([]);
+          toast.error("Vui lòng đăng nhập để xem khóa học của bạn");
         }
       } catch (error) {
         console.error('Error fetching enrolled courses:', error);
         setEnrolledCourses([]);
+        toast.error("Không thể tải khóa học đã đăng ký");
       } finally {
         setLoading(false);
       }
@@ -85,7 +79,20 @@ const MyCourses = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {enrolledCourses.map((course) => (
                 <div key={course.id} className="flex flex-col h-full">
-                  <CourseCard key={course.id} {...course} />
+                  <CourseCard 
+                    key={course.id} 
+                    id={course.id}
+                    title={course.title}
+                    description={course.description || ''}
+                    level={course.level || 'Cơ bản'}
+                    duration={course.duration || ''}
+                    category={course.category || ''}
+                    image={course.image}
+                    color={course.color}
+                    isPremium={course.isPremium}
+                    price={course.price}
+                    discountPrice={course.discountPrice}
+                  />
                   <div className="mt-3">
                     <div className="flex justify-between text-sm mb-1">
                       <span>Tiến độ</span>

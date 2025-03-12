@@ -1,21 +1,42 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Loader2 } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserAvatar from './UserAvatar';
 import { useAuth } from '@/context/AuthContext';
 import { EnrolledCourse } from '@/models/lesson';
+import { fetchUserEnrolledCourses } from '@/services/apiUtils';
+import { toast } from 'sonner';
 
-interface UserSidebarProps {
-  enrolledCourses: EnrolledCourse[];
-  isLoadingCourses: boolean;
-}
-
-const UserSidebar: React.FC<UserSidebarProps> = ({ enrolledCourses, isLoadingCourses }) => {
+const UserSidebar: React.FC = () => {
   const { currentUser } = useAuth();
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+  
+  useEffect(() => {
+    const loadEnrolledCourses = async () => {
+      if (!currentUser) {
+        setIsLoadingCourses(false);
+        return;
+      }
+      
+      try {
+        setIsLoadingCourses(true);
+        const courses = await fetchUserEnrolledCourses(currentUser.id);
+        setEnrolledCourses(courses);
+      } catch (error) {
+        console.error('Error loading enrolled courses:', error);
+        toast.error('Không thể tải khóa học đã đăng ký');
+      } finally {
+        setIsLoadingCourses(false);
+      }
+    };
+    
+    loadEnrolledCourses();
+  }, [currentUser]);
   
   return (
     <div className="md:w-64 space-y-4">
@@ -48,7 +69,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({ enrolledCourses, isLoadingCou
           <h3 className="font-medium mb-3">Tiến độ học tập</h3>
           {isLoadingCourses ? (
             <div className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+              <Loader2 className="h-6 w-6 animate-spin text-green-500" />
             </div>
           ) : enrolledCourses.length > 0 ? (
             enrolledCourses.map((course) => (

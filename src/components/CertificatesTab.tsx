@@ -1,10 +1,14 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Award, FileText, ExternalLink, Download } from 'lucide-react';
+import { Award, FileText, ExternalLink, Download, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from '@/context/AuthContext';
+import { fetchUserCertificates } from '@/services/apiUtils';
+import { toast } from 'sonner';
 
 interface Certificate {
   id: string;
@@ -13,13 +17,37 @@ interface Certificate {
   credential: string;
 }
 
-interface CertificatesTabProps {
-  certificates: Certificate[];
-  isLoading: boolean;
-}
-
-const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, isLoading }) => {
+const CertificatesTab: React.FC = () => {
   const { toast } = useToast();
+  const { currentUser } = useAuth();
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadCertificates = async () => {
+      if (!currentUser) {
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        setIsLoading(true);
+        const certs = await fetchUserCertificates(currentUser.id);
+        setCertificates(certs);
+      } catch (error) {
+        console.error('Error loading certificates:', error);
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải chứng chỉ",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadCertificates();
+  }, [currentUser]);
 
   const handleViewCertificate = (cert: Certificate) => {
     // For now, show a toast when viewing certificate
@@ -52,7 +80,7 @@ const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, isLoadi
         
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+            <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
           </div>
         ) : certificates.length > 0 ? (
           <div className="space-y-4">

@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Clock } from "lucide-react";
+import { BookOpen, Clock, Crown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +17,9 @@ interface CourseCardProps {
   category: string;
   image: string;
   color: string;
+  isPremium?: boolean;
+  price?: number;
+  discountPrice?: number;
 }
 
 // Component hiển thị thẻ khóa học với thiết kế của Lovable
@@ -28,7 +32,10 @@ const CourseCard = ({
   duration, 
   category,
   image,
-  color 
+  color,
+  isPremium = false,
+  price,
+  discountPrice
 }: CourseCardProps) => {
   return (
     <Card className="course-card h-full overflow-hidden border shadow-sm hover:shadow-xl transition-all duration-500 bg-card dark:bg-card/60 hover:-translate-y-2">
@@ -47,10 +54,17 @@ const CourseCard = ({
             className="object-cover h-full w-full opacity-90 transition-all duration-500 hover:opacity-100" 
           />
         </div>
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 flex flex-col gap-2">
           <Badge className="bg-white/90 text-gray-800 hover:bg-white/95 dark:bg-gray-900/90 dark:text-gray-100 dark:hover:bg-gray-900/95 font-medium">
             {level}
           </Badge>
+          
+          {isPremium && (
+            <Badge className="bg-yellow-500/90 text-white hover:bg-yellow-500/95 font-medium flex items-center gap-1">
+              <Crown className="h-3 w-3" />
+              VIP
+            </Badge>
+          )}
         </div>
       </div>
       
@@ -73,11 +87,26 @@ const CourseCard = ({
             <span>{duration}</span>
           </div>
         </div>
+        
+        {isPremium && price && (
+          <div className="mt-3 flex justify-between items-center">
+            {discountPrice && discountPrice < price ? (
+              <div className="flex flex-col">
+                <span className="text-sm line-through text-muted-foreground">{price.toLocaleString('vi-VN')}đ</span>
+                <span className="text-lg font-semibold text-green-600 dark:text-green-500">{discountPrice.toLocaleString('vi-VN')}đ</span>
+              </div>
+            ) : (
+              <span className="text-lg font-semibold">{price.toLocaleString('vi-VN')}đ</span>
+            )}
+          </div>
+        )}
       </CardContent>
       
       <CardFooter className="flex justify-center">
         <Link to={`/course/${id}`} className="w-full">
-          <Button variant="default" className="w-full">Xem Khóa Học</Button>
+          <Button variant="default" className={`w-full ${isPremium ? 'bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800' : ''}`}>
+            {isPremium ? 'Xem Khóa Học VIP' : 'Xem Khóa Học'}
+          </Button>
         </Link>
       </CardFooter>
     </Card>

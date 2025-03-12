@@ -5,30 +5,47 @@ import { ArrowRight, RefreshCw } from "lucide-react";
 import CourseCard from './CourseCard';
 import { Link } from "react-router-dom";
 import { toast } from 'sonner';
-import { API_URL, fetchWithTimeout } from '@/services/apiUtils';
+import { fetchFeaturedCourses } from '@/services/apiUtils';
+import { Course, SupabaseCourseResponse } from '@/models/lesson';
 
 // Component hiển thị các khóa học nổi bật
 const FeaturedCourses = () => {
-  const [featuredCourses, setFeaturedCourses] = useState([]);
+  const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchFeaturedCourses = async () => {
+  const loadFeaturedCourses = async () => {
     try {
-      console.log('Fetching featured courses from API...');
-      const response = await fetchWithTimeout(`${API_URL}/featured-courses`, {}, 8000);
+      console.log('Fetching featured courses from Supabase...');
+      setIsLoading(true);
       
-      if (!response.ok) {
-        throw new Error('Không thể tải khóa học nổi bật');
-      }
+      const coursesData = await fetchFeaturedCourses();
+      console.log('Featured courses data received:', coursesData);
       
-      const data = await response.json();
-      console.log('Featured courses data received:', data);
-      setFeaturedCourses(data);
+      // Transform data to match Course interface
+      const formattedCourses: Course[] = coursesData.map((course: SupabaseCourseResponse) => ({
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        level: course.level,
+        duration: course.duration,
+        category: course.category,
+        image: course.thumbnail_url || '/placeholder.svg',
+        color: course.is_premium ? '#ffd700' : '#4f46e5', // Gold for premium, blue for regular
+        isPremium: course.is_premium,
+        price: course.price || undefined,
+        discountPrice: course.discount_price || undefined,
+        isFeatured: course.is_featured,
+        instructor: course.instructor,
+        chapters: [],  // Chapters will be loaded separately when viewing course details
+      }));
+      
+      setFeaturedCourses(formattedCourses);
       setIsLoading(false);
+      setError(null);
     } catch (err) {
       console.error('Lỗi khi tải khóa học nổi bật:', err);
-      setError(err.message);
+      setError((err as Error).message);
       setIsLoading(false);
       
       toast.error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối của bạn hoặc thử lại sau.");
@@ -36,14 +53,13 @@ const FeaturedCourses = () => {
   };
 
   useEffect(() => {
-    fetchFeaturedCourses();
+    loadFeaturedCourses();
   }, []);
 
   // Thử lại khi gặp lỗi
   const handleRetry = () => {
     setError(null);
-    setIsLoading(true);
-    fetchFeaturedCourses();
+    loadFeaturedCourses();
   };
 
   if (isLoading) {
@@ -109,7 +125,20 @@ const FeaturedCourses = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {featuredCourses.length > 0 ? (
             featuredCourses.map((course) => (
-              <CourseCard key={course.id} {...course} />
+              <CourseCard 
+                key={course.id} 
+                id={course.id}
+                title={course.title}
+                description={course.description}
+                level={course.level}
+                duration={course.duration}
+                category={course.category}
+                image={course.image}
+                color={course.color}
+                isPremium={course.isPremium}
+                price={course.price}
+                discountPrice={course.discountPrice}
+              />
             ))
           ) : (
             <p className="col-span-4 text-center text-gray-500 dark:text-gray-400">Không có khóa học nổi bật nào.</p>

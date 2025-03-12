@@ -1,9 +1,8 @@
-
 /**
  * Utility functions for API requests
  */
 import { supabase } from "@/integrations/supabase/client";
-import { Database, EnrolledCourse, UserCertificate } from "@/models/lesson";
+import { EnrolledCourse, UserCertificate } from "@/models/lesson";
 
 // Base URL for external APIs (if still needed)
 export const API_URL = import.meta.env.PROD 
@@ -130,7 +129,13 @@ export const fetchCourses = async () => {
     throw new Error(error.message);
   }
   
-  return data || [];
+  // Format the duration for display
+  const formattedData = data?.map(course => ({
+    ...course,
+    duration: formatDuration(course.duration)
+  })) || [];
+  
+  return formattedData;
 };
 
 /**
@@ -148,7 +153,13 @@ export const fetchFeaturedCourses = async () => {
     throw new Error(error.message);
   }
   
-  return data || [];
+  // Format the duration for display
+  const formattedData = data?.map(course => ({
+    ...course,
+    duration: formatDuration(course.duration)
+  })) || [];
+  
+  return formattedData;
 };
 
 /**
@@ -198,9 +209,15 @@ export const fetchCourseById = async (courseId: string) => {
     };
   }));
   
+  // Format durations for display
+  const formattedCourse = {
+    ...course,
+    duration: formatDuration(course.duration)
+  };
+  
   // Return the complete course object with chapters and lessons
   return {
-    ...course,
+    ...formattedCourse,
     chapters: chaptersWithLessons
   };
 };
@@ -214,6 +231,7 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
     .select(`
       id,
       progress_percentage,
+      is_completed,
       course_id,
       courses:course_id (
         id, 
@@ -225,7 +243,8 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
         category,
         is_premium,
         price,
-        discount_price
+        discount_price,
+        status
       )
     `)
     .eq('user_id', userId);
@@ -242,14 +261,59 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
     description: enrollment.courses.description,
     image: enrollment.courses.thumbnail_url || '/placeholder.svg',
     progress: enrollment.progress_percentage,
-    duration: enrollment.courses.duration,
+    duration: formatDuration(enrollment.courses.duration),
     level: enrollment.courses.level,
     category: enrollment.courses.category,
     color: enrollment.courses.is_premium ? '#ffd700' : '#4f46e5', // Gold for premium, blue for regular
     isPremium: enrollment.courses.is_premium,
     price: enrollment.courses.price,
-    discountPrice: enrollment.courses.discount_price
+    discountPrice: enrollment.courses.discount_price,
+    status: enrollment.courses.status,
+    isCompleted: enrollment.is_completed
   }));
+};
+
+/**
+ * Helper function to format duration for display
+ */
+export const formatDuration = (duration: string | null): string => {
+  if (!duration) return 'N/A';
+  
+  try {
+    // If it's already a formatted string like "10 hours" or "45 minutes", return as is
+    if (typeof duration === 'string' && !duration.includes('P') && !duration.includes('T')) {
+      return duration;
+    }
+    
+    // Try to parse PostgreSQL interval format
+    // This is a simplified approach - for a production app, use a dedicated duration library
+    const hours = duration.toString().match(/(\d+):(\d+):(\d+)/);
+    if (hours) {
+      const h = parseInt(hours[1]);
+      const m = parseInt(hours[2]);
+      
+      if (h > 0) {
+        return `${h} ${h === 1 ? 'hour' : 'hours'}${m > 0 ? ` ${m} ${m === 1 ? 'minute' : 'minutes'}` : ''}`;
+      } else {
+        return `${m} ${m === 1 ? 'minute' : 'minutes'}`;
+      }
+    }
+    
+    // For simple hour/minute values
+    if (duration.toString().includes('hour') || duration.toString().includes('hours')) {
+      return duration.toString();
+    }
+    
+    if (duration.toString().includes('minute') || duration.toString().includes('minutes')) {
+      return duration.toString();
+    }
+    
+    // Default fallback
+    return duration.toString();
+  } catch (e) {
+    console.error("Error formatting duration:", e);
+    return duration.toString();
+  }
 };
 
 /**
@@ -405,16 +469,34 @@ export const updateCourseProgress = async (userId: string, courseId: string) => 
     ? Math.round((completedCount / totalLessons) * 100) 
     : 0;
   
-  // Update user_courses table
+  // If all lessons are completed, mark the course as completed
+  if (progressPercentage === 100) {
+    await supabase
+      .from('user_courses')
+      .update({ 
+        progress_percentage: progressPercentage,
+        is_completed: true,
+        last_accessed: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('course_id', courseId);
+  } else {
+    await supabase
+      .from('user_courses')
+      .update({ 
+        progress_percentage: progressPercentage,
+        last_accessed: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('course_id', courseId);
+  }
+  
   const { data, error } = await supabase
     .from('user_courses')
-    .update({ 
-      progress_percentage: progressPercentage,
-      last_accessed: new Date().toISOString()
-    })
+    .select()
     .eq('user_id', userId)
     .eq('course_id', courseId)
-    .select();
+    .single();
   
   if (error) {
     console.error("Error updating course progress:", error);

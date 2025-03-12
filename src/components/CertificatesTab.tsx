@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, Loader2 } from 'lucide-react';
 import { UserCertificate } from '@/models/lesson';
+import { toast } from 'sonner';
 
 interface CertificatesTabProps {
   certificates: UserCertificate[];
@@ -15,7 +16,7 @@ const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, isLoadi
     // In a real application, this would redirect to a certificate download/view endpoint
     console.log(`Downloading certificate with ID: ${certificateId}`);
     // Placeholder for certificate download functionality
-    alert(`Chứng chỉ ${certificateId} sẽ được tải xuống (chức năng đang phát triển)`);
+    toast.info(`Chứng chỉ ${certificateId} sẽ được tải xuống (chức năng đang phát triển)`);
   };
   
   return (

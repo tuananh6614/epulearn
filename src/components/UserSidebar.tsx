@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Loader2 } from 'lucide-react';
+import { BookOpen, Loader2, CheckCircle } from 'lucide-react';
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -92,9 +93,23 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
                   <Link to={`/course/${course.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
                     {course.title}
                   </Link>
-                  <span>{course.progress}%</span>
+                  <div className="flex items-center">
+                    {course.isCompleted && (
+                      <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                    )}
+                    <span>{course.progress}%</span>
+                  </div>
                 </div>
-                <Progress value={course.progress} className="h-2" />
+                <Progress 
+                  value={course.progress} 
+                  className={`h-2 ${course.isCompleted ? 'bg-green-100' : ''}`} 
+                />
+                {course.status === 'draft' && (
+                  <p className="text-xs text-amber-500 mt-1">Bản nháp</p>
+                )}
+                {course.status === 'archived' && (
+                  <p className="text-xs text-gray-500 mt-1">Đã lưu trữ</p>
+                )}
               </div>
             ))
           ) : (

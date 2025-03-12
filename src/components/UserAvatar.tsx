@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Upload, Crown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,7 +37,6 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   };
 
   useEffect(() => {
-    // Fetch VIP status from profile if user is logged in
     const fetchVipStatus = async () => {
       if (!currentUser) return;
       
@@ -55,33 +53,31 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         }
         
         if (data) {
-          setIsVip(!!data.is_vip);
-          setVipExpirationDate(data.vip_expiration_date);
+          const now = new Date();
+          const expirationDate = data.vip_expiration_date ? new Date(data.vip_expiration_date) : null;
           
-          // Calculate remaining days if expiration date exists
-          if (data.vip_expiration_date) {
-            const expirationDate = new Date(data.vip_expiration_date);
-            const today = new Date();
-            const timeDiff = expirationDate.getTime() - today.getTime();
-            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+          if (expirationDate && expirationDate > now) {
+            setIsVip(!!data.is_vip);
+            setVipExpirationDate(data.vip_expiration_date);
             
-            // Only show positive days remaining
-            if (daysDiff > 0) {
-              setRemainingDays(daysDiff);
-            } else {
-              // VIP expired
-              setIsVip(false);
-              setRemainingDays(null);
+            const timeDiff = expirationDate.getTime() - now.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            setRemainingDays(daysDiff);
+          } else {
+            setIsVip(false);
+            setRemainingDays(null);
+            
+            if (data.is_vip) {
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ 
+                  is_vip: false,
+                  vip_expiration_date: null
+                })
+                .eq('id', currentUser.id);
               
-              // Update profile to remove VIP status if expired
-              if (data.is_vip) {
-                supabase
-                  .from('profiles')
-                  .update({ is_vip: false })
-                  .eq('id', currentUser.id)
-                  .then(({ error }) => {
-                    if (error) console.error('Error updating expired VIP status:', error);
-                  });
+              if (updateError) {
+                console.error('Error updating expired VIP status:', updateError);
               }
             }
           }

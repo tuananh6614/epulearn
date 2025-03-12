@@ -233,8 +233,10 @@ export type Database = {
           email: string
           first_name: string | null
           id: string
+          is_vip: boolean | null
           last_name: string | null
           updated_at: string
+          vip_expiration_date: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -243,8 +245,10 @@ export type Database = {
           email: string
           first_name?: string | null
           id: string
+          is_vip?: boolean | null
           last_name?: string | null
           updated_at?: string
+          vip_expiration_date?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -253,8 +257,10 @@ export type Database = {
           email?: string
           first_name?: string | null
           id?: string
+          is_vip?: boolean | null
           last_name?: string | null
           updated_at?: string
+          vip_expiration_date?: string | null
         }
         Relationships: []
       }

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -166,8 +165,6 @@ const VipPurchaseForm = () => {
     setIsLoading(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       const plan = plans[selectedPlan as keyof typeof plans];
       const finalPrice = plan.discount > 0 
         ? plan.price - (plan.price * plan.discount / 100) 
@@ -177,22 +174,7 @@ const VipPurchaseForm = () => {
       const expirationDate = new Date();
       expirationDate.setMonth(expirationDate.getMonth() + plan.months);
       
-      const { error } = await supabase
-        .from('user_courses')
-        .insert({
-          user_id: currentUser.id,
-          course_id: `vip-${selectedPlan}`,
-          has_paid: false,
-          payment_amount: finalPrice,
-          progress_percentage: 0,
-          enrolled_at: new Date().toISOString(),
-          vip_expiration_date: expirationDate.toISOString() // Add expiration date
-        })
-        .select();
-      
-      if (error) throw error;
-      
-      // Update user profile to mark as VIP
+      // Update user's VIP status in profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
@@ -202,8 +184,23 @@ const VipPurchaseForm = () => {
         .eq('id', currentUser.id);
       
       if (profileError) {
-        console.error("Error updating profile:", profileError);
+        throw profileError;
       }
+      
+      // Create purchase record
+      const { error: purchaseError } = await supabase
+        .from('user_courses')
+        .insert({
+          user_id: currentUser.id,
+          course_id: `vip-${selectedPlan}`,
+          has_paid: false,
+          payment_amount: finalPrice,
+          progress_percentage: 0,
+          enrolled_at: new Date().toISOString()
+        })
+        .select();
+      
+      if (purchaseError) throw purchaseError;
       
       setShowSuccessMessage(true);
       toast({

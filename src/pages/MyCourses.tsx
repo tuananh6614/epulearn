@@ -5,7 +5,7 @@ import Footer from '@/components/Footer';
 import CourseCard from '@/components/CourseCard';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from "@/components/ui/button";
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { EnrolledCourse } from '@/models/lesson';
 import { fetchUserEnrolledCourses } from '@/services/apiUtils';
@@ -83,7 +83,7 @@ const MyCourses = () => {
                     key={course.id} 
                     id={course.id}
                     title={course.title}
-                    description={course.description || ''}
+                    description={course.description}
                     level={course.level || 'Cơ bản'}
                     duration={course.duration || ''}
                     category={course.category || ''}

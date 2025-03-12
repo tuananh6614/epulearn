@@ -14,7 +14,8 @@ import ProfileForm from '@/components/ProfileForm';
 import SecurityForm from '@/components/SecurityForm';
 import CertificatesTab from '@/components/CertificatesTab';
 import { toast } from 'sonner';
-import { API_URL, fetchWithTimeout, handleApiResponse } from '@/services/apiUtils';
+import { API_URL, fetchWithTimeout, handleApiResponse, fetchUserEnrolledCourses, fetchUserCertificates } from '@/services/apiUtils';
+import { EnrolledCourse, UserCertificate } from '@/models/lesson';
 
 const UserProfile = () => {
   const { currentUser } = useAuth();
@@ -43,7 +44,7 @@ const UserProfile = () => {
           const text = await response.text();
           setConnectionDetails(`Máy chủ phản hồi với lỗi: ${response.status} ${response.statusText}`);
           console.warn('API health check failed:', text);
-          toast.error("Máy chủ không phản hồi đúng. Hãy kiểm tra cài đặt của máy chủ MySQL.", { 
+          toast.warning("Máy chủ không phản hồi đúng. Hãy kiểm tra cài đặt của máy chủ MySQL.", { 
             duration: 8000 
           });
         }
@@ -95,66 +96,10 @@ const UserProfile = () => {
     }
   };
 
-  // Fetch enrolled courses from the database
-  const fetchUserCourses = async () => {
-    if (!currentUser?.id) return [];
-    
-    try {
-      console.log("Fetching user courses for ID:", currentUser.id);
-      const response = await fetchWithTimeout(`${API_URL}/users/${currentUser.id}/courses`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-cache'
-      }, 8000);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Failed to fetch enrolled courses:', errorText);
-        throw new Error('Failed to fetch enrolled courses');
-      }
-      
-      const data = await response.json();
-      console.log("Received user courses:", data);
-      return data.courses || [];
-    } catch (error) {
-      console.error('Error fetching user courses:', error);
-      toast.error("Không thể tải dữ liệu khóa học. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
-      return []; // Return empty array on error
-    }
-  };
-
-  // Fetch certificates from the database
-  const fetchUserCertificates = async () => {
-    if (!currentUser?.id) return [];
-    
-    try {
-      console.log("Fetching user certificates for ID:", currentUser.id);
-      const response = await fetchWithTimeout(`${API_URL}/users/${currentUser.id}/certificates`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-cache'
-      }, 8000);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Failed to fetch certificates:', errorText);
-        throw new Error('Failed to fetch certificates');
-      }
-      
-      const data = await response.json();
-      console.log("Received user certificates:", data);
-      return data.certificates || [];
-    } catch (error) {
-      console.error('Error fetching user certificates:', error);
-      toast.error("Không thể tải dữ liệu chứng chỉ. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
-      return []; // Return empty array on error
-    }
-  };
-
   // Use React Query to fetch user courses
   const { data: userCourses, isLoading: isLoadingCourses } = useQuery({
     queryKey: ['userCourses', currentUser?.id, apiConnectionStatus],
-    queryFn: fetchUserCourses,
+    queryFn: () => fetchUserEnrolledCourses(currentUser?.id || ''),
     enabled: !!currentUser?.id && apiConnectionStatus === 'connected',
     retry: 1,
     refetchOnWindowFocus: false,
@@ -163,7 +108,7 @@ const UserProfile = () => {
   // Use React Query to fetch user certificates
   const { data: userCertificates, isLoading: isLoadingCertificates } = useQuery({
     queryKey: ['userCertificates', currentUser?.id, apiConnectionStatus],
-    queryFn: fetchUserCertificates,
+    queryFn: () => fetchUserCertificates(currentUser?.id || ''),
     enabled: !!currentUser?.id && apiConnectionStatus === 'connected',
     retry: 1,
     refetchOnWindowFocus: false,

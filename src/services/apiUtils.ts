@@ -3,6 +3,7 @@
  * Utility functions for API requests
  */
 import { supabase } from "@/integrations/supabase/client";
+import { Database, EnrolledCourse, UserCertificate } from "@/models/lesson";
 
 // Base URL for external APIs (if still needed)
 export const API_URL = import.meta.env.PROD 
@@ -42,7 +43,10 @@ export const fetchWithTimeout = async (
 export const checkApiHealth = async (): Promise<boolean> => {
   try {
     // For Supabase, we can simply check if we can access the public schema
-    const { data, error } = await supabase.from('courses').select('id').limit(1);
+    const { data, error } = await supabase
+      .from('courses')
+      .select('id')
+      .limit(1);
     
     if (error) {
       console.warn("Supabase connection check failed:", error.message);
@@ -85,7 +89,10 @@ export const getDetailedApiStatus = async (): Promise<{
   statusCode?: number;
 }> => {
   try {
-    const { data, error } = await supabase.from('courses').select('id').limit(1);
+    const { data, error } = await supabase
+      .from('courses')
+      .select('id')
+      .limit(1);
     
     if (error) {
       return {
@@ -115,7 +122,7 @@ export const getDetailedApiStatus = async (): Promise<{
 export const fetchCourses = async () => {
   const { data, error } = await supabase
     .from('courses')
-    .select('*')
+    .select()
     .order('created_at', { ascending: false });
     
   if (error) {
@@ -132,7 +139,7 @@ export const fetchCourses = async () => {
 export const fetchFeaturedCourses = async () => {
   const { data, error } = await supabase
     .from('courses')
-    .select('*')
+    .select()
     .eq('is_featured', true)
     .order('created_at', { ascending: false });
     
@@ -151,7 +158,7 @@ export const fetchCourseById = async (courseId: string) => {
   // Fetch the course details
   const { data: course, error: courseError } = await supabase
     .from('courses')
-    .select('*')
+    .select()
     .eq('id', courseId)
     .single();
   
@@ -163,7 +170,7 @@ export const fetchCourseById = async (courseId: string) => {
   // Fetch the chapters for this course
   const { data: chapters, error: chaptersError } = await supabase
     .from('chapters')
-    .select('*')
+    .select()
     .eq('course_id', courseId)
     .order('order_index', { ascending: true });
   
@@ -173,10 +180,10 @@ export const fetchCourseById = async (courseId: string) => {
   }
   
   // Fetch lessons for each chapter
-  const chaptersWithLessons = await Promise.all(chapters.map(async (chapter) => {
+  const chaptersWithLessons = await Promise.all((chapters || []).map(async (chapter) => {
     const { data: lessons, error: lessonsError } = await supabase
       .from('lessons')
-      .select('*')
+      .select()
       .eq('chapter_id', chapter.id)
       .order('order_index', { ascending: true });
     
@@ -201,7 +208,7 @@ export const fetchCourseById = async (courseId: string) => {
 /**
  * Fetch user's enrolled courses
  */
-export const fetchUserEnrolledCourses = async (userId: string) => {
+export const fetchUserEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> => {
   const { data, error } = await supabase
     .from('user_courses')
     .select(`
@@ -216,7 +223,9 @@ export const fetchUserEnrolledCourses = async (userId: string) => {
         duration,
         level,
         category,
-        is_premium
+        is_premium,
+        price,
+        discount_price
       )
     `)
     .eq('user_id', userId);
@@ -237,14 +246,16 @@ export const fetchUserEnrolledCourses = async (userId: string) => {
     level: enrollment.courses.level,
     category: enrollment.courses.category,
     color: enrollment.courses.is_premium ? '#ffd700' : '#4f46e5', // Gold for premium, blue for regular
-    isPremium: enrollment.courses.is_premium
+    isPremium: enrollment.courses.is_premium,
+    price: enrollment.courses.price,
+    discountPrice: enrollment.courses.discount_price
   }));
 };
 
 /**
  * Fetch user's certificates
  */
-export const fetchUserCertificates = async (userId: string) => {
+export const fetchUserCertificates = async (userId: string): Promise<UserCertificate[]> => {
   const { data, error } = await supabase
     .from('certificates')
     .select(`
@@ -266,9 +277,11 @@ export const fetchUserCertificates = async (userId: string) => {
   // Format the data to match the expected structure
   return (data || []).map(cert => ({
     id: cert.id,
-    title: cert.courses.title,
-    issueDate: new Date(cert.issue_date).toLocaleDateString('vi-VN'),
-    credential: cert.certificate_id
+    userId: userId,
+    courseId: cert.courses.id,
+    certificateId: cert.certificate_id,
+    issueDate: cert.issue_date,
+    courseName: cert.courses.title
   }));
 };
 
@@ -309,7 +322,7 @@ export const updateLessonProgress = async (
   // Check if a record exists first
   const { data: existingProgress } = await supabase
     .from('user_lesson_progress')
-    .select('*')
+    .select()
     .eq('user_id', userId)
     .eq('lesson_id', lessonId)
     .maybeSingle();

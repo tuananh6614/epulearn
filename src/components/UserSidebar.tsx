@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Loader2 } from 'lucide-react';
@@ -11,12 +10,27 @@ import { EnrolledCourse } from '@/models/lesson';
 import { fetchUserEnrolledCourses } from '@/services/apiUtils';
 import { toast } from 'sonner';
 
-const UserSidebar: React.FC = () => {
+interface UserSidebarProps {
+  enrolledCourses?: EnrolledCourse[];
+  isLoadingCourses?: boolean;
+}
+
+const UserSidebar: React.FC<UserSidebarProps> = ({ 
+  enrolledCourses: propEnrolledCourses, 
+  isLoadingCourses: propIsLoading 
+}) => {
   const { currentUser } = useAuth();
-  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
-  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>(propEnrolledCourses || []);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(propIsLoading !== undefined ? propIsLoading : true);
   
   useEffect(() => {
+    // If courses are provided via props, use those
+    if (propEnrolledCourses) {
+      setEnrolledCourses(propEnrolledCourses);
+      return;
+    }
+
+    // Otherwise fetch courses
     const loadEnrolledCourses = async () => {
       if (!currentUser) {
         setIsLoadingCourses(false);
@@ -36,7 +50,7 @@ const UserSidebar: React.FC = () => {
     };
     
     loadEnrolledCourses();
-  }, [currentUser]);
+  }, [currentUser, propEnrolledCourses, propIsLoading]);
   
   return (
     <div className="md:w-64 space-y-4">

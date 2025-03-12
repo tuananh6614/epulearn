@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for API requests
  */
@@ -210,6 +209,64 @@ export const fetchCourseById = async (courseId: string) => {
     ...formattedCourse,
     chapters: chaptersWithLessons
   };
+};
+
+/**
+ * Fetch course structure (chapters and lessons)
+ * @param courseId - Course ID to fetch structure for
+ */
+export const fetchCourseStructure = async (courseId: string) => {
+  try {
+    // Fetch chapters
+    const { data: chapters, error: chaptersError } = await supabase
+      .from('chapters')
+      .select()
+      .eq('course_id', courseId)
+      .order('order_index', { ascending: true });
+      
+    if (chaptersError) throw new Error(chaptersError.message);
+    
+    // Fetch lessons for each chapter
+    const chaptersWithLessons = await Promise.all((chapters || []).map(async (chapter) => {
+      const { data: lessons, error: lessonsError } = await supabase
+        .from('lessons')
+        .select()
+        .eq('chapter_id', chapter.id)
+        .order('order_index', { ascending: true });
+        
+      if (lessonsError) throw new Error(lessonsError.message);
+      
+      return {
+        ...chapter,
+        lessons: lessons || []
+      };
+    }));
+    
+    return chaptersWithLessons;
+  } catch (error) {
+    console.error("Error fetching course structure:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch a specific lesson
+ * @param lessonId - Lesson ID to fetch
+ */
+export const fetchLesson = async (lessonId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('lessons')
+      .select()
+      .eq('id', lessonId)
+      .single();
+      
+    if (error) throw new Error(error.message);
+    return data;
+  } catch (error) {
+    console.error("Error fetching lesson:", error);
+    throw error;
+  }
 };
 
 /**

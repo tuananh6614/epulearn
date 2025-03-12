@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Upload, Crown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -57,7 +58,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           const expirationDate = data.vip_expiration_date ? new Date(data.vip_expiration_date) : null;
           
           if (expirationDate && expirationDate > now) {
-            setIsVip(!!data.is_vip);
+            setIsVip(data.is_vip || false);
             setVipExpirationDate(data.vip_expiration_date);
             
             const timeDiff = expirationDate.getTime() - now.getTime();

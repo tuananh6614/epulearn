@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, RefreshCw } from "lucide-react";
@@ -16,11 +15,9 @@ const FeaturedCourses = () => {
 
   const loadFeaturedCourses = async () => {
     try {
-      console.log('Fetching featured courses from Supabase...');
       setIsLoading(true);
       
       const coursesData = await fetchFeaturedCourses();
-      console.log('Featured courses data received:', coursesData);
       
       // Transform data to match Course interface
       const formattedCourses: Course[] = coursesData.map((course: SupabaseCourseResponse) => ({

@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { API_URL, fetchWithTimeout } from '@/services/apiUtils';
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserAvatarProps {
   avatarUrl: string | null;
@@ -22,7 +23,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   editable = false 
 }) => {
   const [isUploading, setIsUploading] = useState(false);
-  const { updateCurrentUser } = useAuth();
+  const { updateCurrentUser, user } = useAuth();
   
   // Size class mapping
   const sizeClasses = {
@@ -50,11 +51,53 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     setIsUploading(true);
     
     try {
-      // Create object URL for local preview without server
-      const localImageUrl = URL.createObjectURL(file);
+      if (!user) {
+        toast.error("Bạn cần đăng nhập để tải lên ảnh đại diện");
+        return;
+      }
       
+      // Try Supabase Storage upload first
       try {
-        // Try to upload to server first
+        // Generate a unique file name
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `avatars/${fileName}`;
+        
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
+          
+        if (error) {
+          throw error;
+        }
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+          
+        // Update user data in AuthContext with Supabase URL
+        await updateCurrentUser({ avatarUrl: publicUrl });
+        
+        // Also update the profile in the database
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ avatar_url: publicUrl })
+          .eq('id', user.id);
+          
+        if (updateError) {
+          console.error('Error updating profile:', updateError);
+        }
+        
+        toast.success("Ảnh đại diện đã được cập nhật");
+      } catch (supabaseError) {
+        console.error('Error uploading to Supabase:', supabaseError);
+        
+        // Fallback to server upload
         const formData = new FormData();
         formData.append('avatar', file);
         
@@ -72,16 +115,15 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         // Update user data in AuthContext with server URL
         await updateCurrentUser({ avatarUrl: data.avatarUrl });
         toast.success("Ảnh đại diện đã được cập nhật và đồng bộ với CSDL");
-      } catch (error) {
-        console.error('Error uploading avatar to server:', error);
-        
-        // Fall back to local URL if server upload fails
-        await updateCurrentUser({ avatarUrl: localImageUrl });
-        toast.warning("Không thể kết nối đến máy chủ. Ảnh đã được lưu cục bộ.");
       }
     } catch (error) {
       console.error('Error handling avatar upload:', error);
-      toast.error("Không thể tải lên ảnh đại diện. Vui lòng thử lại sau.");
+      
+      // Create object URL for local preview as last resort
+      const localImageUrl = URL.createObjectURL(file);
+      await updateCurrentUser({ avatarUrl: localImageUrl });
+      
+      toast.warning("Không thể kết nối đến máy chủ. Ảnh đã được lưu cục bộ.");
     } finally {
       setIsUploading(false);
     }

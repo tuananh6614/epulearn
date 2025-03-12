@@ -41,6 +41,44 @@ export type Database = {
           },
         ]
       }
+      chapter_tests: {
+        Row: {
+          chapter_id: string
+          correct_answer: number
+          created_at: string | null
+          id: string
+          options: Json
+          question: string
+          updated_at: string | null
+        }
+        Insert: {
+          chapter_id: string
+          correct_answer: number
+          created_at?: string | null
+          id?: string
+          options: Json
+          question: string
+          updated_at?: string | null
+        }
+        Update: {
+          chapter_id?: string
+          correct_answer?: number
+          created_at?: string | null
+          id?: string
+          options?: Json
+          question?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_tests_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chapters: {
         Row: {
           course_id: string

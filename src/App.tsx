@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,7 @@ import MyCourses from "./pages/MyCourses";
 import UserProfile from "./pages/UserProfile";
 import Certification from "./pages/Certification";
 import VipCourses from "./pages/VipCourses";
+import ChapterTestPage from "./pages/ChapterTestPage";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -71,6 +73,13 @@ const App = () => (
             } />
             <Route path="/lesson-demo" element={<LessonDemo />} />
             <Route path="/demo" element={<LessonDemo />} />
+            
+            {/* Chapter test route */}
+            <Route path="/course/:courseId/chapter/:chapterId/test" element={
+              <ProtectedRoute>
+                <ChapterTestPage />
+              </ProtectedRoute>
+            } />
             
             {/* Update route path for certificates */}
             <Route path="/profile/certificates" element={

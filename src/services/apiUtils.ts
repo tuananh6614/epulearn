@@ -5,6 +5,46 @@
 import { supabase } from "@/integrations/supabase/client";
 import { EnrolledCourse, UserCertificate } from "@/models/lesson";
 
+// Define API URL for Supabase
+export const API_URL = import.meta.env.VITE_SUPABASE_URL || 'https://zrpmghqlhxjwxceqihfg.supabase.co';
+
+/**
+ * Fetch with timeout helper
+ * @param resource URL to fetch
+ * @param options Fetch options
+ * @param timeout Timeout in milliseconds
+ */
+export const fetchWithTimeout = async (
+  resource: string,
+  options: RequestInit = {},
+  timeout = 8000
+): Promise<Response> => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(resource, {
+      ...options,
+      signal: controller.signal
+    });
+    return response;
+  } finally {
+    clearTimeout(id);
+  }
+};
+
+/**
+ * Helper to handle API response 
+ */
+export const handleApiResponse = async (response: Response) => {
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `Error: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
 /**
  * Check if the API is available
  */

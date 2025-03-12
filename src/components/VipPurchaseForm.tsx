@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +7,6 @@ import { Crown, CheckCircle, Clock, QrCode, Download, Share2 } from 'lucide-reac
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from "@/integrations/supabase/client";
 
-// QR code images would normally be hosted in your project
 const QR_CODE_IMAGE = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=VIB-339435005-NGUYENTUANANH";
 
 interface VipPlanProps {
@@ -98,7 +96,7 @@ const VipPurchaseForm = () => {
       price: 500000,
       discount: 0,
       features: [
-        "Truy cập đầy đủ tất cả khóa học VIP",
+        "Truy cập đ��y đủ tất cả khóa học VIP",
         "Bài kiểm tra và đánh giá chuyên sâu",
         "Hỗ trợ trực tiếp từ giảng viên",
         "Chứng chỉ hoàn thành khóa học"
@@ -133,24 +131,17 @@ const VipPurchaseForm = () => {
     setIsLoading(true);
     
     try {
-      // Simulate processing
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Log the purchase attempt to Supabase (you can expand this later)
       const { error } = await supabase
-        .from('user_purchases')
+        .from('user_courses')
         .insert({
           user_id: currentUser.id,
-          plan: selectedPlan,
-          price: plans[selectedPlan as keyof typeof plans].price,
-          discount: plans[selectedPlan as keyof typeof plans].discount,
-          status: 'pending',
-          payment_method: 'bank_transfer',
-          payment_details: {
-            bank: 'VIB',
-            account_number: '339435005',
-            account_name: 'NGUYEN TUAN ANH'
-          }
+          course_id: selectedPlan === "3-months" ? "vip-3-months" : "vip-1-year",
+          has_paid: false,
+          payment_amount: selectedPlan === "3-months" ? 500000 : 1800000,
+          progress_percentage: 0,
+          enrolled_at: new Date().toISOString()
         })
         .select();
       

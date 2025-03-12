@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for API requests
  */
@@ -226,14 +227,14 @@ export const fetchCourseById = async (courseId: string) => {
  * Fetch user's enrolled courses
  */
 export const fetchUserEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> => {
+  // Let's fix the query to match the actual database structure
   const { data, error } = await supabase
     .from('user_courses')
     .select(`
       id,
       progress_percentage,
-      is_completed,
       course_id,
-      courses:course_id (
+      courses:courses(
         id, 
         title, 
         description,
@@ -243,8 +244,7 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
         category,
         is_premium,
         price,
-        discount_price,
-        status
+        discount_price
       )
     `)
     .eq('user_id', userId);
@@ -268,8 +268,8 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
     isPremium: enrollment.courses.is_premium,
     price: enrollment.courses.price,
     discountPrice: enrollment.courses.discount_price,
-    status: enrollment.courses.status,
-    isCompleted: enrollment.is_completed
+    // Use proper defaults for nullable properties
+    isCompleted: false
   }));
 };
 

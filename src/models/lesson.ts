@@ -1,4 +1,3 @@
-
 // Lesson data structures for our application
 
 export interface Lesson {
@@ -96,7 +95,7 @@ export interface UserCertificate {
 export interface EnrolledCourse {
   id: string;
   title: string;
-  description: string; // Added to fix TypeScript error
+  description: string;
   progress: number;
   image: string;
   color: string;
@@ -106,6 +105,8 @@ export interface EnrolledCourse {
   level?: string;
   duration?: string;
   category?: string;
+  isCompleted?: boolean;
+  status?: string;
 }
 
 export interface SupabaseCourseResponse {

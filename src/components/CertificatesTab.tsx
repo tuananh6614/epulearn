@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,18 +12,53 @@ interface CertificatesTabProps {
   isLoading: boolean;
 }
 
-const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, isLoading }) => {
-  const handleDownloadCertificate = (certificateId: string) => {
-    // In a real application, this would redirect to a certificate download/view endpoint
+const CertificateItem = React.memo(({ certificate, onView, onDownload }: {
+  certificate: UserCertificate;
+  onView: (id: string) => void;
+  onDownload: (id: string) => void;
+}) => (
+  <div className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-950/30 dark:to-green-950/30">
+    <div className="flex justify-between items-start">
+      <div>
+        <h3 className="font-semibold">{certificate.courseName}</h3>
+        <p className="text-sm text-muted-foreground">
+          Ngày cấp: {new Date(certificate.issueDate).toLocaleDateString('vi-VN')}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">ID: {certificate.certificateId}</p>
+      </div>
+      <div className="flex space-x-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex items-center gap-1" 
+          onClick={() => onView(certificate.certificateId)}
+        >
+          <FileText className="h-4 w-4" />
+          Xem
+        </Button>
+        <Button 
+          variant="default" 
+          size="sm" 
+          className="flex items-center gap-1" 
+          onClick={() => onDownload(certificate.certificateId)}
+        >
+          <Download className="h-4 w-4" />
+          Tải xuống
+        </Button>
+      </div>
+    </div>
+  </div>
+));
+
+const CertificatesTab: React.FC<CertificatesTabProps> = React.memo(({ certificates, isLoading }) => {
+  const handleDownloadCertificate = React.useCallback((certificateId: string) => {
     console.log(`Downloading certificate with ID: ${certificateId}`);
-    // Placeholder for certificate download functionality
     toast.info(`Chứng chỉ ${certificateId} sẽ được tải xuống (chức năng đang phát triển)`);
-  };
+  }, []);
   
-  const handleViewCertificate = (certificateId: string) => {
-    // Placeholder for certificate view functionality
+  const handleViewCertificate = React.useCallback((certificateId: string) => {
     toast.info(`Đang mở chứng chỉ ${certificateId} (chức năng đang phát triển)`);
-  };
+  }, []);
   
   return (
     <Card>
@@ -39,35 +75,12 @@ const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, isLoadi
         ) : certificates.length > 0 ? (
           <div className="space-y-4">
             {certificates.map((certificate) => (
-              <div key={certificate.id} className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-950/30 dark:to-green-950/30">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold">{certificate.courseName}</h3>
-                    <p className="text-sm text-muted-foreground">Ngày cấp: {new Date(certificate.issueDate).toLocaleDateString('vi-VN')}</p>
-                    <p className="text-xs text-muted-foreground mt-1">ID: {certificate.certificateId}</p>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex items-center gap-1" 
-                      onClick={() => handleViewCertificate(certificate.certificateId)}
-                    >
-                      <FileText className="h-4 w-4" />
-                      Xem
-                    </Button>
-                    <Button 
-                      variant="default" 
-                      size="sm" 
-                      className="flex items-center gap-1" 
-                      onClick={() => handleDownloadCertificate(certificate.certificateId)}
-                    >
-                      <Download className="h-4 w-4" />
-                      Tải xuống
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <CertificateItem 
+                key={certificate.id}
+                certificate={certificate}
+                onView={handleViewCertificate}
+                onDownload={handleDownloadCertificate}
+              />
             ))}
           </div>
         ) : (
@@ -85,6 +98,10 @@ const CertificatesTab: React.FC<CertificatesTabProps> = ({ certificates, isLoadi
       </CardContent>
     </Card>
   );
-};
+});
+
+// Add display names for better debugging
+CertificatesTab.displayName = 'CertificatesTab';
+CertificateItem.displayName = 'CertificateItem';
 
 export default CertificatesTab;

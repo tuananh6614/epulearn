@@ -13,8 +13,8 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false, // Disable this for faster login process
-    flowType: 'implicit', // Use implicit flow for faster authentication
+    detectSessionInUrl: true, // Enable this to detect auth in URL
+    flowType: 'pkce', // Use PKCE flow for more secure authentication
   },
   global: {
     headers: {

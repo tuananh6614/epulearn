@@ -44,7 +44,9 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
         return {
           id: item.course_id,
           title: `Gói VIP ${durationMap[duration] || duration}`,
+          description: `Gói VIP đăng ký ${durationMap[duration] || duration}`,
           image: '/public/vip-badge.png',
+          color: 'yellow',
           progress: 100,
           isCompleted: true,
           lastAccessed: item.last_accessed,
@@ -58,7 +60,11 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
         return {
           id: item.course_id,
           title: item.course.title,
+          description: item.course.description || '',
           image: item.course.thumbnail_url || '/placeholder.svg',
+          color: item.course.category === 'JavaScript' ? 'yellow' : 
+                 item.course.category === 'React' ? 'blue' : 
+                 item.course.category === 'Node' ? 'green' : 'gray',
           progress: item.progress_percentage,
           isCompleted,
           lastAccessed: item.last_accessed,
@@ -71,7 +77,9 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
       return {
         id: item.course_id,
         title: 'Khóa học không xác định',
+        description: 'Khóa học này không còn tồn tại',
         image: '/placeholder.svg',
+        color: 'gray',
         progress: item.progress_percentage,
         isCompleted,
         lastAccessed: item.last_accessed,

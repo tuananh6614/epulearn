@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { checkApiHealth } from '@/services/apiUtils';
@@ -12,11 +13,40 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const location = useLocation();
   const { isAuthenticated, loading: authLoading, currentUser, resendVerificationEmail } = useAuth();
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
   const [healthCheckAttempted, setHealthCheckAttempted] = useState(false);
   const [showEmailAlert, setShowEmailAlert] = useState(false);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
+  
+  // Check for auth error in URL
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('error=') && hash.includes('error_code=')) {
+      const errorParams = new URLSearchParams(hash.substring(1));
+      const errorType = errorParams.get('error');
+      const errorCode = errorParams.get('error_code');
+      const errorDescription = errorParams.get('error_description');
+      
+      if (errorType && errorCode) {
+        let message = 'Lỗi xác thực';
+        
+        if (errorCode === 'otp_expired') {
+          message = 'Liên kết email đã hết hạn. Vui lòng yêu cầu gửi lại email xác thực.';
+        } else if (errorDescription) {
+          message = errorDescription.replace(/\+/g, ' ');
+        }
+        
+        toast.error(message, {
+          duration: 8000,
+        });
+        
+        // Remove the error from the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [location]);
   
   useEffect(() => {
     const performHealthCheck = async () => {

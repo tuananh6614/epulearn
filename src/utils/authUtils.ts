@@ -1,4 +1,3 @@
-
 import { User } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
@@ -89,21 +88,16 @@ export const handleAuthStateChange = async (event: string, session: any, setCurr
     setCurrentUser(null);
     localStorage.removeItem('epu_user');
   } else if (event === 'USER_UPDATED' && session) {
-    setCurrentUser(prevUser => 
-      prevUser ? {
-        ...prevUser,
-        email_confirmed_at: session.user.email_confirmed_at
-      } : null
-    );
-    
     const storedUser = localStorage.getItem('epu_user');
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        localStorage.setItem('epu_user', JSON.stringify({
+        const updatedUser: User = {
           ...parsedUser,
           email_confirmed_at: session.user.email_confirmed_at
-        }));
+        };
+        setCurrentUser(updatedUser);
+        localStorage.setItem('epu_user', JSON.stringify(updatedUser));
       } catch (error) {
         console.error('Failed to update user in localStorage', error);
       }

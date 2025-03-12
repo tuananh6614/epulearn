@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SupabaseCourseResponse {
@@ -7,9 +6,16 @@ export interface SupabaseCourseResponse {
   description: string;
   status: string;
   thumbnail_url?: string;
-  category?: string;
-  created_at?: string;
+  category: string;
+  created_at: string;
+  updated_at: string;
   is_featured?: boolean;
+  instructor: string;
+  duration: string;
+  level: string;
+  price: number | null;
+  discount_price: number | null;
+  is_premium: boolean;
 }
 
 export interface UserCertificate {
@@ -59,7 +65,7 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
       return [];
     }
 
-    // Transform data to EnrolledCourse format with more efficient async handling
+    // Transform data to EnrolledCourse format
     return data.map(item => {
       const isCompleted = item.progress_percentage >= 100;
       
@@ -139,7 +145,10 @@ export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
       throw error;
     }
 
-    return data || [];
+    return data?.map(course => ({
+      ...course,
+      status: 'published'
+    })) || [];
   } catch (error) {
     console.error('Error fetching courses:', error);
     return [];
@@ -161,7 +170,10 @@ export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> 
       throw error;
     }
 
-    return data || [];
+    return data?.map(course => ({
+      ...course,
+      status: 'published'
+    })) || [];
   } catch (error) {
     console.error('Error fetching featured courses:', error);
     return [];

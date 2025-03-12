@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { z } from "zod";
@@ -31,9 +32,10 @@ const SecurityForm: React.FC = () => {
   const [checkingPassword, setCheckingPassword] = useState(false);
   const [passwordChecked, setPasswordChecked] = useState(false);
   const [isCurrentPasswordValid, setIsCurrentPasswordValid] = useState(false);
-  const [showCurrentPassword, setShowNewPassword] = useState(false);
-  const [showNewPassword, setShowConfirmPassword] = useState(false);
-  const [showConfirmPassword, setSyncStatus] = useState<'none' | 'syncing' | 'synced' | 'error'>('none');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'none' | 'syncing' | 'synced' | 'error'>('none');
   const navigate = useNavigate();
   
   // Check if email is unverified
@@ -286,21 +288,21 @@ const SecurityForm: React.FC = () => {
               ) : "Thay đổi mật khẩu"}
             </Button>
             
-            {setSyncStatus !== 'none' && (
+            {syncStatus !== 'none' && (
               <div className="flex items-center text-sm">
-                {setSyncStatus === 'syncing' && (
+                {syncStatus === 'syncing' && (
                   <span className="flex items-center text-blue-600">
                     <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                     Đang cập nhật mật khẩu...
                   </span>
                 )}
-                {setSyncStatus === 'synced' && (
+                {syncStatus === 'synced' && (
                   <span className="flex items-center text-green-600">
                     <CheckCircle2 className="h-4 w-4 mr-1" />
                     Đã cập nhật mật khẩu
                   </span>
                 )}
-                {setSyncStatus === 'error' && (
+                {syncStatus === 'error' && (
                   <span className="flex items-center text-red-600">
                     <AlertTriangle className="h-4 w-4 mr-1" />
                     Lỗi cập nhật mật khẩu

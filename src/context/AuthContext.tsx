@@ -12,7 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { API_URL, fetchWithTimeout } from '@/services/apiUtils';
+import { supabase } from "@/integrations/supabase/client";
 
 // Define the user type
 interface User {
@@ -62,57 +62,107 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [apiConnectionState, setApiConnectionState] = useState<'available' | 'unavailable' | 'unknown'>('unknown');
   const navigate = useNavigate();
 
-  // Check API connection on mount
+  // Check if there's a logged-in user in localStorage on initial load or through Supabase session
   useEffect(() => {
-    const checkApiConnection = async () => {
-      try {
-        console.log("Checking API connection...");
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        
-        const response = await fetch(`${API_URL}/health-check`, {
-          signal: controller.signal,
-          cache: 'no-cache' // Tránh cache khi kiểm tra sức khỏe API
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-          console.log("API connection successful");
-          setApiConnectionState('available');
+    const checkAuth = async () => {
+      setLoading(true);
+      
+      // Check Supabase session first
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        // Get user profile data from Supabase
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profileData) {
+          const userData: User = {
+            id: session.user.id,
+            email: session.user.email || '',
+            firstName: profileData.first_name,
+            lastName: profileData.last_name,
+            avatarUrl: profileData.avatar_url,
+            bio: profileData.bio
+          };
+          
+          setCurrentUser(userData);
+          localStorage.setItem('epu_user', JSON.stringify(userData));
         } else {
-          console.warn("API responded with error:", response.status, response.statusText);
-          setApiConnectionState('unavailable');
+          // Fallback to basic user data if profile not found
+          const userData: User = {
+            id: session.user.id,
+            email: session.user.email || '',
+          };
+          
+          setCurrentUser(userData);
+          localStorage.setItem('epu_user', JSON.stringify(userData));
         }
-      } catch (error) {
-        console.warn('API connection check failed:', error);
-        setApiConnectionState('unavailable');
+      } else {
+        // Check localStorage as fallback
+        const storedUser = localStorage.getItem('epu_user');
+        if (storedUser) {
+          try {
+            setCurrentUser(JSON.parse(storedUser));
+          } catch (error) {
+            console.error('Failed to parse user from localStorage', error);
+            localStorage.removeItem('epu_user');
+          }
+        }
       }
+      
+      setLoading(false);
     };
     
-    checkApiConnection();
+    checkAuth();
     
-    // Kiểm tra lại kết nối mỗi 30 giây
-    const intervalId = setInterval(checkApiConnection, 30000);
-    
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // Check if there's a logged-in user in localStorage on initial load
-  useEffect(() => {
-    const storedUser = localStorage.getItem('epu_user');
-    if (storedUser) {
-      try {
-        setCurrentUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Failed to parse user from localStorage', error);
-        localStorage.removeItem('epu_user');
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          // Get user profile data
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profileData) {
+            const userData: User = {
+              id: session.user.id,
+              email: session.user.email || '',
+              firstName: profileData.first_name,
+              lastName: profileData.last_name,
+              avatarUrl: profileData.avatar_url,
+              bio: profileData.bio
+            };
+            
+            setCurrentUser(userData);
+            localStorage.setItem('epu_user', JSON.stringify(userData));
+          } else {
+            // Fallback to basic user data if profile not found
+            const userData: User = {
+              id: session.user.id,
+              email: session.user.email || '',
+            };
+            
+            setCurrentUser(userData);
+            localStorage.setItem('epu_user', JSON.stringify(userData));
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setCurrentUser(null);
+          localStorage.removeItem('epu_user');
+        }
       }
-    }
-    setLoading(false);
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Method to update current user data
@@ -145,76 +195,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("Updating user data:", userData);
       
-      // Try to update the database if API is available
-      if (apiConnectionState === 'available') {
-        try {
-          // Kiểm tra kết nối trước
-          const healthCheck = await fetchWithTimeout(`${API_URL}/health-check`, {
-            method: 'GET',
-            cache: 'no-cache'
-          }, 3000);
-          
-          if (!healthCheck.ok) {
-            throw new Error(`Máy chủ không phản hồi: ${healthCheck.status}`);
-          }
-          
-          // Tiếp tục cập nhật
-          const response = await fetchWithTimeout(`${API_URL}/users/${currentUser.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData),
-          }, 5000);
-          
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'Lỗi phản hồi từ máy chủ' }));
-            throw new Error(errorData.message || 'Máy chủ phản hồi lỗi');
-          }
-          
-          // Update local storage AFTER successful API update
-          const updatedUser = { ...currentUser, ...userData };
-          localStorage.setItem('epu_user', JSON.stringify(updatedUser));
-          setCurrentUser(updatedUser);
-          
-          setLoading(false);
-          return true;
-        } catch (error) {
-          console.error('Error updating profile on server:', error);
-          
-          // Cập nhật trạng thái API connection
-          if ((error as Error).message.includes('fetch') || (error as Error).message.includes('network')) {
-            setApiConnectionState('unavailable');
-          }
-          
-          // Fall back to local storage update only
-          const updatedUser = { ...currentUser, ...userData };
-          localStorage.setItem('epu_user', JSON.stringify(updatedUser));
-          setCurrentUser(updatedUser);
-          
-          toast.warning("Đã lưu thay đổi cục bộ, nhưng không thể đồng bộ với CSDL. Lỗi: " + (error as Error).message);
-          setLoading(false);
-          return false; // Return false to indicate DB sync failed
-        }
-      } else {
-        // If API is unavailable, update local storage only
-        const updatedUser = { ...currentUser, ...userData };
-        localStorage.setItem('epu_user', JSON.stringify(updatedUser));
-        setCurrentUser(updatedUser);
-        
-        toast.warning("Đã lưu thay đổi cục bộ, dữ liệu sẽ được đồng bộ khi có kết nối.");
+      // Update user profile in Supabase
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          avatar_url: userData.avatarUrl,
+          bio: userData.bio,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', currentUser.id);
+      
+      if (error) {
+        console.error('Error updating profile:', error);
+        toast.error("Không thể cập nhật thông tin. " + error.message);
         setLoading(false);
-        return false; // Return false to indicate DB sync failed
+        return false;
       }
+      
+      // Update local storage
+      const updatedUser = { ...currentUser, ...userData };
+      localStorage.setItem('epu_user', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+      
+      toast.success("Cập nhật thông tin thành công");
+      setLoading(false);
+      return true;
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error("Không thể cập nhật thông tin. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
+      toast.error("Không thể cập nhật thông tin. Vui lòng thử lại sau.");
       setLoading(false);
       return false;
     }
   };
 
-  // Password change method - plain text
+  // Password change method
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     if (!currentUser) return false;
     
@@ -234,100 +250,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Check if API is available
-      if (apiConnectionState === 'available') {
-        try {
-          // Kiểm tra kết nối trước
-          const healthCheck = await fetchWithTimeout(`${API_URL}/health-check`, {
-            method: 'GET',
-            cache: 'no-cache'
-          }, 3000);
-          
-          if (!healthCheck.ok) {
-            throw new Error(`Máy chủ không phản hồi: ${healthCheck.status}`);
-          }
-          
-          // First verify current password - plain text
-          console.log("Verifying current password for user ID:", currentUser.id);
-          const verifyResponse = await fetchWithTimeout(`${API_URL}/check-password`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              userId: currentUser.id, 
-              password: currentPassword // Plain text password
-            }),
-          }, 5000);
-          
-          if (!verifyResponse.ok) {
-            const errorData = await verifyResponse.json().catch(() => ({ message: 'Lỗi phản hồi từ máy chủ' }));
-            throw new Error(errorData.message || "Mật khẩu hiện tại không chính xác");
-          }
-          
-          // If verification passed, try to change password - plain text
-          console.log("Changing password for user ID:", currentUser.id);
-          const changeResponse = await fetchWithTimeout(`${API_URL}/users/${currentUser.id}/change-password`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              currentPassword, // Plain text password
-              newPassword      // Plain text password
-            }),
-          }, 5000);
-          
-          if (!changeResponse.ok) {
-            // Try fallback endpoint if main one fails
-            console.log("Primary endpoint failed, trying fallback endpoint...");
-            const fallbackResponse = await fetchWithTimeout(`${API_URL}/change-password`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ 
-                userId: currentUser.id, 
-                currentPassword, // Plain text password
-                newPassword      // Plain text password
-              }),
-            }, 5000);
-            
-            if (!fallbackResponse.ok) {
-              const errorData = await fallbackResponse.json().catch(() => ({ message: 'Lỗi phản hồi từ máy chủ' }));
-              throw new Error(errorData.message || "Không thể cập nhật mật khẩu trên máy chủ");
-            }
-            
-            const successData = await fallbackResponse.json().catch(() => ({ message: 'Đã cập nhật mật khẩu thành công' }));
-            console.log("Password change success via fallback endpoint:", successData);
-          } else {
-            const successData = await changeResponse.json().catch(() => ({ message: 'Đã cập nhật mật khẩu thành công' }));
-            console.log("Password change success:", successData);
-          }
-          
-          toast.success("Mật khẩu đã được thay đổi thành công và đồng bộ với CSDL");
-          setLoading(false);
-          return true;
-        } catch (error) {
-          console.error('Error changing password:', error);
-          
-          // Cập nhật trạng thái API connection
-          if ((error as Error).message.includes('fetch') || (error as Error).message.includes('network')) {
-            setApiConnectionState('unavailable');
-          }
-          
-          toast.error((error as Error).message || "Không thể thay đổi mật khẩu. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
-          setLoading(false);
-          return false;
-        }
-      } else {
-        toast.error("Không thể thay đổi mật khẩu khi không có kết nối đến máy chủ");
+      // Change password via Supabase
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) {
+        console.error('Error changing password:', error);
+        toast.error(error.message || "Không thể thay đổi mật khẩu");
         setLoading(false);
         return false;
       }
+      
+      toast.success("Mật khẩu đã được thay đổi thành công");
+      setLoading(false);
+      return true;
     } catch (error) {
       console.error('Error changing password:', error);
-      toast.error((error as Error).message || "Không thể thay đổi mật khẩu. Vui lòng kiểm tra kết nối đến máy chủ và thử lại sau.");
+      toast.error((error as Error).message || "Không thể thay đổi mật khẩu");
       setLoading(false);
       return false;
     }
@@ -360,17 +300,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   };
 
-  // Login function with plain text passwords
+  // Login function
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     
     try {
       if (!email || !password) {
         toast.error("Vui lòng nhập email và mật khẩu");
+        setLoading(false);
         return false;
       }
       
-      // Check for fixed account first (for development/offline use) - plain text comparison
+      // Check for fixed account first (for development/offline use)
       if (FIXED_ACCOUNT.email && FIXED_ACCOUNT.password && 
           email === FIXED_ACCOUNT.email && password === FIXED_ACCOUNT.password) {
         const user: User = {
@@ -384,102 +325,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentUser(user);
         
         toast.success("Đăng nhập thành công (Tài khoản demo)");
+        setLoading(false);
         return true;
       }
       
-      // Try to connect to API if available
-      if (apiConnectionState === 'available') {
-        try {
-          // Kiểm tra kết nối trước
-          const healthCheck = await fetchWithTimeout(`${API_URL}/health-check`, {
-            method: 'GET',
-            cache: 'no-cache'
-          }, 3000);
-          
-          if (!healthCheck.ok) {
-            throw new Error(`Máy chủ không phản hồi: ${healthCheck.status}`);
-          }
-          
-          // Call login API - plain text password
-          console.log("Attempting API login for email:", email);
-          const response = await fetchWithTimeout(`${API_URL}/login`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password }),
-          }, 5000);
-          
-          const data = await response.json().catch(() => ({ message: 'Lỗi phản hồi từ máy chủ' }));
-          
-          if (!response.ok) {
-            toast.error(data.message || "Đăng nhập thất bại");
-            return false;
-          }
-          
-          // Save user info to localStorage
-          localStorage.setItem('epu_user', JSON.stringify(data.user));
-          setCurrentUser(data.user);
-          
-          toast.success("Đăng nhập thành công");
-          return true;
-        } catch (error) {
-          console.error('Login error with API:', error);
-          
-          // Cập nhật trạng thái API connection
-          if ((error as Error).message.includes('fetch') || (error as Error).message.includes('network')) {
-            setApiConnectionState('unavailable');
-          }
-          
-          // If API fails and email matches fixed account for demo, allow login
-          if (email === FIXED_ACCOUNT.email && password === FIXED_ACCOUNT.password) {
-            const user: User = {
-              id: FIXED_ACCOUNT.id,
-              email: FIXED_ACCOUNT.email,
-              firstName: FIXED_ACCOUNT.firstName,
-              lastName: FIXED_ACCOUNT.lastName
-            };
-            
-            localStorage.setItem('epu_user', JSON.stringify(user));
-            setCurrentUser(user);
-            
-            toast.success("Đăng nhập thành công (Chế độ offline)");
-            return true;
-          }
-          
-          toast.error((error as Error).message || "Đăng nhập thất bại. Không thể kết nối đến máy chủ");
-          return false;
-        }
-      } else {
-        // If API unavailable, only allow login with fixed account for demo
-        if (email === FIXED_ACCOUNT.email && password === FIXED_ACCOUNT.password) {
-          const user: User = {
-            id: FIXED_ACCOUNT.id,
-            email: FIXED_ACCOUNT.email,
-            firstName: FIXED_ACCOUNT.firstName,
-            lastName: FIXED_ACCOUNT.lastName
-          };
-          
-          localStorage.setItem('epu_user', JSON.stringify(user));
-          setCurrentUser(user);
-          
-          toast.success("Đăng nhập thành công (Chế độ offline)");
-          return true;
-        } else {
-          toast.error("Không thể đăng nhập khi không có kết nối đến máy chủ");
-          return false;
-        }
+      // Try Supabase authentication
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        console.error('Login error:', error);
+        toast.error(error.message || "Đăng nhập thất bại");
+        setLoading(false);
+        return false;
       }
+      
+      // Get user profile data
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+      
+      const userData: User = {
+        id: data.user.id,
+        email: data.user.email || '',
+        firstName: profileData?.first_name,
+        lastName: profileData?.last_name,
+        avatarUrl: profileData?.avatar_url,
+        bio: profileData?.bio
+      };
+      
+      localStorage.setItem('epu_user', JSON.stringify(userData));
+      setCurrentUser(userData);
+      
+      toast.success("Đăng nhập thành công");
+      setLoading(false);
+      return true;
     } catch (error) {
       console.error('Login error:', error);
-      toast.error((error as Error).message || "Đăng nhập thất bại. Vui lòng kiểm tra kết nối mạng");
-      return false;
-    } finally {
+      toast.error((error as Error).message || "Đăng nhập thất bại");
       setLoading(false);
+      return false;
     }
   };
 
-  // Signup function with plain text passwords
+  // Signup function
   const signup = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
     setLoading(true);
     
@@ -487,73 +380,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Validate input
       if (!email || !password || !firstName || !lastName) {
         toast.error("Vui lòng điền đầy đủ thông tin");
+        setLoading(false);
         return false;
       }
       
       if (password.length < 6) {
         toast.error("Mật khẩu phải có ít nhất 6 ký tự");
+        setLoading(false);
         return false;
       }
       
       // Check if trying to register with fixed account email
       if (FIXED_ACCOUNT.email && email === FIXED_ACCOUNT.email) {
         toast.error("Email này đã được sử dụng");
+        setLoading(false);
         return false;
       }
       
-      // Check if API is available
-      if (apiConnectionState === 'available') {
-        try {
-          // Kiểm tra kết nối trước
-          const healthCheck = await fetchWithTimeout(`${API_URL}/health-check`, {
-            method: 'GET',
-            cache: 'no-cache'
-          }, 3000);
-          
-          if (!healthCheck.ok) {
-            throw new Error(`Máy chủ không phản hồi: ${healthCheck.status}`);
+      // Register with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName
           }
-          
-          // Call signup API - plain text password
-          console.log("Attempting API signup for email:", email);
-          const response = await fetchWithTimeout(`${API_URL}/signup`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password, firstName, lastName }),
-          }, 5000);
-          
-          const data = await response.json().catch(() => ({ message: 'Lỗi phản hồi từ máy chủ' }));
-          
-          if (!response.ok) {
-            toast.error(data.message || "Đăng ký thất bại");
-            return false;
-          }
-          
-          toast.success("Đăng ký thành công");
-          return true;
-        } catch (error) {
-          console.error('Signup error with API:', error);
-          
-          // Cập nhật trạng thái API connection
-          if ((error as Error).message.includes('fetch') || (error as Error).message.includes('network')) {
-            setApiConnectionState('unavailable');
-          }
-          
-          toast.error((error as Error).message || "Đăng ký thất bại. Không thể kết nối đến máy chủ");
-          return false;
         }
-      } else {
-        toast.error("Không thể đăng ký khi không có kết nối đến máy chủ");
+      });
+      
+      if (error) {
+        console.error('Signup error:', error);
+        toast.error(error.message || "Đăng ký thất bại");
+        setLoading(false);
         return false;
       }
+      
+      toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
+      setLoading(false);
+      return true;
     } catch (error) {
       console.error('Signup error:', error);
-      toast.error((error as Error).message || "Đăng ký thất bại. Vui lòng kiểm tra kết nối mạng");
-      return false;
-    } finally {
+      toast.error((error as Error).message || "Đăng ký thất bại");
       setLoading(false);
+      return false;
     }
   };
 
@@ -563,12 +433,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Perform actual logout
-  const performLogout = () => {
-    localStorage.removeItem('epu_user');
-    setCurrentUser(null);
-    navigate('/login');
-    toast.info("Đã đăng xuất. Hẹn gặp lại bạn!");
-    setShowLogoutConfirm(false);
+  const performLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      localStorage.removeItem('epu_user');
+      setCurrentUser(null);
+      navigate('/login');
+      toast.info("Đã đăng xuất. Hẹn gặp lại bạn!");
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error("Đăng xuất thất bại. Vui lòng thử lại.");
+    } finally {
+      setShowLogoutConfirm(false);
+    }
   };
 
   const value = {

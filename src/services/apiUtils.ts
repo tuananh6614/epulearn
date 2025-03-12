@@ -5,38 +5,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { EnrolledCourse, UserCertificate } from "@/models/lesson";
 
-// Base URL for external APIs (if still needed)
-export const API_URL = import.meta.env.PROD 
-  ? 'https://your-production-api-url.com/api' 
-  : 'http://localhost:3000/api';
-
-/**
- * Make a fetch request with timeout and error handling
- */
-export const fetchWithTimeout = async (
-  url: string, 
-  options: RequestInit = {}, 
-  timeoutMs: number = 10000
-): Promise<Response> => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('Request timeout');
-    }
-    throw error;
-  }
-};
-
 /**
  * Check if the API is available
  */
@@ -59,25 +27,6 @@ export const checkApiHealth = async (): Promise<boolean> => {
     console.warn('Supabase connection check failed:', error);
     return false;
   }
-};
-
-/**
- * Handle API response
- */
-export const handleApiResponse = async (response: Response) => {
-  if (!response.ok) {
-    const errorText = await response.text();
-    try {
-      // Try to parse as JSON
-      const errorJson = JSON.parse(errorText);
-      throw new Error(errorJson.message || `API error: ${response.status}`);
-    } catch (e) {
-      // If parsing fails, use the text directly
-      throw new Error(`API error: ${response.status} - ${errorText || 'Unknown error'}`);
-    }
-  }
-  
-  return response.json();
 };
 
 /**
@@ -227,14 +176,14 @@ export const fetchCourseById = async (courseId: string) => {
  * Fetch user's enrolled courses
  */
 export const fetchUserEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> => {
-  // Let's fix the query to match the actual database structure
+  // Match the actual database structure
   const { data, error } = await supabase
     .from('user_courses')
     .select(`
       id,
       progress_percentage,
       course_id,
-      courses:courses(
+      courses(
         id, 
         title, 
         description,
@@ -269,7 +218,8 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
     price: enrollment.courses.price,
     discountPrice: enrollment.courses.discount_price,
     // Use proper defaults for nullable properties
-    isCompleted: false
+    isCompleted: false,
+    status: 'in-progress'
   }));
 };
 
@@ -469,27 +419,15 @@ export const updateCourseProgress = async (userId: string, courseId: string) => 
     ? Math.round((completedCount / totalLessons) * 100) 
     : 0;
   
-  // If all lessons are completed, mark the course as completed
-  if (progressPercentage === 100) {
-    await supabase
-      .from('user_courses')
-      .update({ 
-        progress_percentage: progressPercentage,
-        is_completed: true,
-        last_accessed: new Date().toISOString()
-      })
-      .eq('user_id', userId)
-      .eq('course_id', courseId);
-  } else {
-    await supabase
-      .from('user_courses')
-      .update({ 
-        progress_percentage: progressPercentage,
-        last_accessed: new Date().toISOString()
-      })
-      .eq('user_id', userId)
-      .eq('course_id', courseId);
-  }
+  // Update the user course record
+  await supabase
+    .from('user_courses')
+    .update({ 
+      progress_percentage: progressPercentage,
+      last_accessed: new Date().toISOString()
+    })
+    .eq('user_id', userId)
+    .eq('course_id', courseId);
   
   const { data, error } = await supabase
     .from('user_courses')

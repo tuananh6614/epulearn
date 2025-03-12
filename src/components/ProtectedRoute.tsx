@@ -24,14 +24,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         setApiAvailable(isAvailable);
         
         if (!isAvailable) {
-          toast.warning("Không thể kết nối đến máy chủ. Kiểm tra kết nối mạng và cài đặt máy chủ MySQL.", {
+          toast.warning("Không thể kết nối đến Supabase. Vui lòng kiểm tra kết nối mạng.", {
             duration: 8000,
           });
         }
       } catch (error) {
         console.error('API health check error:', error);
         setApiAvailable(false);
-        toast.error("Lỗi kết nối đến máy chủ. Hãy kiểm tra xem máy chủ đã chạy chưa và cấu hình database đã đúng chưa.", {
+        toast.error("Lỗi kết nối đến Supabase. Hãy kiểm tra kết nối internet.", {
           duration: 8000,
         });
       } finally {
@@ -51,15 +51,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
   
-  // If API is not available but we are in development, allow user to continue with limited functionality
+  // If API is not available, show warning but allow user to continue in limited mode
   if (apiAvailable === false) {
-    // Use toast instead of blocking access
-    toast.warning("Máy chủ không khả dụng. Hãy chạy server MySQL và chạy lệnh 'npm run dev' trong thư mục server.", {
+    toast.warning("Không thể kết nối đến Supabase. Một số tính năng có thể không hoạt động.", {
       duration: 10000,
       id: "offline-mode-warning", // prevent duplicates
     });
     
-    // Continue to app instead of blocking
+    // Continue to app instead of blocking, but only if authenticated
     if (!isAuthenticated) {
       toast.error("Bạn cần đăng nhập để truy cập trang này");
       return <Navigate to="/login" replace />;

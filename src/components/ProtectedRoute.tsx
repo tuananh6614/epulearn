@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, currentUser } = useAuth();
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
   const [healthCheckAttempted, setHealthCheckAttempted] = useState(false);
   
@@ -41,6 +41,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     
     performHealthCheck();
   }, []);
+  
+  // Check if email is unverified
+  useEffect(() => {
+    if (currentUser && (currentUser.email_confirmed_at === undefined || currentUser.email_confirmed_at === null)) {
+      toast.warning("Email của bạn chưa được xác thực. Một số tính năng có thể bị hạn chế.", {
+        duration: 10000,
+        id: "email-not-verified", // prevent duplicates
+      });
+    }
+  }, [currentUser]);
   
   // Show loading state if auth is still being determined or we're checking API health
   if (authLoading || !healthCheckAttempted) {

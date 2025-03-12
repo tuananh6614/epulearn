@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,111 +8,37 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { FileText, Lock, User, AlertTriangle, Database, Loader2, CheckCircle2 } from 'lucide-react';
+import { FileText, Lock, User, AlertTriangle, Mail } from 'lucide-react';
 import UserSidebar from '@/components/UserSidebar';
 import ProfileForm from '@/components/ProfileForm';
 import SecurityForm from '@/components/SecurityForm';
 import CertificatesTab from '@/components/CertificatesTab';
 import { toast } from 'sonner';
-import { API_URL, fetchWithTimeout, handleApiResponse, fetchUserEnrolledCourses, fetchUserCertificates } from '@/services/apiUtils';
-import { EnrolledCourse, UserCertificate } from '@/models/lesson';
+import { fetchUserEnrolledCourses, fetchUserCertificates } from '@/services/apiUtils';
 
 const UserProfile = () => {
   const { currentUser } = useAuth();
-  const [apiConnectionStatus, setApiConnectionStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
-  const [connectionDetails, setConnectionDetails] = useState<string | null>(null);
-
-  // Check API connection on mount and on interval
-  useEffect(() => {
-    const checkApiConnection = async () => {
-      try {
-        console.log("UserProfile: Checking API connection");
-        setApiConnectionStatus('checking');
-        
-        const response = await fetchWithTimeout(`${API_URL}/health-check`, { 
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-cache' // Tránh cache khi kiểm tra sức khỏe API
-        }, 5000); // 5 second timeout
-        
-        if (response.ok) {
-          setApiConnectionStatus('connected');
-          setConnectionDetails(null);
-          console.log("UserProfile: API connection successful");
-        } else {
-          setApiConnectionStatus('disconnected');
-          const text = await response.text();
-          setConnectionDetails(`Máy chủ phản hồi với lỗi: ${response.status} ${response.statusText}`);
-          console.warn('API health check failed:', text);
-          toast.warning("Máy chủ không phản hồi đúng. Hãy kiểm tra cài đặt của máy chủ MySQL.", { 
-            duration: 8000 
-          });
-        }
-      } catch (error) {
-        console.error('API connection error:', error);
-        setApiConnectionStatus('disconnected');
-        setConnectionDetails(`Lỗi: ${(error as Error).message}`);
-        toast.error("Không thể kết nối đến máy chủ. Hãy kiểm tra xem máy chủ đã chạy chưa.", { 
-          duration: 8000 
-        });
-      }
-    };
-    
-    checkApiConnection();
-    
-    // Thiết lập kiểm tra lại định kỳ
-    const intervalId = setInterval(checkApiConnection, 15000); // Kiểm tra mỗi 15 giây
-    
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // Manualy retry connection
-  const retryConnection = async () => {
-    try {
-      setApiConnectionStatus('checking');
-      toast.info("Đang kiểm tra kết nối với máy chủ...");
-      
-      const response = await fetchWithTimeout(`${API_URL}/health-check`, { 
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-cache'
-      }, 5000);
-      
-      if (response.ok) {
-        setApiConnectionStatus('connected');
-        setConnectionDetails(null);
-        toast.success("Đã kết nối thành công với máy chủ");
-      } else {
-        setApiConnectionStatus('disconnected');
-        const text = await response.text();
-        setConnectionDetails(`Máy chủ phản hồi với lỗi: ${response.status} ${response.statusText}`);
-        throw new Error(`Máy chủ không phản hồi đúng: ${response.status} ${response.statusText}`);
-      }
-    } catch (error) {
-      console.error('Retry connection failed:', error);
-      setApiConnectionStatus('disconnected');
-      setConnectionDetails(`Lỗi: ${(error as Error).message}`);
-      toast.error(`Không thể kết nối đến máy chủ: ${(error as Error).message}`);
-    }
-  };
 
   // Use React Query to fetch user courses
   const { data: userCourses, isLoading: isLoadingCourses } = useQuery({
-    queryKey: ['userCourses', currentUser?.id, apiConnectionStatus],
+    queryKey: ['userCourses', currentUser?.id],
     queryFn: () => fetchUserEnrolledCourses(currentUser?.id || ''),
-    enabled: !!currentUser?.id && apiConnectionStatus === 'connected',
+    enabled: !!currentUser?.id,
     retry: 1,
     refetchOnWindowFocus: false,
   });
 
   // Use React Query to fetch user certificates
   const { data: userCertificates, isLoading: isLoadingCertificates } = useQuery({
-    queryKey: ['userCertificates', currentUser?.id, apiConnectionStatus],
+    queryKey: ['userCertificates', currentUser?.id],
     queryFn: () => fetchUserCertificates(currentUser?.id || ''),
-    enabled: !!currentUser?.id && apiConnectionStatus === 'connected',
+    enabled: !!currentUser?.id,
     retry: 1,
     refetchOnWindowFocus: false,
   });
+
+  // Check if user email is unverified
+  const isEmailUnverified = currentUser?.email_confirmed_at === undefined || currentUser?.email_confirmed_at === null;
 
   if (!currentUser) {
     return (
@@ -140,13 +66,21 @@ const UserProfile = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      {apiConnectionStatus === 'disconnected' && (
+      {isEmailUnverified && (
         <div className="bg-amber-50 border-amber-200 border-b py-2 px-4">
           <div className="container mx-auto flex items-center text-amber-800 text-sm">
-            <AlertTriangle className="h-4 w-4 mr-2" />
+            <Mail className="h-4 w-4 mr-2" />
             <span>
-              Không thể kết nối với máy chủ. Vui lòng kiểm tra máy chủ MySQL đã được cài đặt đúng chưa và máy chủ Express đã chạy chưa. Hãy xem file .env.example để biết cách cấu hình và tạo file .env.
+              Email của bạn chưa được xác thực. Vui lòng kiểm tra hộp thư và xác nhận email để có thể sử dụng đầy đủ tính năng.
             </span>
+            <Button 
+              variant="link" 
+              size="sm" 
+              className="text-blue-600 ml-2" 
+              onClick={() => toast.info("Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư của bạn.")}
+            >
+              Gửi lại email xác thực
+            </Button>
           </div>
         </div>
       )}
@@ -157,65 +91,14 @@ const UserProfile = () => {
             {/* Sidebar Component */}
             <UserSidebar 
               enrolledCourses={userCourses || []} 
-              isLoadingCourses={isLoadingCourses || apiConnectionStatus !== 'connected'}
+              isLoadingCourses={isLoadingCourses}
             />
             
             {/* Nội dung chính */}
             <div className="flex-grow">
               <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold">Hồ sơ của bạn</h1>
-                
-                <div className="flex items-center text-sm">
-                  <Database className="h-4 w-4 mr-1" />
-                  <span>
-                    Trạng thái: {' '}
-                    {apiConnectionStatus === 'connected' ? (
-                      <span className="text-green-600 flex items-center">
-                        <CheckCircle2 className="h-4 w-4 mr-1" />
-                        Đã kết nối với máy chủ
-                      </span>
-                    ) : apiConnectionStatus === 'checking' ? (
-                      <span className="text-blue-600 flex items-center">
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                        Đang kiểm tra kết nối...
-                      </span>
-                    ) : (
-                      <span className="text-amber-600 flex items-center">
-                        <AlertTriangle className="h-4 w-4 mr-1" />
-                        Không có kết nối
-                        <Button 
-                          variant="link" 
-                          size="sm" 
-                          className="text-blue-600 p-0 ml-2 h-auto" 
-                          onClick={retryConnection}
-                        >
-                          Thử lại
-                        </Button>
-                      </span>
-                    )}
-                  </span>
-                </div>
               </div>
-              
-              {apiConnectionStatus === 'disconnected' && connectionDetails && (
-                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-md">
-                  <h3 className="text-amber-800 font-medium mb-2 flex items-center">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Chi tiết lỗi kết nối
-                  </h3>
-                  <p className="text-amber-700 text-sm">{connectionDetails}</p>
-                  <div className="mt-2 text-sm text-amber-700">
-                    <p className="font-medium">Vui lòng kiểm tra:</p>
-                    <ul className="list-disc pl-5 space-y-1 mt-1">
-                      <li>Máy chủ MySQL đã được cài đặt và đang chạy</li>
-                      <li>Tên người dùng và mật khẩu trong file .env là chính xác</li>
-                      <li>Cổng 3000 không bị chặn bởi tường lửa</li>
-                      <li>Đã tạo database theo hướng dẫn trong file .env.example</li>
-                      <li>Máy chủ Express Node.js đang chạy (node server.js hoặc npm run dev)</li>
-                    </ul>
-                  </div>
-                </div>
-              )}
               
               <Tabs defaultValue="profile">
                 <TabsList className="mb-6 w-full justify-start">
@@ -252,7 +135,7 @@ const UserProfile = () => {
                 <TabsContent value="certificates">
                   <CertificatesTab 
                     certificates={userCertificates || []} 
-                    isLoading={isLoadingCertificates || apiConnectionStatus !== 'connected'}
+                    isLoading={isLoadingCertificates}
                   />
                 </TabsContent>
               </Tabs>

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -23,6 +22,7 @@ interface User {
   lastNameChanged?: string; // Track when name was last changed
   avatarUrl?: string; // Add support for user avatar
   bio?: string; // User bio information
+  email_confirmed_at?: string | null; // Add this property for email verification status
 }
 
 // Define fixed account type to match User type
@@ -87,7 +87,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             firstName: profileData.first_name,
             lastName: profileData.last_name,
             avatarUrl: profileData.avatar_url,
-            bio: profileData.bio
+            bio: profileData.bio,
+            email_confirmed_at: session.user.email_confirmed_at
           };
           
           setCurrentUser(userData);
@@ -97,6 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userData: User = {
             id: session.user.id,
             email: session.user.email || '',
+            email_confirmed_at: session.user.email_confirmed_at
           };
           
           setCurrentUser(userData);
@@ -138,7 +140,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               firstName: profileData.first_name,
               lastName: profileData.last_name,
               avatarUrl: profileData.avatar_url,
-              bio: profileData.bio
+              bio: profileData.bio,
+              email_confirmed_at: session.user.email_confirmed_at
             };
             
             setCurrentUser(userData);
@@ -148,14 +151,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const userData: User = {
               id: session.user.id,
               email: session.user.email || '',
+              email_confirmed_at: session.user.email_confirmed_at
             };
             
             setCurrentUser(userData);
             localStorage.setItem('epu_user', JSON.stringify(userData));
           }
+
+          // Show confirmation message if the email was just verified
+          if (event === 'SIGNED_IN' && session.user.email_confirmed_at) {
+            toast.success("Email của bạn đã được xác thực thành công!");
+          }
         } else if (event === 'SIGNED_OUT') {
           setCurrentUser(null);
           localStorage.removeItem('epu_user');
+        } else if (event === 'USER_UPDATED') {
+          // Update the current user data when user is updated (e.g. email verification)
+          if (session) {
+            // Update the current user with the latest session data
+            setCurrentUser(prevUser => 
+              prevUser ? {
+                ...prevUser,
+                email_confirmed_at: session.user.email_confirmed_at
+              } : null
+            );
+            
+            // Update localStorage
+            const storedUser = localStorage.getItem('epu_user');
+            if (storedUser) {
+              try {
+                const parsedUser = JSON.parse(storedUser);
+                localStorage.setItem('epu_user', JSON.stringify({
+                  ...parsedUser,
+                  email_confirmed_at: session.user.email_confirmed_at
+                }));
+              } catch (error) {
+                console.error('Failed to update user in localStorage', error);
+              }
+            }
+            
+            // Show confirmation message if the email was just verified
+            if (session.user.email_confirmed_at) {
+              toast.success("Email của bạn đã được xác thực thành công!");
+            }
+          }
         }
       }
     );
@@ -355,7 +394,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         firstName: profileData?.first_name,
         lastName: profileData?.last_name,
         avatarUrl: profileData?.avatar_url,
-        bio: profileData?.bio
+        bio: profileData?.bio,
+        email_confirmed_at: session.user.email_confirmed_at
       };
       
       localStorage.setItem('epu_user', JSON.stringify(userData));
@@ -470,7 +510,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận đăng xuất</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn đăng xuất không? Hệ thống sẽ không lưu tiến trình hiện tại của bạn.
+              Bạn có chắc chắn muốn đăng xuất không?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -211,3 +211,36 @@ export const checkApiHealth = async (): Promise<boolean> => {
     return false;
   }
 };
+
+// New function to fetch certification programs (courses that can offer certificates)
+export const fetchCertificationPrograms = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('is_premium', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching certification programs:', error);
+      throw error;
+    }
+
+    // Transform course data into certification program format
+    return data?.map(course => ({
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      duration: course.duration,
+      level: course.level,
+      requirements: [
+        `Kiến thức cơ bản về ${course.category}`,
+        `Hoàn thành tất cả các bài học trong khóa học`,
+        `Đạt điểm tối thiểu 80% trong bài kiểm tra cuối khóa`
+      ]
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching certification programs:', error);
+    return [];
+  }
+};

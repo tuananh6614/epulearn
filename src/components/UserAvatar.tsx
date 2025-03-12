@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Upload } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,9 +22,8 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   editable = false 
 }) => {
   const [isUploading, setIsUploading] = useState(false);
-  const { updateCurrentUser, user } = useAuth();
+  const { updateCurrentUser, currentUser } = useAuth();
   
-  // Size class mapping
   const sizeClasses = {
     sm: 'w-10 h-10',
     md: 'w-16 h-16',
@@ -36,13 +34,11 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
     
-    // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Kích thước ảnh không được vượt quá 5MB");
       return;
     }
     
-    // Check file type
     if (!file.type.match('image.*')) {
       toast.error("Chỉ chấp nhận file hình ảnh");
       return;
@@ -51,19 +47,16 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     setIsUploading(true);
     
     try {
-      if (!user) {
+      if (!currentUser) {
         toast.error("Bạn cần đăng nhập để tải lên ảnh đại diện");
         return;
       }
       
-      // Try Supabase Storage upload first
       try {
-        // Generate a unique file name
         const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const fileName = `${currentUser.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
         const filePath = `avatars/${fileName}`;
         
-        // Upload to Supabase Storage
         const { data, error } = await supabase.storage
           .from('avatars')
           .upload(filePath, file, {
@@ -75,19 +68,16 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           throw error;
         }
         
-        // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('avatars')
           .getPublicUrl(filePath);
           
-        // Update user data in AuthContext with Supabase URL
         await updateCurrentUser({ avatarUrl: publicUrl });
         
-        // Also update the profile in the database
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ avatar_url: publicUrl })
-          .eq('id', user.id);
+          .eq('id', currentUser.id);
           
         if (updateError) {
           console.error('Error updating profile:', updateError);
@@ -97,7 +87,6 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       } catch (supabaseError) {
         console.error('Error uploading to Supabase:', supabaseError);
         
-        // Fallback to server upload
         const formData = new FormData();
         formData.append('avatar', file);
         
@@ -112,14 +101,12 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         
         const data = await response.json();
         
-        // Update user data in AuthContext with server URL
         await updateCurrentUser({ avatarUrl: data.avatarUrl });
         toast.success("Ảnh đại diện đã được cập nhật và đồng bộ với CSDL");
       }
     } catch (error) {
       console.error('Error handling avatar upload:', error);
       
-      // Create object URL for local preview as last resort
       const localImageUrl = URL.createObjectURL(file);
       await updateCurrentUser({ avatarUrl: localImageUrl });
       

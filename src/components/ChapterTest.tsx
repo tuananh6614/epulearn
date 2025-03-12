@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,7 +46,14 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
         if (error) throw error;
         
         if (data && data.length > 0) {
-          setQuestions(data);
+          const transformedQuestions: TestQuestion[] = data.map(q => ({
+            id: q.id,
+            question: q.question,
+            options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
+            correct_answer: q.correct_answer
+          }));
+          
+          setQuestions(transformedQuestions);
         } else {
           toast.error("Không tìm thấy bài kiểm tra cho chương này");
         }
@@ -67,35 +73,28 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
   };
   
   const handleNextQuestion = () => {
-    // Check if answer is correct
     const currentQ = questions[currentQuestion];
     const isAnswerCorrect = selectedAnswer === currentQ.correct_answer;
     
-    // Update score
     if (isAnswerCorrect) {
       setScore(prev => prev + 1);
     }
     
-    // Show result feedback
     setIsCorrect(isAnswerCorrect);
     setShowResult(true);
     
-    // Move to next question after delay
     setTimeout(() => {
       if (currentQuestion < questions.length - 1) {
         setCurrentQuestion(prev => prev + 1);
         setSelectedAnswer(null);
         setShowResult(false);
       } else {
-        // Test completed
         setTestCompleted(true);
         
-        // Update progress in database if user is logged in
         if (user) {
           updateTestProgress();
         }
         
-        // Call onComplete callback if provided
         if (onComplete) {
           onComplete(score + (isAnswerCorrect ? 1 : 0), questions.length);
         }
@@ -108,10 +107,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
       const finalScore = score + (isCorrect ? 1 : 0);
       const percentageScore = Math.round((finalScore / questions.length) * 100);
       
-      // We could store test results in a new table, but for simplicity,
-      // we'll just update the lesson progress for now
       if (user) {
-        // Get the first lesson in this chapter that's a test
         const { data: lessonData } = await supabase
           .from('lessons')
           .select('id')
@@ -122,14 +118,13 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
         if (lessonData && lessonData.length > 0) {
           const testLessonId = lessonData[0].id;
           
-          // Update lesson progress
           await supabase
             .from('user_lesson_progress')
             .upsert({
               user_id: user.id,
               lesson_id: testLessonId,
               course_id: courseId,
-              completed: percentageScore >= 70, // Pass if score is 70% or higher
+              completed: percentageScore >= 70,
               last_position: JSON.stringify({
                 score: finalScore,
                 total: questions.length,

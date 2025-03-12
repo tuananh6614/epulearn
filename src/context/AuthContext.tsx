@@ -53,6 +53,7 @@ interface AuthContextType {
   updateCurrentUser: (userData: Partial<User>) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   resendVerificationEmail: () => Promise<boolean>;
+  user: User | null; // Add this line to include user property
 }
 
 // Create the auth context
@@ -536,7 +537,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loginWithFixedAccount,
     updateCurrentUser,
     changePassword,
-    resendVerificationEmail
+    resendVerificationEmail,
+    user: currentUser // Add this line to expose user through context
   };
 
   return (

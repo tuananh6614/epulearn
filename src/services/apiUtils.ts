@@ -1,12 +1,15 @@
 
-// Tối ưu hàm fetchUserEnrolledCourses để cải thiện hiệu suất
+import { supabase } from '@/integrations/supabase/client';
+import { Course, EnrolledCourse, SupabaseCourseResponse, UserCertificate } from '@/models/lesson';
+
+// Function to fetch user enrolled courses
 export const fetchUserEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> => {
   try {
     if (!userId) {
       return [];
     }
 
-    // Sử dụng một truy vấn JOIN duy nhất thay vì nhiều truy vấn riêng lẻ
+    // Use a single JOIN query instead of multiple separate queries
     const { data, error } = await supabase
       .from('user_courses')
       .select(`
@@ -24,11 +27,11 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
       return [];
     }
 
-    // Chuyển đổi dữ liệu sang định dạng EnrolledCourse với xử lý bất đồng bộ hiệu quả hơn
+    // Transform data to EnrolledCourse format with more efficient async handling
     return data.map(item => {
       const isCompleted = item.progress_percentage >= 100;
       
-      // Xử lý khóa học VIP đặc biệt
+      // Special handling for VIP courses
       if (item.course_id.startsWith('vip-')) {
         const duration = item.course_id.split('vip-')[1];
         const durationMap: Record<string, string> = {
@@ -50,7 +53,7 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
         };
       }
       
-      // Xử lý các khóa học thông thường
+      // Handle regular courses
       if (item.course) {
         return {
           id: item.course_id,
@@ -64,7 +67,7 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
         };
       }
       
-      // Fallback nếu không tìm thấy thông tin khóa học
+      // Fallback for undefined courses
       return {
         id: item.course_id,
         title: 'Khóa học không xác định',
@@ -80,5 +83,91 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
   } catch (error) {
     console.error('Error fetching enrolled courses:', error);
     return [];
+  }
+};
+
+// Function to fetch courses
+export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching courses:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching courses:', error);
+    return [];
+  }
+};
+
+// Function to fetch featured courses
+export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('is_featured', true)
+      .order('created_at', { ascending: false })
+      .limit(4);
+
+    if (error) {
+      console.error('Error fetching featured courses:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching featured courses:', error);
+    return [];
+  }
+};
+
+// Function to fetch user certificates
+export const fetchUserCertificates = async (userId: string): Promise<UserCertificate[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('certificates')
+      .select(`
+        *,
+        courses(title)
+      `)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error fetching certificates:', error);
+      throw error;
+    }
+
+    return data?.map(cert => ({
+      id: cert.id,
+      userId: cert.user_id,
+      courseId: cert.course_id,
+      certificateId: cert.certificate_id,
+      issueDate: cert.issue_date,
+      courseName: cert.courses?.title || 'Unknown Course'
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching certificates:', error);
+    return [];
+  }
+};
+
+// Function to check API health
+export const checkApiHealth = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('count', { count: 'exact', head: true });
+    
+    return !error;
+  } catch (error) {
+    console.error('API health check error:', error);
+    return false;
   }
 };

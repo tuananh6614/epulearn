@@ -32,14 +32,14 @@ const VipTab = () => {
   }
   
   if (showActivationPending) {
-    return <VipActivationPending userEmail={currentUser.email} />;
+    return <VipActivationPending userEmail={currentUser.email || ''} />;
   }
   
   return (
     <div className="space-y-6" key={refreshKey}>
       <VipManager 
         userId={currentUser.id}
-        userEmail={currentUser.email}
+        userEmail={currentUser.email || ''}
         isCurrentUserVip={!!currentUser.isVip}
         vipExpirationDate={currentUser.vipExpirationDate ? new Date(currentUser.vipExpirationDate) : null}
         onVipStatusChanged={handleVipStatusChanged}

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -167,7 +168,7 @@ const VipPurchaseForm = () => {
         ? plan.price - (plan.price * plan.discount / 100) 
         : plan.price;
       
-      // Tạo bản ghi trong user_courses cho gói VIP đã thanh toán
+      // Create record in user_courses for the paid VIP package
       const { error: purchaseError } = await supabase
         .from('user_courses')
         .insert({
@@ -181,18 +182,18 @@ const VipPurchaseForm = () => {
       
       if (purchaseError) throw purchaseError;
       
-      // Hiển thị thông báo chờ kích hoạt
+      // Show activation pending message
       setShowActivationPending(true);
       
       toast.success("Đã ghi nhận thanh toán của bạn. Vui lòng chờ xác nhận.");
       
-      // Sau 10 phút giả lập kích hoạt thành công (thực tế sẽ do admin xác nhận)
+      // After 10 minutes simulate successful activation (in reality would be admin confirmed)
       setTimeout(() => {
         activateVip(plan.months);
-      }, 10 * 60 * 1000); // 10 phút
+      }, 10 * 60 * 1000); // 10 minutes
       
     } catch (error) {
-      console.error("Lỗi khi xử lý thanh toán:", error);
+      console.error("Error processing payment:", error);
       toast.error("Không thể xử lý giao dịch. Vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);
@@ -357,7 +358,7 @@ const VipPurchaseForm = () => {
                       : selectedPlanDetails.price;
                     
                     navigator.clipboard.writeText(`VIB - 339435005 - NGUYEN TUAN ANH - ${finalPrice.toLocaleString('vi-VN')}đ`);
-                    toast({ title: "Đã sao chép" });
+                    toast("Đã sao chép");
                   }}>
                     <Share2 className="h-4 w-4 mr-2" />
                     Sao chép thông tin
@@ -446,4 +447,3 @@ const VipPurchaseForm = () => {
 };
 
 export default VipPurchaseForm;
-

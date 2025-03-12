@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -125,26 +124,32 @@ const UserProfile = () => {
             
             <div className="flex-grow">
               <div className="flex justify-between items-center mb-4">
-                <h1 className="text-2xl font-bold">Hồ sơ của bạn</h1>
+                <h1 className="text-2xl font-bold">Your Profile</h1>
+                {currentUser?.isVip && (
+                  <div className="flex items-center bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1 rounded-full">
+                    <Crown className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mr-1" />
+                    <span className="text-sm font-medium text-yellow-800 dark:text-yellow-300">VIP</span>
+                  </div>
+                )}
               </div>
               
               <Tabs defaultValue="profile">
                 <TabsList className="mb-6 w-full justify-start">
                   <TabsTrigger value="profile" className="flex items-center">
                     <User className="h-4 w-4 mr-2" />
-                    Thông tin cá nhân
+                    Personal Information
                   </TabsTrigger>
                   <TabsTrigger value="security" className="flex items-center">
                     <Lock className="h-4 w-4 mr-2" />
-                    Bảo mật
+                    Security
                   </TabsTrigger>
                   <TabsTrigger value="vip" className="flex items-center">
                     <Crown className="h-4 w-4 mr-2" />
-                    Quản lý VIP
+                    VIP Management
                   </TabsTrigger>
                   <TabsTrigger value="certificates" className="flex items-center">
                     <FileText className="h-4 w-4 mr-2" />
-                    Chứng chỉ
+                    Certificates
                   </TabsTrigger>
                 </TabsList>
                 

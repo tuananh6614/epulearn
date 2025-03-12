@@ -8,7 +8,7 @@ interface VipActivationPendingProps {
 }
 
 const VipActivationPending: React.FC<VipActivationPendingProps> = ({ userEmail }) => {
-  const [remainingTime, setRemainingTime] = useState<number>(10 * 60); // 10 phút = 600 giây
+  const [remainingTime, setRemainingTime] = useState<number>(10 * 60); // 10 minutes = 600 seconds
   
   useEffect(() => {
     const timer = setInterval(() => {
@@ -45,20 +45,20 @@ const VipActivationPending: React.FC<VipActivationPendingProps> = ({ userEmail }
           
           <div>
             <h3 className="text-xl font-semibold mb-2">
-              {remainingTime > 0 ? "Đang chờ kích hoạt VIP" : "VIP đã sẵn sàng!"}
+              {remainingTime > 0 ? "Waiting for VIP Activation" : "VIP is Ready!"}
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
               {remainingTime > 0 ? (
                 <>
-                  Yêu cầu của bạn đang được xử lý. Trạng thái VIP sẽ được kích hoạt trong vòng:
+                  Your request is being processed. VIP status will be activated in:
                   <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-2">
                     {formatTime(remainingTime)}
                   </div>
                 </>
               ) : (
                 <>
-                  Tài khoản VIP của bạn đã được kích hoạt!<br />
-                  Vui lòng làm mới trang để xem các quyền lợi của bạn.
+                  Your VIP account has been activated!<br />
+                  Please refresh the page to see your benefits.
                 </>
               )}
             </p>
@@ -66,7 +66,7 @@ const VipActivationPending: React.FC<VipActivationPendingProps> = ({ userEmail }
           
           {remainingTime === 0 && (
             <p className="text-sm text-gray-500">
-              Nếu biểu tượng VIP chưa xuất hiện, hãy làm mới trang hoặc đăng nhập lại.
+              If the VIP icon doesn't appear, please refresh the page or log in again.
             </p>
           )}
         </div>

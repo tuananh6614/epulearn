@@ -362,6 +362,36 @@ export type Database = {
           },
         ]
       }
+      vip_purchases: {
+        Row: {
+          activation_date: string | null
+          amount: number
+          id: string
+          plan_type: string
+          purchase_date: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          activation_date?: string | null
+          amount: number
+          id?: string
+          plan_type: string
+          purchase_date?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          activation_date?: string | null
+          amount?: number
+          id?: string
+          plan_type?: string
+          purchase_date?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

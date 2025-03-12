@@ -6,7 +6,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { Crown, Check, Timer, UserCheck } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
 import { supabase } from "@/integrations/supabase/client";
 
 interface VipManagerProps {
@@ -15,6 +14,7 @@ interface VipManagerProps {
   isCurrentUserVip: boolean;
   vipExpirationDate: Date | null;
   onVipStatusChanged: () => void;
+  onActivationPending: () => void;
 }
 
 const VipManager: React.FC<VipManagerProps> = ({ 
@@ -22,7 +22,8 @@ const VipManager: React.FC<VipManagerProps> = ({
   userEmail, 
   isCurrentUserVip, 
   vipExpirationDate, 
-  onVipStatusChanged 
+  onVipStatusChanged,
+  onActivationPending
 }) => {
   const [loading, setLoading] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState<string>("1-month");
@@ -32,18 +33,22 @@ const VipManager: React.FC<VipManagerProps> = ({
     "1-month": {
       label: "1 tháng",
       months: 1,
+      planType: "vip1"
     },
     "3-months": {
       label: "3 tháng",
       months: 3,
+      planType: "vip3"
     },
     "6-months": {
       label: "6 tháng",
       months: 6,
+      planType: "vip6"
     },
     "1-year": {
       label: "1 năm",
       months: 12,
+      planType: "vip1year"
     }
   };
   
@@ -62,42 +67,60 @@ const VipManager: React.FC<VipManagerProps> = ({
       const duration = durations[selectedDuration as keyof typeof durations];
       const expiryDate = calculateExpiryDate(duration.months);
       
-      // Cập nhật trạng thái VIP trong profiles
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          is_vip: true,
-          vip_expiration_date: expiryDate.toISOString()
-        })
-        .eq('id', userId);
-      
-      if (updateError) throw updateError;
-      
-      // Thêm bản ghi trong user_courses cho VIP
-      const vipCourseId = `vip-${selectedDuration}`;
-      const { error: insertError } = await supabase
-        .from('user_courses')
+      // Record the VIP purchase in vip_purchases table
+      const { error: purchaseError } = await supabase
+        .from('vip_purchases')
         .insert({
           user_id: userId,
-          course_id: vipCourseId,
-          has_paid: true,
-          payment_amount: 0, // Admin set nên không tính phí
-          payment_date: new Date().toISOString(),
-          enrolled_at: new Date().toISOString(),
-          progress_percentage: 0
+          plan_type: duration.planType,
+          amount: duration.months * 100000, // Example calculation
+          status: 'pending'
         });
-        
-      if (insertError) throw insertError;
+      
+      if (purchaseError) throw purchaseError;
       
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
-        onVipStatusChanged();
+        // Show the activation pending component
+        onActivationPending();
       }, 3000);
       
+      // In a real scenario, this would be triggered by an admin approval
+      // For this demo, we'll simulate it with a timeout
+      setTimeout(async () => {
+        try {
+          // Cập nhật trạng thái VIP trong profiles
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ 
+              is_vip: true,
+              vip_expiration_date: expiryDate.toISOString()
+            })
+            .eq('id', userId);
+          
+          if (updateError) throw updateError;
+          
+          // Update the purchase record
+          const { error: purchaseUpdateError } = await supabase
+            .from('vip_purchases')
+            .update({
+              status: 'active',
+              activation_date: new Date().toISOString()
+            })
+            .eq('user_id', userId)
+            .eq('status', 'pending');
+            
+          if (purchaseUpdateError) throw purchaseUpdateError;
+          
+        } catch (error) {
+          console.error('Error activating VIP status:', error);
+        }
+      }, 10 * 60 * 1000); // 10 minutes
+      
     } catch (error) {
-      console.error('Lỗi khi cập nhật trạng thái VIP:', error);
-      toast.error('Không thể cập nhật trạng thái VIP. Vui lòng thử lại sau.');
+      console.error('Error when updating VIP status:', error);
+      toast.error('Cannot update VIP status. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -109,7 +132,7 @@ const VipManager: React.FC<VipManagerProps> = ({
     try {
       setLoading(true);
       
-      // Cập nhật trạng thái VIP trong profiles
+      // Update VIP status in profiles
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
@@ -120,12 +143,23 @@ const VipManager: React.FC<VipManagerProps> = ({
       
       if (updateError) throw updateError;
       
-      toast.success('Đã hủy quyền VIP thành công');
+      // Update related vip_purchases to expired
+      const { error: purchaseUpdateError } = await supabase
+        .from('vip_purchases')
+        .update({
+          status: 'expired'
+        })
+        .eq('user_id', userId)
+        .eq('status', 'active');
+        
+      if (purchaseUpdateError) throw purchaseUpdateError;
+      
+      toast.success('VIP access has been removed successfully');
       onVipStatusChanged();
       
     } catch (error) {
-      console.error('Lỗi khi hủy quyền VIP:', error);
-      toast.error('Không thể hủy quyền VIP. Vui lòng thử lại sau.');
+      console.error('Error when removing VIP access:', error);
+      toast.error('Cannot remove VIP access. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -141,9 +175,9 @@ const VipManager: React.FC<VipManagerProps> = ({
               <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <h3 className="text-xl font-medium">Cập nhật quyền VIP thành công!</h3>
+              <h3 className="text-xl font-medium">VIP access update successful!</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Người dùng sẽ được kích hoạt quyền VIP trong vài phút.
+                User will have VIP access activated within a few minutes.
               </p>
             </div>
           </div>
@@ -157,7 +191,7 @@ const VipManager: React.FC<VipManagerProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Crown className="h-5 w-5 text-yellow-500" />
-          <span>Quản lý quyền VIP</span>
+          <span>VIP Access Management</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -166,10 +200,10 @@ const VipManager: React.FC<VipManagerProps> = ({
             <div className="flex items-center gap-2 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
               <UserCheck className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
               <div>
-                <p className="font-medium">Người dùng hiện đang có quyền VIP</p>
+                <p className="font-medium">User currently has VIP access</p>
                 {vipExpirationDate && (
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Hết hạn: {new Date(vipExpirationDate).toLocaleDateString('vi-VN')}
+                    Expires: {vipExpirationDate.toLocaleDateString()}
                   </p>
                 )}
               </div>
@@ -181,13 +215,13 @@ const VipManager: React.FC<VipManagerProps> = ({
               disabled={loading}
               className="w-full"
             >
-              {loading ? 'Đang xử lý...' : 'Hủy quyền VIP'}
+              {loading ? 'Processing...' : 'Remove VIP Access'}
             </Button>
           </div>
         ) : (
           <div className="space-y-4">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-              Chọn thời hạn VIP cho người dùng:
+              Select VIP duration for user:
             </p>
             <RadioGroup 
               value={selectedDuration} 
@@ -207,7 +241,7 @@ const VipManager: React.FC<VipManagerProps> = ({
               disabled={loading}
               className="w-full bg-yellow-600 hover:bg-yellow-700"
             >
-              {loading ? 'Đang xử lý...' : 'Cấp quyền VIP'}
+              {loading ? 'Processing...' : 'Grant VIP Access'}
             </Button>
           </div>
         )}

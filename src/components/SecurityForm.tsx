@@ -4,13 +4,14 @@ import { useAuth } from '@/context/AuthContext';
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertTriangle, AlertCircle, Mail } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // Schema for password change
 const passwordFormSchema = z.object({
@@ -27,7 +28,7 @@ const passwordFormSchema = z.object({
 type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 
 const SecurityForm: React.FC = () => {
-  const { currentUser, changePassword, logout } = useAuth();
+  const { currentUser, changePassword, logout, resendVerificationEmail } = useAuth();
   const [loading, setLoading] = useState(false);
   const [checkingPassword, setCheckingPassword] = useState(false);
   const [passwordChecked, setPasswordChecked] = useState(false);
@@ -36,6 +37,7 @@ const SecurityForm: React.FC = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'none' | 'syncing' | 'synced' | 'error'>('none');
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
   const navigate = useNavigate();
   
   // Check if email is unverified
@@ -49,6 +51,18 @@ const SecurityForm: React.FC = () => {
       confirmPassword: "",
     },
   });
+  
+  // Handle resend verification email
+  const handleResendEmail = async () => {
+    if (isResendingEmail) return;
+    
+    setIsResendingEmail(true);
+    try {
+      await resendVerificationEmail();
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
   
   // Check current password directly with Supabase
   const checkCurrentPassword = async () => {
@@ -139,23 +153,33 @@ const SecurityForm: React.FC = () => {
       </h2>
       
       {isEmailUnverified && (
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-md">
-          <h3 className="text-amber-800 font-medium mb-2 flex items-center">
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            Cần xác thực email
-          </h3>
-          <p className="text-amber-700 text-sm">
-            Bạn cần xác thực email trước khi có thể thay đổi mật khẩu. Vui lòng kiểm tra hộp thư và nhấp vào liên kết xác thực.
-          </p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-2 text-amber-700 border-amber-200" 
-            onClick={() => toast.info("Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư của bạn.")}
-          >
-            Gửi lại email xác thực
-          </Button>
-        </div>
+        <Alert variant="warning" className="mb-6 bg-amber-50 border-amber-300">
+          <AlertCircle className="h-5 w-5 text-amber-600" />
+          <AlertTitle className="text-amber-800 font-medium">Email chưa xác thực</AlertTitle>
+          <AlertDescription className="text-amber-700">
+            <div className="flex flex-col space-y-2">
+              <p>Bạn cần xác thực email trước khi có thể thay đổi mật khẩu. Vui lòng kiểm tra hộp thư và nhấp vào liên kết xác thực.</p>
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-amber-600" />
+                <span className="font-medium">{currentUser?.email}</span>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-fit mt-2 text-amber-700 border-amber-300 hover:bg-amber-100" 
+                onClick={handleResendEmail}
+                disabled={isResendingEmail}
+              >
+                {isResendingEmail ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Đang gửi...
+                  </>
+                ) : "Gửi lại email xác thực"}
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
       )}
       
       <Form {...form}>
@@ -194,7 +218,7 @@ const SecurityForm: React.FC = () => {
                       variant="outline" 
                       size="sm" 
                       onClick={checkCurrentPassword}
-                      disabled={checkingPassword || (passwordChecked && isCurrentPasswordValid)}
+                      disabled={checkingPassword || (passwordChecked && isCurrentPasswordValid) || isEmailUnverified}
                     >
                       {checkingPassword ? (
                         <>

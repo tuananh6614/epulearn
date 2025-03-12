@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -53,6 +52,7 @@ interface AuthContextType {
   loginWithFixedAccount: () => void;
   updateCurrentUser: (userData: Partial<User>) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
+  resendVerificationEmail: () => Promise<boolean>;
 }
 
 // Create the auth context
@@ -313,6 +313,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Resend verification email
+  const resendVerificationEmail = async (): Promise<boolean> => {
+    if (!currentUser) {
+      toast.error("Không có người dùng đăng nhập");
+      return false;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: currentUser.email,
+      });
+      
+      if (error) {
+        console.error('Error resending verification email:', error);
+        toast.error(error.message || "Không thể gửi lại email xác thực");
+        setLoading(false);
+        return false;
+      }
+      
+      toast.success("Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư của bạn.", {
+        duration: 6000,
+      });
+      setLoading(false);
+      return true;
+    } catch (error) {
+      console.error('Error resending verification email:', error);
+      toast.error((error as Error).message || "Không thể gửi lại email xác thực");
+      setLoading(false);
+      return false;
+    }
+  };
+
   // Login with fixed account
   const loginWithFixedAccount = () => {
     // Check if fixed account is configured
@@ -500,7 +535,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShowLogoutConfirm,
     loginWithFixedAccount,
     updateCurrentUser,
-    changePassword
+    changePassword,
+    resendVerificationEmail
   };
 
   return (

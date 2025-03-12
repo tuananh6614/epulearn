@@ -4,15 +4,20 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { checkApiHealth } from '@/services/apiUtils';
+import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, loading: authLoading, currentUser } = useAuth();
+  const { isAuthenticated, loading: authLoading, currentUser, resendVerificationEmail } = useAuth();
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
   const [healthCheckAttempted, setHealthCheckAttempted] = useState(false);
+  const [showEmailAlert, setShowEmailAlert] = useState(false);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
   
   // Check API health on component mount
   useEffect(() => {
@@ -45,12 +50,26 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   // Check if email is unverified
   useEffect(() => {
     if (currentUser && (currentUser.email_confirmed_at === undefined || currentUser.email_confirmed_at === null)) {
+      setShowEmailAlert(true);
       toast.warning("Email của bạn chưa được xác thực. Một số tính năng có thể bị hạn chế.", {
         duration: 10000,
         id: "email-not-verified", // prevent duplicates
       });
+    } else {
+      setShowEmailAlert(false);
     }
   }, [currentUser]);
+  
+  const handleResendEmail = async () => {
+    if (isResendingEmail) return;
+    
+    setIsResendingEmail(true);
+    try {
+      await resendVerificationEmail();
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
   
   // Show loading state if auth is still being determined or we're checking API health
   if (authLoading || !healthCheckAttempted) {
@@ -84,7 +103,33 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
   
   // Render children if authenticated
-  return <>{children}</>;
+  return (
+    <>
+      {showEmailAlert && (
+        <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 bg-amber-50 border-b border-amber-200">
+          <div className="container mx-auto">
+            <Alert variant="warning" className="bg-amber-50 border-amber-300">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-amber-800">Email chưa xác thực</AlertTitle>
+              <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <span className="text-amber-700">Vui lòng kiểm tra hộp thư và xác nhận email để sử dụng đầy đủ tính năng</span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleResendEmail}
+                  disabled={isResendingEmail}
+                  className="w-fit text-amber-700 border-amber-300 hover:bg-amber-100"
+                >
+                  {isResendingEmail ? "Đang gửi..." : "Gửi lại email xác thực"}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        </div>
+      )}
+      {children}
+    </>
+  );
 };
 
 export default ProtectedRoute;

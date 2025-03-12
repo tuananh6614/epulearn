@@ -8,16 +8,17 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { FileText, Lock, User, AlertTriangle, Mail } from 'lucide-react';
+import { FileText, Lock, User, Mail, AlertCircle, Loader2 } from 'lucide-react';
 import UserSidebar from '@/components/UserSidebar';
 import ProfileForm from '@/components/ProfileForm';
 import SecurityForm from '@/components/SecurityForm';
 import CertificatesTab from '@/components/CertificatesTab';
-import { toast } from 'sonner';
 import { fetchUserEnrolledCourses, fetchUserCertificates } from '@/services/apiUtils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const UserProfile = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, resendVerificationEmail } = useAuth();
+  const [isResendingEmail, setIsResendingEmail] = React.useState(false);
 
   // Use React Query to fetch user courses
   const { data: userCourses, isLoading: isLoadingCourses } = useQuery({
@@ -39,6 +40,18 @@ const UserProfile = () => {
 
   // Check if user email is unverified
   const isEmailUnverified = currentUser?.email_confirmed_at === undefined || currentUser?.email_confirmed_at === null;
+
+  // Handle resend verification email
+  const handleResendEmail = async () => {
+    if (isResendingEmail) return;
+    
+    setIsResendingEmail(true);
+    try {
+      await resendVerificationEmail();
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
 
   if (!currentUser) {
     return (
@@ -67,20 +80,33 @@ const UserProfile = () => {
       <Navbar />
       
       {isEmailUnverified && (
-        <div className="bg-amber-50 border-amber-200 border-b py-2 px-4">
-          <div className="container mx-auto flex items-center text-amber-800 text-sm">
-            <Mail className="h-4 w-4 mr-2" />
-            <span>
-              Email của bạn chưa được xác thực. Vui lòng kiểm tra hộp thư và xác nhận email để có thể sử dụng đầy đủ tính năng.
-            </span>
-            <Button 
-              variant="link" 
-              size="sm" 
-              className="text-blue-600 ml-2" 
-              onClick={() => toast.info("Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư của bạn.")}
-            >
-              Gửi lại email xác thực
-            </Button>
+        <div className="bg-amber-50 border-amber-300 border-b py-2 px-4">
+          <div className="container mx-auto">
+            <Alert variant="warning" className="border-0 bg-transparent p-0">
+              <AlertCircle className="h-5 w-5 text-amber-600" />
+              <AlertTitle className="text-amber-800">Email chưa xác thực</AlertTitle>
+              <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="flex items-center gap-1 text-amber-700">
+                  <span>Email của bạn</span> 
+                  <span className="font-medium mx-1">{currentUser.email}</span>
+                  <span>chưa được xác thực</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-fit text-amber-700 border-amber-300 hover:bg-amber-100"
+                  onClick={handleResendEmail}
+                  disabled={isResendingEmail}
+                >
+                  {isResendingEmail ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      Đang gửi...
+                    </>
+                  ) : "Gửi lại email xác thực"}
+                </Button>
+              </AlertDescription>
+            </Alert>
           </div>
         </div>
       )}

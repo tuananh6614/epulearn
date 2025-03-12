@@ -1,542 +1,84 @@
-/**
- * Utility functions for API requests
- */
-import { supabase } from "@/integrations/supabase/client";
-import { EnrolledCourse, UserCertificate } from "@/models/lesson";
 
-// Define API URL for Supabase
-export const API_URL = import.meta.env.VITE_SUPABASE_URL || 'https://zrpmghqlhxjwxceqihfg.supabase.co';
-
-/**
- * Fetch with timeout helper
- * @param resource URL to fetch
- * @param options Fetch options
- * @param timeout Timeout in milliseconds
- */
-export const fetchWithTimeout = async (
-  resource: string,
-  options: RequestInit = {},
-  timeout = 8000
-): Promise<Response> => {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  
-  try {
-    const response = await fetch(resource, {
-      ...options,
-      signal: controller.signal
-    });
-    return response;
-  } finally {
-    clearTimeout(id);
-  }
-};
-
-/**
- * Helper to handle API response 
- */
-export const handleApiResponse = async (response: Response) => {
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Error: ${response.status}`);
-  }
-  
-  return response.json();
-};
-
-/**
- * Check if the API is available
- */
-export const checkApiHealth = async (): Promise<boolean> => {
-  try {
-    // For Supabase, we can simply check if we can access the public schema
-    const { data, error } = await supabase
-      .from('courses')
-      .select('id')
-      .limit(1);
-    
-    if (error) {
-      console.warn("Supabase connection check failed:", error.message);
-      return false;
-    }
-    
-    console.log("Supabase connection check successful");
-    return true;
-  } catch (error) {
-    console.warn('Supabase connection check failed:', error);
-    return false;
-  }
-};
-
-/**
- * Kiểm tra kết nối API và trả về chi tiết lỗi
- */
-export const getDetailedApiStatus = async (): Promise<{
-  connected: boolean;
-  message: string;
-  statusCode?: number;
-}> => {
-  try {
-    const { data, error } = await supabase
-      .from('courses')
-      .select('id')
-      .limit(1);
-    
-    if (error) {
-      return {
-        connected: false,
-        message: `Lỗi kết nối: ${error.message}`,
-        statusCode: error.code ? parseInt(error.code) : undefined
-      };
-    }
-    
-    return {
-      connected: true,
-      message: "Kết nối thành công với Supabase"
-    };
-  } catch (error) {
-    return {
-      connected: false,
-      message: `Không thể kết nối với Supabase: ${(error as Error).message}`
-    };
-  }
-};
-
-// Supabase specific utility functions
-
-/**
- * Fetch courses from Supabase
- */
-export const fetchCourses = async () => {
-  const { data, error } = await supabase
-    .from('courses')
-    .select()
-    .order('created_at', { ascending: false });
-    
-  if (error) {
-    console.error("Error fetching courses:", error);
-    throw new Error(error.message);
-  }
-  
-  // Format the duration for display
-  const formattedData = data?.map(course => ({
-    ...course,
-    duration: formatDuration(course.duration)
-  })) || [];
-  
-  return formattedData;
-};
-
-/**
- * Fetch featured courses from Supabase
- */
-export const fetchFeaturedCourses = async () => {
-  const { data, error } = await supabase
-    .from('courses')
-    .select()
-    .eq('is_featured', true)
-    .order('created_at', { ascending: false });
-    
-  if (error) {
-    console.error("Error fetching featured courses:", error);
-    throw new Error(error.message);
-  }
-  
-  // Format the duration for display
-  const formattedData = data?.map(course => ({
-    ...course,
-    duration: formatDuration(course.duration)
-  })) || [];
-  
-  return formattedData;
-};
-
-/**
- * Fetch a course by ID
- */
-export const fetchCourseById = async (courseId: string) => {
-  // Fetch the course details
-  const { data: course, error: courseError } = await supabase
-    .from('courses')
-    .select()
-    .eq('id', courseId)
-    .single();
-  
-  if (courseError) {
-    console.error("Error fetching course:", courseError);
-    throw new Error(courseError.message);
-  }
-  
-  // Fetch the chapters for this course
-  const { data: chapters, error: chaptersError } = await supabase
-    .from('chapters')
-    .select()
-    .eq('course_id', courseId)
-    .order('order_index', { ascending: true });
-  
-  if (chaptersError) {
-    console.error("Error fetching chapters:", chaptersError);
-    throw new Error(chaptersError.message);
-  }
-  
-  // Fetch lessons for each chapter
-  const chaptersWithLessons = await Promise.all((chapters || []).map(async (chapter) => {
-    const { data: lessons, error: lessonsError } = await supabase
-      .from('lessons')
-      .select()
-      .eq('chapter_id', chapter.id)
-      .order('order_index', { ascending: true });
-    
-    if (lessonsError) {
-      console.error("Error fetching lessons:", lessonsError);
-      throw new Error(lessonsError.message);
-    }
-    
-    return {
-      ...chapter,
-      lessons: lessons || []
-    };
-  }));
-  
-  // Format durations for display
-  const formattedCourse = {
-    ...course,
-    duration: formatDuration(course.duration)
-  };
-  
-  // Return the complete course object with chapters and lessons
-  return {
-    ...formattedCourse,
-    chapters: chaptersWithLessons
-  };
-};
-
-/**
- * Fetch course structure (chapters and lessons)
- * @param courseId - Course ID to fetch structure for
- */
-export const fetchCourseStructure = async (courseId: string) => {
-  try {
-    // Fetch chapters
-    const { data: chapters, error: chaptersError } = await supabase
-      .from('chapters')
-      .select()
-      .eq('course_id', courseId)
-      .order('order_index', { ascending: true });
-      
-    if (chaptersError) throw new Error(chaptersError.message);
-    
-    // Fetch lessons for each chapter
-    const chaptersWithLessons = await Promise.all((chapters || []).map(async (chapter) => {
-      const { data: lessons, error: lessonsError } = await supabase
-        .from('lessons')
-        .select()
-        .eq('chapter_id', chapter.id)
-        .order('order_index', { ascending: true });
-        
-      if (lessonsError) throw new Error(lessonsError.message);
-      
-      return {
-        ...chapter,
-        lessons: lessons || []
-      };
-    }));
-    
-    return chaptersWithLessons;
-  } catch (error) {
-    console.error("Error fetching course structure:", error);
-    throw error;
-  }
-};
-
-/**
- * Fetch a specific lesson
- * @param lessonId - Lesson ID to fetch
- */
-export const fetchLesson = async (lessonId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('lessons')
-      .select()
-      .eq('id', lessonId)
-      .single();
-      
-    if (error) throw new Error(error.message);
-    return data;
-  } catch (error) {
-    console.error("Error fetching lesson:", error);
-    throw error;
-  }
-};
-
-/**
- * Fetch user's enrolled courses
- */
+// Tối ưu hàm fetchUserEnrolledCourses để cải thiện hiệu suất
 export const fetchUserEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> => {
-  // Match the actual database structure
-  const { data, error } = await supabase
-    .from('user_courses')
-    .select(`
-      id,
-      progress_percentage,
-      course_id,
-      courses(
-        id, 
-        title, 
-        description,
-        thumbnail_url,
-        duration,
-        level,
-        category,
-        is_premium,
-        price,
-        discount_price
-      )
-    `)
-    .eq('user_id', userId);
-  
-  if (error) {
-    console.error("Error fetching enrolled courses:", error);
-    throw new Error(error.message);
-  }
-  
-  // Format the data to match the expected structure
-  return (data || []).map(enrollment => ({
-    id: enrollment.courses.id,
-    title: enrollment.courses.title,
-    description: enrollment.courses.description,
-    image: enrollment.courses.thumbnail_url || '/placeholder.svg',
-    progress: enrollment.progress_percentage,
-    duration: formatDuration(enrollment.courses.duration),
-    level: enrollment.courses.level,
-    category: enrollment.courses.category,
-    color: enrollment.courses.is_premium ? '#ffd700' : '#4f46e5', // Gold for premium, blue for regular
-    isPremium: enrollment.courses.is_premium,
-    price: enrollment.courses.price,
-    discountPrice: enrollment.courses.discount_price,
-    // Use proper defaults for nullable properties
-    isCompleted: false,
-    status: 'in-progress'
-  }));
-};
-
-/**
- * Helper function to format duration for display
- */
-export const formatDuration = (duration: string | null): string => {
-  if (!duration) return 'N/A';
-  
   try {
-    // If it's already a formatted string like "10 hours" or "45 minutes", return as is
-    if (typeof duration === 'string' && !duration.includes('P') && !duration.includes('T')) {
-      return duration;
+    if (!userId) {
+      return [];
     }
-    
-    // Try to parse PostgreSQL interval format
-    // This is a simplified approach - for a production app, use a dedicated duration library
-    const hours = duration.toString().match(/(\d+):(\d+):(\d+)/);
-    if (hours) {
-      const h = parseInt(hours[1]);
-      const m = parseInt(hours[2]);
+
+    // Sử dụng một truy vấn JOIN duy nhất thay vì nhiều truy vấn riêng lẻ
+    const { data, error } = await supabase
+      .from('user_courses')
+      .select(`
+        *,
+        course:courses(*)
+      `)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error fetching enrolled courses:', error);
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Chuyển đổi dữ liệu sang định dạng EnrolledCourse với xử lý bất đồng bộ hiệu quả hơn
+    return data.map(item => {
+      const isCompleted = item.progress_percentage >= 100;
       
-      if (h > 0) {
-        return `${h} ${h === 1 ? 'hour' : 'hours'}${m > 0 ? ` ${m} ${m === 1 ? 'minute' : 'minutes'}` : ''}`;
-      } else {
-        return `${m} ${m === 1 ? 'minute' : 'minutes'}`;
+      // Xử lý khóa học VIP đặc biệt
+      if (item.course_id.startsWith('vip-')) {
+        const duration = item.course_id.split('vip-')[1];
+        const durationMap: Record<string, string> = {
+          '1-month': '1 tháng',
+          '3-months': '3 tháng',
+          '6-months': '6 tháng',
+          '1-year': '1 năm'
+        };
+        
+        return {
+          id: item.course_id,
+          title: `Gói VIP ${durationMap[duration] || duration}`,
+          image: '/public/vip-badge.png',
+          progress: 100,
+          isCompleted: true,
+          lastAccessed: item.last_accessed,
+          enrolledAt: item.enrolled_at,
+          status: item.has_paid ? 'published' : 'draft'
+        };
       }
-    }
-    
-    // For simple hour/minute values
-    if (duration.toString().includes('hour') || duration.toString().includes('hours')) {
-      return duration.toString();
-    }
-    
-    if (duration.toString().includes('minute') || duration.toString().includes('minutes')) {
-      return duration.toString();
-    }
-    
-    // Default fallback
-    return duration.toString();
-  } catch (e) {
-    console.error("Error formatting duration:", e);
-    return duration.toString();
-  }
-};
-
-/**
- * Fetch user's certificates
- */
-export const fetchUserCertificates = async (userId: string): Promise<UserCertificate[]> => {
-  const { data, error } = await supabase
-    .from('certificates')
-    .select(`
-      id,
-      certificate_id,
-      issue_date,
-      courses:course_id (
-        id,
-        title
-      )
-    `)
-    .eq('user_id', userId);
-  
-  if (error) {
-    console.error("Error fetching certificates:", error);
-    throw new Error(error.message);
-  }
-  
-  // Format the data to match the expected structure
-  return (data || []).map(cert => ({
-    id: cert.id,
-    userId: userId,
-    courseId: cert.courses.id,
-    certificateId: cert.certificate_id,
-    issueDate: cert.issue_date,
-    courseName: cert.courses.title
-  }));
-};
-
-/**
- * Enroll user in a course
- */
-export const enrollUserInCourse = async (userId: string, courseId: string, hasPaid: boolean = false) => {
-  const { data, error } = await supabase
-    .from('user_courses')
-    .insert([
-      { 
-        user_id: userId, 
-        course_id: courseId,
-        has_paid: hasPaid,
-        progress_percentage: 0 
+      
+      // Xử lý các khóa học thông thường
+      if (item.course) {
+        return {
+          id: item.course_id,
+          title: item.course.title,
+          image: item.course.thumbnail_url || '/placeholder.svg',
+          progress: item.progress_percentage,
+          isCompleted,
+          lastAccessed: item.last_accessed,
+          enrolledAt: item.enrolled_at,
+          status: 'published'
+        };
       }
-    ])
-    .select();
-  
-  if (error) {
-    console.error("Error enrolling user in course:", error);
-    throw new Error(error.message);
-  }
-  
-  return data;
-};
-
-/**
- * Update user's lesson progress
- */
-export const updateLessonProgress = async (
-  userId: string, 
-  lessonId: string, 
-  courseId: string,
-  completed: boolean,
-  lastPosition?: string
-) => {
-  // Check if a record exists first
-  const { data: existingProgress } = await supabase
-    .from('user_lesson_progress')
-    .select()
-    .eq('user_id', userId)
-    .eq('lesson_id', lessonId)
-    .maybeSingle();
-  
-  if (existingProgress) {
-    // Update existing record
-    const { data, error } = await supabase
-      .from('user_lesson_progress')
-      .update({ 
-        completed, 
-        last_position: lastPosition,
-        completed_at: completed ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', userId)
-      .eq('lesson_id', lessonId)
-      .select();
+      
+      // Fallback nếu không tìm thấy thông tin khóa học
+      return {
+        id: item.course_id,
+        title: 'Khóa học không xác định',
+        image: '/placeholder.svg',
+        progress: item.progress_percentage,
+        isCompleted,
+        lastAccessed: item.last_accessed,
+        enrolledAt: item.enrolled_at,
+        status: 'archived'
+      };
+    });
     
-    if (error) {
-      console.error("Error updating lesson progress:", error);
-      throw new Error(error.message);
-    }
-    
-    return data;
-  } else {
-    // Insert new record
-    const { data, error } = await supabase
-      .from('user_lesson_progress')
-      .insert([{ 
-        user_id: userId, 
-        lesson_id: lessonId,
-        course_id: courseId,
-        completed,
-        last_position: lastPosition,
-        completed_at: completed ? new Date().toISOString() : null
-      }])
-      .select();
-    
-    if (error) {
-      console.error("Error inserting lesson progress:", error);
-      throw new Error(error.message);
-    }
-    
-    return data;
+  } catch (error) {
+    console.error('Error fetching enrolled courses:', error);
+    return [];
   }
-};
-
-/**
- * Calculate and update course progress
- */
-export const updateCourseProgress = async (userId: string, courseId: string) => {
-  // Get total lessons for the course
-  const { data: lessons, error: lessonsError } = await supabase
-    .from('lessons')
-    .select('id')
-    .eq('course_id', courseId);
-  
-  if (lessonsError) {
-    console.error("Error fetching lessons:", lessonsError);
-    throw new Error(lessonsError.message);
-  }
-  
-  // Get completed lessons
-  const { data: completedLessons, error: progressError } = await supabase
-    .from('user_lesson_progress')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('course_id', courseId)
-    .eq('completed', true);
-  
-  if (progressError) {
-    console.error("Error fetching completed lessons:", progressError);
-    throw new Error(progressError.message);
-  }
-  
-  // Calculate progress percentage
-  const totalLessons = lessons?.length || 0;
-  const completedCount = completedLessons?.length || 0;
-  const progressPercentage = totalLessons > 0 
-    ? Math.round((completedCount / totalLessons) * 100) 
-    : 0;
-  
-  // Update the user course record
-  await supabase
-    .from('user_courses')
-    .update({ 
-      progress_percentage: progressPercentage,
-      last_accessed: new Date().toISOString()
-    })
-    .eq('user_id', userId)
-    .eq('course_id', courseId);
-  
-  const { data, error } = await supabase
-    .from('user_courses')
-    .select()
-    .eq('user_id', userId)
-    .eq('course_id', courseId)
-    .single();
-  
-  if (error) {
-    console.error("Error updating course progress:", error);
-    throw new Error(error.message);
-  }
-  
-  return data;
 };

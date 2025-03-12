@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
 import { Crown, CheckCircle, Clock, QrCode, Download, Share2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from 'sonner';
+import VipActivationPending from './VipActivationPending';
 
-const QR_CODE_IMAGE = "/lovable-uploads/df571914-fa9f-49ba-a991-8777a7ca7726.png";
+const QR_CODE_IMAGE = "/lovable-uploads/a49f5bd6-e4ae-4a5e-8f6a-3669ecdd8196.png";
 
 interface VipPlanProps {
   duration: string;
@@ -90,11 +91,11 @@ const VipPlan: React.FC<VipPlanProps> = ({
 };
 
 const VipPurchaseForm = () => {
-  const { toast } = useToast();
   const { currentUser } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState<string>("6-months");
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showActivationPending, setShowActivationPending] = useState(false);
   
   const plans = {
     "1-month": {
@@ -154,11 +155,7 @@ const VipPurchaseForm = () => {
   
   const handleSubmitPurchase = async () => {
     if (!currentUser) {
-      toast({
-        title: "Vui lòng đăng nhập",
-        description: "Bạn cần đăng nhập để mua gói VIP",
-        variant: "destructive"
-      });
+      toast.error("Vui lòng đăng nhập để mua gói VIP");
       return;
     }
     
@@ -170,24 +167,7 @@ const VipPurchaseForm = () => {
         ? plan.price - (plan.price * plan.discount / 100) 
         : plan.price;
       
-      // Calculate expiration date based on selected plan
-      const expirationDate = new Date();
-      expirationDate.setMonth(expirationDate.getMonth() + plan.months);
-      
-      // Update user's VIP status in profiles table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-          is_vip: true,
-          vip_expiration_date: expirationDate.toISOString()
-        })
-        .eq('id', currentUser.id);
-      
-      if (profileError) {
-        throw profileError;
-      }
-      
-      // Create purchase record
+      // Tạo bản ghi trong user_courses cho gói VIP đã thanh toán
       const { error: purchaseError } = await supabase
         .from('user_courses')
         .insert({
@@ -197,26 +177,57 @@ const VipPurchaseForm = () => {
           payment_amount: finalPrice,
           progress_percentage: 0,
           enrolled_at: new Date().toISOString()
-        })
-        .select();
+        });
       
       if (purchaseError) throw purchaseError;
       
-      setShowSuccessMessage(true);
-      toast({
-        title: "Đã ghi nhận",
-        description: "Chúng tôi đã ghi nhận yêu cầu và sẽ kích hoạt tài khoản của bạn sau khi xác nhận thanh toán.",
-        duration: 5000,
-      });
+      // Hiển thị thông báo chờ kích hoạt
+      setShowActivationPending(true);
+      
+      toast.success("Đã ghi nhận thanh toán của bạn. Vui lòng chờ xác nhận.");
+      
+      // Sau 10 phút giả lập kích hoạt thành công (thực tế sẽ do admin xác nhận)
+      setTimeout(() => {
+        activateVip(plan.months);
+      }, 10 * 60 * 1000); // 10 phút
+      
     } catch (error) {
-      console.error("Purchase error:", error);
-      toast({
-        title: "Có lỗi xảy ra",
-        description: "Không thể xử lý giao dịch. Vui lòng thử lại sau.",
-        variant: "destructive"
-      });
+      console.error("Lỗi khi xử lý thanh toán:", error);
+      toast.error("Không thể xử lý giao dịch. Vui lòng thử lại sau.");
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const activateVip = async (months: number) => {
+    if (!currentUser) return;
+    
+    try {
+      // Tính ngày hết hạn
+      const expirationDate = new Date();
+      expirationDate.setMonth(expirationDate.getMonth() + months);
+      
+      // Cập nhật trạng thái VIP trong profiles
+      await supabase
+        .from('profiles')
+        .update({ 
+          is_vip: true,
+          vip_expiration_date: expirationDate.toISOString()
+        })
+        .eq('id', currentUser.id);
+        
+      // Cập nhật bản ghi thanh toán
+      await supabase
+        .from('user_courses')
+        .update({
+          has_paid: true,
+          payment_date: new Date().toISOString()
+        })
+        .eq('user_id', currentUser.id)
+        .eq('course_id', `vip-${selectedPlan}`);
+      
+    } catch (error) {
+      console.error("Lỗi khi kích hoạt VIP:", error);
     }
   };
   
@@ -232,11 +243,16 @@ const VipPurchaseForm = () => {
     a.click();
     document.body.removeChild(a);
     
-    toast({
-      title: "Đã tải xuống",
-      description: "Mã QR đã được tải xuống thiết bị của bạn",
-    });
+    toast.success("Đã tải xuống mã QR");
   };
+  
+  if (showActivationPending) {
+    return (
+      <div className="container mx-auto py-8 max-w-md">
+        <VipActivationPending userEmail={currentUser?.email || ''} />
+      </div>
+    );
+  }
   
   if (showSuccessMessage) {
     return (
@@ -247,7 +263,7 @@ const VipPurchaseForm = () => {
         <h2 className="text-2xl font-bold">Cảm ơn bạn!</h2>
         <p className="text-muted-foreground">
           Chúng tôi đã ghi nhận yêu cầu mua gói VIP của bạn.
-          <br />Tài khoản của bạn sẽ được kích hoạt trong vòng 24 giờ sau khi xác nhận thanh toán.
+          <br />Tài khoản của bạn sẽ được kích hoạt trong vòng 10 phút sau khi xác nhận thanh toán.
         </p>
         <Button 
           onClick={() => setShowSuccessMessage(false)} 
@@ -430,3 +446,4 @@ const VipPurchaseForm = () => {
 };
 
 export default VipPurchaseForm;
+

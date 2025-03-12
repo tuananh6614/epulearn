@@ -24,6 +24,8 @@ interface User {
   avatarUrl?: string; // Add support for user avatar
   bio?: string; // User bio information
   email_confirmed_at?: string | null; // Add this property for email verification status
+  isVip?: boolean; // VIP status
+  vipExpirationDate?: string | null; // VIP expiration date
 }
 
 // Define fixed account type to match User type
@@ -100,8 +102,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           lastName: profileData.last_name,
           avatarUrl: profileData.avatar_url,
           bio: profileData.bio,
-          email_confirmed_at: emailConfirmedAt
+          email_confirmed_at: emailConfirmedAt,
+          isVip: profileData.is_vip || false,
+          vipExpirationDate: profileData.vip_expiration_date
         };
+        
+        // Kiểm tra và cập nhật trạng thái VIP hết hạn
+        if (userData.vipExpirationDate) {
+          const now = new Date();
+          const expirationDate = new Date(userData.vipExpirationDate);
+          
+          if (expirationDate <= now && userData.isVip) {
+            // Tự động cập nhật nếu đã hết hạn
+            await supabase
+              .from('profiles')
+              .update({ 
+                is_vip: false,
+                vip_expiration_date: null
+              })
+              .eq('id', userId);
+              
+            userData.isVip = false;
+            userData.vipExpirationDate = null;
+          }
+        }
         
         setCurrentUser(userData);
         localStorage.setItem('epu_user', JSON.stringify(userData));
@@ -232,6 +256,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (userData.lastName !== undefined) updateData.last_name = userData.lastName;
       if (userData.avatarUrl !== undefined) updateData.avatar_url = userData.avatarUrl;
       if (userData.bio !== undefined) updateData.bio = userData.bio;
+      if (userData.isVip !== undefined) updateData.is_vip = userData.isVip;
+      if (userData.vipExpirationDate !== undefined) updateData.vip_expiration_date = userData.vipExpirationDate;
       
       updateData.updated_at = new Date().toISOString();
       

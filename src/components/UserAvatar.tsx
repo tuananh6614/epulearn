@@ -1,10 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Upload, Crown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { API_URL, fetchWithTimeout } from '@/services/apiUtils';
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -26,9 +25,6 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   showVipStatus = true
 }) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [isVip, setIsVip] = useState(false);
-  const [vipExpirationDate, setVipExpirationDate] = useState<string | null>(null);
-  const [remainingDays, setRemainingDays] = useState<number | null>(null);
   const { updateCurrentUser, currentUser } = useAuth();
   
   const sizeClasses = {
@@ -37,59 +33,13 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     lg: 'w-24 h-24'
   };
 
-  useEffect(() => {
-    const fetchVipStatus = async () => {
-      if (!currentUser) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('is_vip, vip_expiration_date')
-          .eq('id', currentUser.id)
-          .single();
-        
-        if (error) {
-          console.error('Error fetching VIP status:', error);
-          return;
-        }
-        
-        if (data) {
-          const now = new Date();
-          const expirationDate = data.vip_expiration_date ? new Date(data.vip_expiration_date) : null;
-          
-          if (expirationDate && expirationDate > now) {
-            setIsVip(data.is_vip || false);
-            setVipExpirationDate(data.vip_expiration_date);
-            
-            const timeDiff = expirationDate.getTime() - now.getTime();
-            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-            setRemainingDays(daysDiff);
-          } else {
-            setIsVip(false);
-            setRemainingDays(null);
-            
-            if (data.is_vip) {
-              const { error: updateError } = await supabase
-                .from('profiles')
-                .update({ 
-                  is_vip: false,
-                  vip_expiration_date: null
-                })
-                .eq('id', currentUser.id);
-              
-              if (updateError) {
-                console.error('Error updating expired VIP status:', updateError);
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Error in fetchVipStatus:', err);
-      }
-    };
-    
-    fetchVipStatus();
-  }, [currentUser]);
+  // Kiểm tra trạng thái VIP và ngày hết hạn
+  const isVip = currentUser?.isVip || false;
+  const vipExpirationDate = currentUser?.vipExpirationDate ? new Date(currentUser.vipExpirationDate) : null;
+  
+  // Tính số ngày còn lại của gói VIP
+  const remainingDays = vipExpirationDate ? 
+    Math.ceil((vipExpirationDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24)) : null;
   
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -135,43 +85,11 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           
         await updateCurrentUser({ avatarUrl: publicUrl });
         
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ avatar_url: publicUrl })
-          .eq('id', currentUser.id);
-          
-        if (updateError) {
-          console.error('Error updating profile:', updateError);
-        }
-        
         toast.success("Ảnh đại diện đã được cập nhật");
-      } catch (supabaseError) {
-        console.error('Error uploading to Supabase:', supabaseError);
-        
-        const formData = new FormData();
-        formData.append('avatar', file);
-        
-        const response = await fetchWithTimeout(`${API_URL}/upload-avatar`, {
-          method: 'POST',
-          body: formData,
-        }, 8000);
-        
-        if (!response.ok) {
-          throw new Error('Failed to upload avatar to server');
-        }
-        
-        const data = await response.json();
-        
-        await updateCurrentUser({ avatarUrl: data.avatarUrl });
-        toast.success("Ảnh đại diện đã được cập nhật và đồng bộ với CSDL");
+      } catch (error) {
+        console.error('Error uploading avatar:', error);
+        toast.error("Không thể tải lên ảnh đại diện. Vui lòng thử lại sau.");
       }
-    } catch (error) {
-      console.error('Error handling avatar upload:', error);
-      
-      const localImageUrl = URL.createObjectURL(file);
-      await updateCurrentUser({ avatarUrl: localImageUrl });
-      
-      toast.warning("Không thể kết nối đến máy chủ. Ảnh đã được lưu cục bộ.");
     } finally {
       setIsUploading(false);
     }
@@ -186,11 +104,11 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         </AvatarFallback>
       </Avatar>
       
-      {showVipStatus && isVip && (
+      {showVipStatus && isVip && remainingDays && (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="absolute -top-2 -right-2 bg-yellow-500 rounded-full p-1">
+              <div className="absolute -top-2 -right-2 bg-yellow-500 rounded-full p-1 animate-pulse">
                 <Crown className={`${size === 'sm' ? 'h-3 w-3' : size === 'md' ? 'h-4 w-4' : 'h-5 w-5'} text-white`} />
               </div>
             </TooltipTrigger>

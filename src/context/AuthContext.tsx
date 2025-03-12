@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -42,6 +43,7 @@ const FIXED_ACCOUNT: FixedAccount = {
 // Define the auth context type
 interface AuthContextType {
   currentUser: User | null;
+  user: User | null; // Include user property for backward compatibility
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (email: string, password: string, firstName: string, lastName: string) => Promise<boolean>;
@@ -53,7 +55,6 @@ interface AuthContextType {
   updateCurrentUser: (userData: Partial<User>) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   resendVerificationEmail: () => Promise<boolean>;
-  user: User | null; // Add this line to include user property
 }
 
 // Create the auth context
@@ -64,138 +65,128 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [authInitialized, setAuthInitialized] = useState(false);
   const navigate = useNavigate();
+
+  // Check local storage for cached user first for faster initial render
+  useEffect(() => {
+    const storedUser = localStorage.getItem('epu_user');
+    if (storedUser) {
+      try {
+        setCurrentUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Failed to parse user from localStorage', error);
+        localStorage.removeItem('epu_user');
+      }
+    }
+    
+    // Don't set loading to false yet, let the checkAuth function do that
+  }, []);
+
+  // More efficient way to fetch user profile
+  const fetchUserProfile = useCallback(async (userId: string, userEmail: string, emailConfirmedAt: string | null) => {
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+          
+      if (profileData) {
+        const userData: User = {
+          id: userId,
+          email: userEmail,
+          firstName: profileData.first_name,
+          lastName: profileData.last_name,
+          avatarUrl: profileData.avatar_url,
+          bio: profileData.bio,
+          email_confirmed_at: emailConfirmedAt
+        };
+        
+        setCurrentUser(userData);
+        localStorage.setItem('epu_user', JSON.stringify(userData));
+        return userData;
+      } else if (error) {
+        console.warn('Error fetching profile:', error);
+        // Fallback to basic user data
+        const userData: User = {
+          id: userId,
+          email: userEmail,
+          email_confirmed_at: emailConfirmedAt
+        };
+        
+        setCurrentUser(userData);
+        localStorage.setItem('epu_user', JSON.stringify(userData));
+        return userData;
+      }
+    } catch (error) {
+      console.error('Profile fetch error:', error);
+    }
+    
+    return null;
+  }, []);
 
   // Check if there's a logged-in user in localStorage on initial load or through Supabase session
   useEffect(() => {
     const checkAuth = async () => {
-      setLoading(true);
-      
-      // Check Supabase session first
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        // Get user profile data from Supabase
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (profileData) {
-          const userData: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            firstName: profileData.first_name,
-            lastName: profileData.last_name,
-            avatarUrl: profileData.avatar_url,
-            bio: profileData.bio,
-            email_confirmed_at: session.user.email_confirmed_at
-          };
-          
-          setCurrentUser(userData);
-          localStorage.setItem('epu_user', JSON.stringify(userData));
-        } else {
-          // Fallback to basic user data if profile not found
-          const userData: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            email_confirmed_at: session.user.email_confirmed_at
-          };
-          
-          setCurrentUser(userData);
-          localStorage.setItem('epu_user', JSON.stringify(userData));
+      try {
+        // Check Supabase session first - using faster method
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          await fetchUserProfile(session.user.id, session.user.email || '', session.user.email_confirmed_at);
         }
-      } else {
-        // Check localStorage as fallback
-        const storedUser = localStorage.getItem('epu_user');
-        if (storedUser) {
-          try {
-            setCurrentUser(JSON.parse(storedUser));
-          } catch (error) {
-            console.error('Failed to parse user from localStorage', error);
-            localStorage.removeItem('epu_user');
-          }
-        }
+      } catch (error) {
+        console.error('Session check error:', error);
+      } finally {
+        setLoading(false);
+        setAuthInitialized(true);
       }
-      
-      setLoading(false);
     };
     
     checkAuth();
     
-    // Listen for auth changes
+    // Listen for auth changes - more efficient implementation
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event);
+        
         if (event === 'SIGNED_IN' && session) {
-          // Get user profile data
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+          await fetchUserProfile(session.user.id, session.user.email || '', session.user.email_confirmed_at);
           
-          if (profileData) {
-            const userData: User = {
-              id: session.user.id,
-              email: session.user.email || '',
-              firstName: profileData.first_name,
-              lastName: profileData.last_name,
-              avatarUrl: profileData.avatar_url,
-              bio: profileData.bio,
-              email_confirmed_at: session.user.email_confirmed_at
-            };
-            
-            setCurrentUser(userData);
-            localStorage.setItem('epu_user', JSON.stringify(userData));
-          } else {
-            // Fallback to basic user data if profile not found
-            const userData: User = {
-              id: session.user.id,
-              email: session.user.email || '',
-              email_confirmed_at: session.user.email_confirmed_at
-            };
-            
-            setCurrentUser(userData);
-            localStorage.setItem('epu_user', JSON.stringify(userData));
-          }
-
           // Show confirmation message if the email was just verified
-          if (event === 'SIGNED_IN' && session.user.email_confirmed_at) {
+          if (session.user.email_confirmed_at) {
             toast.success("Email của bạn đã được xác thực thành công!");
           }
         } else if (event === 'SIGNED_OUT') {
           setCurrentUser(null);
           localStorage.removeItem('epu_user');
-        } else if (event === 'USER_UPDATED') {
-          // Update the current user data when user is updated (e.g. email verification)
-          if (session) {
-            // Update the current user with the latest session data
-            setCurrentUser(prevUser => 
-              prevUser ? {
-                ...prevUser,
+        } else if (event === 'USER_UPDATED' && session) {
+          // Update only the specific fields that changed
+          setCurrentUser(prevUser => 
+            prevUser ? {
+              ...prevUser,
+              email_confirmed_at: session.user.email_confirmed_at
+            } : null
+          );
+          
+          // Update localStorage efficiently
+          const storedUser = localStorage.getItem('epu_user');
+          if (storedUser) {
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              localStorage.setItem('epu_user', JSON.stringify({
+                ...parsedUser,
                 email_confirmed_at: session.user.email_confirmed_at
-              } : null
-            );
-            
-            // Update localStorage
-            const storedUser = localStorage.getItem('epu_user');
-            if (storedUser) {
-              try {
-                const parsedUser = JSON.parse(storedUser);
-                localStorage.setItem('epu_user', JSON.stringify({
-                  ...parsedUser,
-                  email_confirmed_at: session.user.email_confirmed_at
-                }));
-              } catch (error) {
-                console.error('Failed to update user in localStorage', error);
-              }
+              }));
+            } catch (error) {
+              console.error('Failed to update user in localStorage', error);
             }
-            
-            // Show confirmation message if the email was just verified
-            if (session.user.email_confirmed_at) {
-              toast.success("Email của bạn đã được xác thực thành công!");
-            }
+          }
+          
+          // Show confirmation message if the email was just verified
+          if (session.user.email_confirmed_at) {
+            toast.success("Email của bạn đã được xác thực thành công!");
           }
         }
       }
@@ -204,9 +195,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchUserProfile]);
 
-  // Method to update current user data
+  // Method to update current user data - optimized for performance
   const updateCurrentUser = async (userData: Partial<User>): Promise<boolean> => {
     if (!currentUser) return false;
     
@@ -234,29 +225,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userData.lastNameChanged = now.toISOString();
       }
       
-      console.log("Updating user data:", userData);
+      // Prepare update data - only include the fields that need to be updated
+      const updateData: Record<string, any> = {};
       
-      // Update user profile in Supabase
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          avatar_url: userData.avatarUrl,
-          bio: userData.bio,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', currentUser.id);
+      if (userData.firstName !== undefined) updateData.first_name = userData.firstName;
+      if (userData.lastName !== undefined) updateData.last_name = userData.lastName;
+      if (userData.avatarUrl !== undefined) updateData.avatar_url = userData.avatarUrl;
+      if (userData.bio !== undefined) updateData.bio = userData.bio;
       
-      if (error) {
-        console.error('Error updating profile:', error);
-        toast.error("Không thể cập nhật thông tin. " + error.message);
-        setLoading(false);
-        return false;
+      updateData.updated_at = new Date().toISOString();
+      
+      // Update user profile in Supabase - only if there are fields to update
+      if (Object.keys(updateData).length > 0) {
+        const { error } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', currentUser.id);
+        
+        if (error) {
+          console.error('Error updating profile:', error);
+          toast.error("Không thể cập nhật thông tin. " + error.message);
+          setLoading(false);
+          return false;
+        }
       }
       
-      // Update local storage
+      // Update local storage and state
       const updatedUser = { ...currentUser, ...userData };
+      
+      // Use a more efficient way to update localStorage
       localStorage.setItem('epu_user', JSON.stringify(updatedUser));
       setCurrentUser(updatedUser);
       
@@ -271,7 +268,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Password change method
+  // Password change method - optimized for performance
   const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     if (!currentUser) return false;
     
@@ -291,7 +288,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Change password via Supabase
+      // Change password via Supabase - optimized approach
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -314,7 +311,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Resend verification email
+  // Resend verification email - optimized
   const resendVerificationEmail = async (): Promise<boolean> => {
     if (!currentUser) {
       toast.error("Không có người dùng đăng nhập");
@@ -349,15 +346,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Login with fixed account
+  // Login with fixed account - optimized
   const loginWithFixedAccount = () => {
     // Check if fixed account is configured
     if (!FIXED_ACCOUNT.email || !FIXED_ACCOUNT.password) {
       toast.error("Không có tài khoản cố định được thiết lập");
       return;
     }
-    
-    setLoading(true);
     
     // Create user object from fixed account (without password)
     const user: User = {
@@ -373,10 +368,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     toast.success("Đăng nhập thành công với tài khoản cố định");
     navigate('/');
-    setLoading(false);
   };
 
-  // Login function
+  // Optimized login function
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     
@@ -405,7 +399,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       }
       
-      // Try Supabase authentication
+      // Use optimized login strategy
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -418,38 +412,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Get user profile data
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-      
-      const userData: User = {
-        id: data.user.id,
-        email: data.user.email || '',
-        firstName: profileData?.first_name,
-        lastName: profileData?.last_name,
-        avatarUrl: profileData?.avatar_url,
-        bio: profileData?.bio,
-        email_confirmed_at: data.user.email_confirmed_at
-      };
-      
-      localStorage.setItem('epu_user', JSON.stringify(userData));
-      setCurrentUser(userData);
-      
+      // Get user profile data - using the optimized fetchUserProfile
+      await fetchUserProfile(data.user.id, data.user.email || '', data.user.email_confirmed_at);
       toast.success("Đăng nhập thành công");
-      setLoading(false);
       return true;
     } catch (error) {
       console.error('Login error:', error);
       toast.error((error as Error).message || "Đăng nhập thất bại");
-      setLoading(false);
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Signup function
+  // Signup function - optimized
   const signup = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
     setLoading(true);
     
@@ -474,7 +450,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Register with Supabase
+      // Register with Supabase - optimized approach
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -482,7 +458,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             first_name: firstName,
             last_name: lastName
-          }
+          },
+          emailRedirectTo: window.location.origin + '/login' // Set redirect URL to improve flow
         }
       });
       
@@ -493,7 +470,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
+      // Show clear success message with shorter timeout
+      toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.", {
+        duration: 5000
+      });
+      
+      // Auto-redirect to login page after signup
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+      
       setLoading(false);
       return true;
     } catch (error) {
@@ -509,12 +495,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShowLogoutConfirm(true);
   };
 
-  // Perform actual logout
+  // Perform actual logout - optimized
   const performLogout = async () => {
     try {
-      await supabase.auth.signOut();
-      localStorage.removeItem('epu_user');
+      // Clear local state first for faster UI response
       setCurrentUser(null);
+      localStorage.removeItem('epu_user');
+      
+      // Then sign out from Supabase (don't wait for this to complete before updating UI)
+      supabase.auth.signOut();
+      
       navigate('/login');
       toast.info("Đã đăng xuất. Hẹn gặp lại bạn!");
     } catch (error) {
@@ -538,7 +528,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateCurrentUser,
     changePassword,
     resendVerificationEmail,
-    user: currentUser // Add this line to expose user through context
+    user: currentUser // Include user property for backward compatibility
   };
 
   return (

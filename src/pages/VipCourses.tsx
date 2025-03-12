@@ -1,12 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CourseCard from '@/components/CourseCard';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCourses } from '@/services/apiUtils';
 import { Course, SupabaseCourseResponse } from '@/models/lesson';
-import { Crown } from 'lucide-react';
+import { Crown, AlertTriangle } from 'lucide-react';
 
 const VipCourses = () => {
   const { data: coursesData, isLoading, error } = useQuery({
@@ -65,6 +66,13 @@ const VipCourses = () => {
             <Crown className="h-8 w-8 text-yellow-500" />
             <h1 className="text-3xl font-bold">Khóa Học VIP</h1>
           </div>
+
+          <Alert variant="warning" className="mb-8">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Bạn cần đăng ký gói VIP để truy cập toàn bộ nội dung khóa học cao cấp
+            </AlertDescription>
+          </Alert>
           
           {coursesData && coursesData.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

@@ -1,6 +1,38 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Course, EnrolledCourse, SupabaseCourseResponse, UserCertificate } from '@/models/lesson';
+
+export interface SupabaseCourseResponse {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  thumbnail_url?: string;
+  category?: string;
+  created_at?: string;
+  is_featured?: boolean;
+}
+
+export interface UserCertificate {
+  id: string;
+  userId: string;
+  courseId: string;
+  certificateId: string;
+  issueDate: string;
+  courseName: string;
+}
+
+export interface EnrolledCourse {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  color: string;
+  progress: number;
+  isCompleted: boolean;
+  lastAccessed: string;
+  enrolledAt: string;
+  status: string;
+}
 
 // Function to fetch user enrolled courses
 export const fetchUserEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> => {

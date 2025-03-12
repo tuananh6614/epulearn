@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -168,7 +167,6 @@ const VipPurchaseForm = () => {
         ? plan.price - (plan.price * plan.discount / 100) 
         : plan.price;
       
-      // Create record in user_courses for the paid VIP package
       const { error: purchaseError } = await supabase
         .from('user_courses')
         .insert({
@@ -182,16 +180,13 @@ const VipPurchaseForm = () => {
       
       if (purchaseError) throw purchaseError;
       
-      // Show activation pending message
       setShowActivationPending(true);
       
       toast.success("Đã ghi nhận thanh toán của bạn. Vui lòng chờ xác nhận.");
       
-      // After 10 minutes simulate successful activation (in reality would be admin confirmed)
       setTimeout(() => {
         activateVip(plan.months);
-      }, 10 * 60 * 1000); // 10 minutes
-      
+      }, 10 * 60 * 1000);
     } catch (error) {
       console.error("Error processing payment:", error);
       toast.error("Không thể xử lý giao dịch. Vui lòng thử lại sau.");
@@ -204,11 +199,9 @@ const VipPurchaseForm = () => {
     if (!currentUser) return;
     
     try {
-      // Tính ngày hết hạn
       const expirationDate = new Date();
       expirationDate.setMonth(expirationDate.getMonth() + months);
       
-      // Cập nhật trạng thái VIP trong profiles
       await supabase
         .from('profiles')
         .update({ 
@@ -217,7 +210,6 @@ const VipPurchaseForm = () => {
         })
         .eq('id', currentUser.id);
         
-      // Cập nhật bản ghi thanh toán
       await supabase
         .from('user_courses')
         .update({
@@ -244,7 +236,7 @@ const VipPurchaseForm = () => {
     a.click();
     document.body.removeChild(a);
     
-    toast.success("Đã tải xuống mã QR");
+    toast("Đã tải xuống mã QR");
   };
   
   if (showActivationPending) {

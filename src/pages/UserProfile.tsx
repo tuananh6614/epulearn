@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -20,7 +19,6 @@ const UserProfile = () => {
   const { currentUser, resendVerificationEmail } = useAuth();
   const [isResendingEmail, setIsResendingEmail] = React.useState(false);
 
-  // Use React Query to fetch user courses
   const { data: userCourses, isLoading: isLoadingCourses } = useQuery({
     queryKey: ['userCourses', currentUser?.id],
     queryFn: () => fetchUserEnrolledCourses(currentUser?.id || ''),
@@ -29,7 +27,6 @@ const UserProfile = () => {
     refetchOnWindowFocus: false,
   });
 
-  // Use React Query to fetch user certificates
   const { data: userCertificates, isLoading: isLoadingCertificates } = useQuery({
     queryKey: ['userCertificates', currentUser?.id],
     queryFn: () => fetchUserCertificates(currentUser?.id || ''),
@@ -38,10 +35,8 @@ const UserProfile = () => {
     refetchOnWindowFocus: false,
   });
 
-  // Check if user email is unverified
   const isEmailUnverified = currentUser?.email_confirmed_at === undefined || currentUser?.email_confirmed_at === null;
 
-  // Handle resend verification email
   const handleResendEmail = async () => {
     if (isResendingEmail) return;
     
@@ -82,7 +77,7 @@ const UserProfile = () => {
       {isEmailUnverified && (
         <div className="bg-amber-50 border-amber-300 border-b py-2 px-4">
           <div className="container mx-auto">
-            <Alert variant="warning" className="border-0 bg-transparent p-0">
+            <Alert variant="default" className="border-0 bg-transparent p-0">
               <AlertCircle className="h-5 w-5 text-amber-600" />
               <AlertTitle className="text-amber-800">Email chưa xác thực</AlertTitle>
               <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -114,13 +109,11 @@ const UserProfile = () => {
       <main className="flex-grow pt-24 pb-16">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row gap-8">
-            {/* Sidebar Component */}
             <UserSidebar 
               enrolledCourses={userCourses || []} 
               isLoadingCourses={isLoadingCourses}
             />
             
-            {/* Nội dung chính */}
             <div className="flex-grow">
               <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold">Hồ sơ của bạn</h1>

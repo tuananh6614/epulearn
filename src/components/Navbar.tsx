@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import { Code, BookOpen, GraduationCap, Home, Menu, X, User, LogOut } from "lucide-react";
+import { Code, BookOpen, GraduationCap, Home, Menu, X, User, LogOut, Crown } from "lucide-react";
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Component thanh điều hướng chính - đã cố định khi cuộn trang
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -62,6 +61,10 @@ const Navbar = () => {
             <BookOpen className="h-4 w-4" />
             Khóa Học
           </Link>
+          <Link to="/vip-courses" className="nav-link text-sm font-medium flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors">
+            <Crown className="h-4 w-4" />
+            Khóa Học VIP
+          </Link>
           <Link to="/certification" className="nav-link text-sm font-medium flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-green-500 dark:hover:text-green-400 transition-colors">
             <GraduationCap className="h-4 w-4" />
             Chứng Chỉ
@@ -107,27 +110,27 @@ const Navbar = () => {
             </>
           )}
           
-          {/* Mobile menu button */}
           <Button variant="ghost" size="icon" className="md:hidden text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-800" onClick={toggleMobileMenu}>
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
         </div>
       </div>
       
-      {/* Mobile menu */}
       <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''} md:hidden`}>
         <nav className="flex flex-col items-center gap-8 py-8">
           <Link to="/" className="text-lg font-medium flex items-center gap-2 text-gray-900 dark:text-white" onClick={() => setMobileMenuOpen(false)}>
             <Home className="h-5 w-5" />
             Trang Chủ
           </Link>
+          
           <Link to="/courses" className="text-lg font-medium flex items-center gap-2 text-gray-900 dark:text-white" onClick={() => setMobileMenuOpen(false)}>
             <BookOpen className="h-5 w-5" />
             Khóa Học
           </Link>
-          <Link to="/certification" className="text-lg font-medium flex items-center gap-2 text-gray-900 dark:text-white" onClick={() => setMobileMenuOpen(false)}>
-            <GraduationCap className="h-5 w-5" />
-            Chứng Chỉ
+          
+          <Link to="/vip-courses" className="text-lg font-medium flex items-center gap-2 text-yellow-600 dark:text-yellow-400" onClick={() => setMobileMenuOpen(false)}>
+            <Crown className="h-5 w-5" />
+            Khóa Học VIP
           </Link>
           
           <div className="flex flex-col gap-4 mt-4 w-full max-w-xs">

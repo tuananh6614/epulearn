@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +14,7 @@ import LessonDemo from "./pages/LessonDemo";
 import MyCourses from "./pages/MyCourses";
 import UserProfile from "./pages/UserProfile";
 import Certification from "./pages/Certification";
+import VipCourses from "./pages/VipCourses";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -78,6 +78,9 @@ const App = () => (
                 <UserProfile />
               </ProtectedRoute>
             } />
+            
+            {/* VIP courses route */}
+            <Route path="/vip-courses" element={<VipCourses />} />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />

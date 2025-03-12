@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { checkApiHealth } from '@/services/apiUtils';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -19,7 +18,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [showEmailAlert, setShowEmailAlert] = useState(false);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
   
-  // Check API health on component mount
   useEffect(() => {
     const performHealthCheck = async () => {
       try {
@@ -47,7 +45,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     performHealthCheck();
   }, []);
   
-  // Check if email is unverified
   useEffect(() => {
     if (currentUser && (currentUser.email_confirmed_at === undefined || currentUser.email_confirmed_at === null)) {
       setShowEmailAlert(true);
@@ -71,7 +68,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     }
   };
   
-  // Show loading state if auth is still being determined or we're checking API health
   if (authLoading || !healthCheckAttempted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -80,14 +76,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
   
-  // If API is not available, show warning but allow user to continue in limited mode
   if (apiAvailable === false) {
     toast.warning("Không thể kết nối đến Supabase. Một số tính năng có thể không hoạt động.", {
       duration: 10000,
       id: "offline-mode-warning", // prevent duplicates
     });
     
-    // Continue to app instead of blocking, but only if authenticated
     if (!isAuthenticated) {
       toast.error("Bạn cần đăng nhập để truy cập trang này");
       return <Navigate to="/login" replace />;
@@ -96,19 +90,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <>{children}</>;
   }
   
-  // Redirect to login if not authenticated
   if (!isAuthenticated) {
     toast.error("Bạn cần đăng nhập để truy cập trang này");
     return <Navigate to="/login" replace />;
   }
   
-  // Render children if authenticated
   return (
     <>
       {showEmailAlert && (
         <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 bg-amber-50 border-b border-amber-200">
           <div className="container mx-auto">
-            <Alert variant="warning" className="bg-amber-50 border-amber-300">
+            <Alert variant="default" className="bg-amber-50 border-amber-300">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertTitle className="text-amber-800">Email chưa xác thực</AlertTitle>
               <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -120,7 +112,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
                   disabled={isResendingEmail}
                   className="w-fit text-amber-700 border-amber-300 hover:bg-amber-100"
                 >
-                  {isResendingEmail ? "Đang gửi..." : "Gửi lại email xác thực"}
+                  {isResendingEmail ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Đang gửi...
+                    </>
+                  ) : "Gửi lại email xác thực"}
                 </Button>
               </AlertDescription>
             </Alert>

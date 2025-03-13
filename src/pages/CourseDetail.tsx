@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -12,6 +13,7 @@ import { CheckCircle, Clock, FileText, Info, Loader2, Lock, Zap, BookOpen, Video
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
 import { fetchCourseContent, supabase } from '@/integrations/supabase/client';
+import { enrollUserInCourse } from '@/integrations/supabase/apiUtils';
 import { toast } from 'sonner';
 
 interface DisplayLesson {

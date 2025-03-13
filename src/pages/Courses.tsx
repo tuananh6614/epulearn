@@ -35,6 +35,12 @@ const Courses = () => {
         const data = await fetchCourses();
         console.log('Fetched courses data:', data);
         
+        if (data.length === 0) {
+          setError('Không tìm thấy khóa học nào trong cơ sở dữ liệu');
+          setIsLoading(false);
+          return;
+        }
+        
         // Transform data to match Course interface
         const formattedCourses: Course[] = data.map((course) => ({
           id: course.id,
@@ -52,6 +58,8 @@ const Courses = () => {
           instructor: course.instructor,
           chapters: [],  // Chapters will be loaded separately when viewing course details
         }));
+        
+        console.log('Formatted courses:', formattedCourses);
         
         setCoursesData(formattedCourses);
         setFilteredCourses(formattedCourses);
@@ -254,7 +262,7 @@ const Courses = () => {
               ))}
             </div>
           ) : error ? (
-            <div className="text-center py-20">
+            <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
               <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-4">Lỗi tải khóa học</h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6">{error}</p>
               <Button onClick={handleRetry} variant="outline" className="flex items-center gap-2">
@@ -282,7 +290,7 @@ const Courses = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-20">
+            <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
               <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">Không tìm thấy khóa học</h3>
               <p className="text-gray-500 dark:text-gray-400">Hãy thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc của bạn</p>
             </div>

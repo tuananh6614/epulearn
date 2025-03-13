@@ -128,33 +128,45 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
 // Function to fetch courses - optimized with specific column selection
 export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
   try {
+    console.log('Fetching courses from Supabase');
+    
     const { data, error } = await supabase
       .from('courses')
-      .select('id, title, description, thumbnail_url, category, level, duration, is_premium, is_featured, created_at');
+      .select('*');
 
     if (error) {
       console.error('Error fetching courses:', error);
       throw error;
     }
 
+    console.log('Supabase returned data:', data);
+    
+    if (!data || data.length === 0) {
+      console.warn('No courses found in database');
+      return [];
+    }
+
     // Transform the data to match SupabaseCourseResponse
-    return data?.map(course => ({
+    return data.map(course => ({
       id: course.id,
       title: course.title,
-      description: course.description,
+      description: course.description || '',
       thumbnail_url: course.thumbnail_url || null,
-      category: course.category,
-      level: course.level,
-      duration: course.duration,
-      is_premium: course.is_premium,
-      is_featured: course.is_featured, 
+      category: course.category || 'General',
+      level: course.level || 'Beginner',
+      duration: course.duration || '0h',
+      is_premium: course.is_premium || false,
+      is_featured: course.is_featured || false, 
       created_at: course.created_at,
-      updated_at: course.created_at, // Use created_at as fallback
+      updated_at: course.updated_at || course.created_at, 
       status: 'published',
-      instructor: 'EPU Learning', // Default instructor
-      price: course.is_premium ? '299.000₫' : '0₫', // Now compatible with updated interface
-      discount_price: course.is_premium ? '149.000₫' : null // Now compatible with updated interface
-    })) || [];
+      instructor: course.instructor || 'EPU Learning',
+      price: course.is_premium ? '299.000₫' : '0₫', 
+      discount_price: course.is_premium ? '149.000₫' : null,
+      full_description: course.full_description || '',
+      objectives: course.objectives || [],
+      requirements: course.requirements || []
+    }));
   } catch (error) {
     console.error('Error fetching courses:', error);
     return [];
@@ -166,7 +178,7 @@ export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> 
   try {
     const { data, error } = await supabase
       .from('courses')
-      .select('id, title, description, thumbnail_url, category, level, duration, is_premium, created_at')
+      .select('*')
       .eq('is_featured', true)
       .order('created_at', { ascending: false })
       .limit(4);
@@ -176,24 +188,32 @@ export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> 
       throw error;
     }
 
+    if (!data || data.length === 0) {
+      console.warn('No featured courses found in database');
+      return [];
+    }
+
     // Transform the data to match SupabaseCourseResponse
-    return data?.map(course => ({
+    return data.map(course => ({
       id: course.id,
       title: course.title,
-      description: course.description,
+      description: course.description || '',
       thumbnail_url: course.thumbnail_url || null,
-      category: course.category,
-      level: course.level,
-      duration: course.duration,
-      is_premium: course.is_premium,
+      category: course.category || 'General',
+      level: course.level || 'Beginner',
+      duration: course.duration || '0h',
+      is_premium: course.is_premium || false,
       is_featured: true, 
       created_at: course.created_at,
-      updated_at: course.created_at, // Use created_at as fallback
+      updated_at: course.updated_at || course.created_at,
       status: 'published',
-      instructor: 'EPU Learning', // Default instructor
-      price: course.is_premium ? '299.000₫' : '0₫', // Default price
-      discount_price: course.is_premium ? '149.000₫' : null // Default discount
-    })) || [];
+      instructor: course.instructor || 'EPU Learning',
+      price: course.is_premium ? '299.000₫' : '0₫',
+      discount_price: course.is_premium ? '149.000₫' : null,
+      full_description: course.full_description || '',
+      objectives: course.objectives || [],
+      requirements: course.requirements || []
+    }));
   } catch (error) {
     console.error('Error fetching featured courses:', error);
     return [];

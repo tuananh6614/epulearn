@@ -19,6 +19,14 @@ const FeaturedCourses = () => {
       setIsLoading(true);
       
       const coursesData = await fetchFeaturedCourses();
+      console.log('Featured courses data:', coursesData);
+      
+      if (coursesData.length === 0) {
+        console.warn('No featured courses found');
+        setFeaturedCourses([]);
+        setIsLoading(false);
+        return;
+      }
       
       // Transform data to match Course interface
       const formattedCourses: Course[] = coursesData.map((course) => ({
@@ -120,28 +128,44 @@ const FeaturedCourses = () => {
           </Button>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredCourses.length > 0 ? (
-            featuredCourses.map((course) => (
-              <CourseCard 
-                key={course.id} 
-                id={course.id}
-                title={course.title}
-                description={course.description}
-                level={course.level}
-                duration={course.duration}
-                category={course.category}
-                image={course.image}
-                color={course.color}
-                isPremium={course.isPremium}
-                price={course.price}
-                discountPrice={course.discountPrice}
-              />
-            ))
-          ) : (
-            <p className="col-span-4 text-center text-gray-500 dark:text-gray-400">Không có khóa học nổi bật nào.</p>
-          )}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((_, index) => (
+              <div key={index} className="bg-gray-200 dark:bg-gray-800 animate-pulse h-80 rounded-lg"></div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="flex justify-center items-center flex-col py-10">
+            <p className="text-gray-700 dark:text-gray-300 mb-4">Không thể tải khóa học. {error}</p>
+            <Button onClick={handleRetry} variant="outline" className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Thử lại
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featuredCourses.length > 0 ? (
+              featuredCourses.map((course) => (
+                <CourseCard 
+                  key={course.id} 
+                  id={course.id}
+                  title={course.title}
+                  description={course.description}
+                  level={course.level}
+                  duration={course.duration}
+                  category={course.category}
+                  image={course.image}
+                  color={course.color}
+                  isPremium={course.isPremium}
+                  price={course.price}
+                  discountPrice={course.discountPrice}
+                />
+              ))
+            ) : (
+              <p className="col-span-4 text-center text-gray-500 dark:text-gray-400 py-10">Không có khóa học nổi bật nào.</p>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

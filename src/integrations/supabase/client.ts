@@ -92,3 +92,43 @@ export const saveTestResult = async (
     return { success: false, error };
   }
 };
+
+// Thêm hàm fetchCourseTests để lấy bài kiểm tra của khóa học
+export const fetchCourseTests = async (courseId: string) => {
+  try {
+    // Fetch test info
+    const { data: testsData, error: testsError } = await supabase
+      .from('course_tests')
+      .select('*')
+      .eq('course_id', courseId);
+      
+    if (testsError) throw testsError;
+    
+    if (!testsData || testsData.length === 0) {
+      return [];
+    }
+    
+    // For each test, fetch its questions
+    const testsWithQuestions = await Promise.all(
+      testsData.map(async (test) => {
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('course_test_questions')
+          .select('*')
+          .eq('course_test_id', test.id);
+          
+        if (questionsError) throw questionsError;
+        
+        return {
+          ...test,
+          questions: questionsData || []
+        };
+      })
+    );
+    
+    return testsWithQuestions;
+  } catch (error) {
+    console.error('Error fetching course tests:', error);
+    return [];
+  }
+};
+

@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -40,7 +39,10 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
     const fetchQuestions = async () => {
       try {
         setIsLoading(true);
+        
+        console.log('Fetching test questions for chapter:', chapterId);
         const data = await fetchTestQuestions(chapterId);
+        console.log('Received test questions:', data);
         
         if (data && data.length > 0) {
           const transformedQuestions: TestQuestion[] = data.map(q => ({
@@ -50,8 +52,10 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
             correct_answer: q.correct_answer
           }));
           
+          console.log('Transformed questions:', transformedQuestions);
           setQuestions(transformedQuestions);
         } else {
+          console.warn('No test questions found for chapter:', chapterId);
           toast.error("Không tìm thấy bài kiểm tra cho chương này");
         }
       } catch (error) {

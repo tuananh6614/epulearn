@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, BookOpen, Check, Play, FileText, Code, Trophy, Loader2 } from 'lucide-react';
-import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardHeader, CardContent, CardDescription, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery } from '@tanstack/react-query';
+import { Separator } from "@/components/ui/separator";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { CheckCircle, Clock, FileText, Info, Loader2, Lock, Zap, BookOpen, Video } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { getCourseProgress } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { Course, Chapter, Lesson } from '@/models/lesson';
+import { useToast } from "@/components/ui/use-toast"
+import { fetchCourseContent } from '@/integrations/supabase/client';
 
+// Define types for our UI components to correctly handle the data
 interface DisplayLesson {
   id: string;
   title: string;
@@ -47,442 +46,508 @@ interface DisplayCourse {
   chapters: DisplayChapter[];
 }
 
+const getCourseColor = (category: string) => {
+  switch (category) {
+    case 'JavaScript':
+      return 'yellow';
+    case 'React':
+      return 'blue';
+    case 'Node':
+      return 'green';
+    default:
+      return 'gray';
+  }
+};
+
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
-  const [course, setCourse] = useState<DisplayCourse | null>(null);
+  const { user } = useAuth();
+  const [course, setCourse] = useState<DisplayCourse>({
+    id: '',
+    title: '',
+    description: '',
+    fullDescription: '',
+    level: 'Beginner',
+    duration: '0h',
+    totalLessons: 0,
+    totalTests: 0,
+    image: '',
+    color: 'blue',
+    requirements: [],
+    objectives: [],
+    chapters: []
+  });
+  const [loading, setLoading] = useState(true);
+  const [enrolled, setEnrolled] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
   const [progress, setProgress] = useState(0);
-  
-  const { data: courseData, isLoading, error } = useQuery({
-    queryKey: ['course', courseId],
-    queryFn: async () => {
-      try {
-        const { data: courseDetails, error: courseError } = await supabase
-          .from('courses')
-          .select('*')
-          .eq('id', courseId)
-          .single();
-        
-        if (courseError) throw courseError;
-        
-        const { data: chaptersData, error: chaptersError } = await supabase
-          .from('chapters')
-          .select('*')
-          .eq('course_id', courseId)
-          .order('order_index', { ascending: true });
-        
-        if (chaptersError) throw chaptersError;
-        
-        const chaptersWithLessons = await Promise.all(chaptersData.map(async (chapter) => {
-          const { data: lessonsData, error: lessonsError } = await supabase
-            .from('lessons')
-            .select('*')
-            .eq('chapter_id', chapter.id)
-            .order('order_index', { ascending: true });
-          
-          if (lessonsError) throw lessonsError;
-          
-          let lessonsWithProgress = lessonsData.map(lesson => ({
-            ...lesson,
-            completed: false
-          }));
-          
-          if (currentUser) {
-            const { data: progressData, error: progressError } = await supabase
-              .from('user_lesson_progress')
-              .select('*')
-              .eq('user_id', currentUser.id)
-              .eq('course_id', courseId)
-              .in('lesson_id', lessonsData.map(lesson => lesson.id));
-            
-            if (!progressError && progressData) {
-              lessonsWithProgress = lessonsData.map(lesson => {
-                const lessonProgress = progressData.find(p => p.lesson_id === lesson.id);
-                return {
-                  ...lesson,
-                  completed: lessonProgress ? lessonProgress.completed : false
-                };
-              });
-            }
-          }
-          
-          return {
-            id: chapter.id,
-            title: chapter.title,
-            description: chapter.description || '',
-            lessons: lessonsWithProgress.map(lesson => ({
-              id: lesson.id,
-              title: lesson.title,
-              type: (lesson.type === 'lesson' || lesson.type === 'video' || lesson.type === 'test') 
-                ? lesson.type as 'lesson' | 'test' | 'video'
-                : 'lesson',
-              duration: lesson.duration,
-              completed: lesson.completed || false,
-              questions: lesson.type === 'test' ? 10 : undefined
-            }))
-          };
-        }));
-        
-        let totalLessons = 0;
-        let totalTests = 0;
-        
-        chaptersWithLessons.forEach(chapter => {
-          chapter.lessons.forEach(lesson => {
-            if (lesson.type === 'test') {
-              totalTests++;
-            } else {
-              totalLessons++;
-            }
-          });
-        });
-        
-        return {
-          id: courseDetails.id,
-          title: courseDetails.title,
-          description: courseDetails.description,
-          fullDescription: courseDetails.full_description || courseDetails.description,
-          level: courseDetails.level,
-          duration: courseDetails.duration,
-          totalLessons,
-          totalTests,
-          image: courseDetails.thumbnail_url || '/placeholder.svg',
-          color: courseDetails.category === 'JavaScript' ? '#F7DF1E' : 
-                 courseDetails.category === 'React' ? '#61DAFB' : 
-                 courseDetails.category === 'Node' ? '#339933' : '#3182CE',
-          requirements: courseDetails.requirements || [
-            'Máy tính có kết nối internet',
-            'Kiến thức cơ bản về máy tính',
-            'Không cần kinh nghiệm lập trình trước đó'
-          ],
-          objectives: courseDetails.objectives || [
-            'Hiểu cách hoạt động của web',
-            'Xây dựng trang web từ đầu',
-            'Làm việc với dữ liệu động',
-            'Xử lý form và validate dữ liệu'
-          ],
-          chapters: chaptersWithLessons
-        } as DisplayCourse;
-      } catch (error) {
-        console.error('Error fetching course:', error);
-        toast.error('Không thể tải dữ liệu khóa học');
-        throw error;
-      }
-    },
-    enabled: !!courseId,
-    retry: 1
-  });
-  
-  const { data: userProgress } = useQuery({
-    queryKey: ['courseProgress', courseId, currentUser?.id],
-    queryFn: () => {
-      if (!courseId || !currentUser) return { success: false, progress: 0 };
-      return getCourseProgress(currentUser.id, courseId);
-    },
-    enabled: !!courseId && !!currentUser?.id
-  });
-  
+  const [activeTab, setActiveTab] = useState('overview');
+  const { toast } = useToast();
+
   useEffect(() => {
-    if (courseData) {
-      setCourse(courseData);
-      
-      if (userProgress && userProgress.success) {
-        setProgress(userProgress.progress);
-      } else if (courseData.chapters) {
-        let completedLessons = 0;
-        let totalLessons = 0;
-        
-        courseData.chapters.forEach(chapter => {
-          chapter.lessons.forEach(lesson => {
-            if (lesson.type === 'lesson' || lesson.type === 'video') {
-              totalLessons++;
-              if (lesson.completed) completedLessons++;
-            }
+    const checkEnrollmentStatus = async () => {
+      if (!user || !courseId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Check if user is enrolled in the course
+        const { data, error } = await supabase
+          .from('user_courses')
+          .select('progress_percentage')
+          .eq('user_id', user.id)
+          .eq('course_id', courseId)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error checking enrollment:', error);
+          toast({
+            title: "Lỗi kiểm tra trạng thái",
+            description: "Đã có lỗi xảy ra khi kiểm tra trạng thái đăng ký khóa học.",
+            variant: "destructive"
           });
-        });
-        
-        const calculatedProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
-        setProgress(calculatedProgress);
-      }
-    }
-  }, [courseData, userProgress]);
-  
-  const getNextLesson = () => {
-    if (!course) return { chapter: '', lesson: '' };
-    
-    for (const chapter of course.chapters) {
-      for (const lesson of chapter.lessons) {
-        if ((lesson.type === 'lesson' || lesson.type === 'video') && !lesson.completed) {
-          return { chapter: chapter.id, lesson: lesson.id };
         }
+
+        if (data) {
+          setEnrolled(true);
+          setProgress(data.progress_percentage || 0);
+        } else {
+          setEnrolled(false);
+          setProgress(0);
+        }
+      } catch (error) {
+        console.error('Error in enrollment check:', error);
+        toast({
+          title: "Lỗi kiểm tra trạng thái",
+          description: "Đã có lỗi xảy ra khi kiểm tra trạng thái đăng ký khóa học.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+
+    checkEnrollmentStatus();
+  }, [courseId, user, toast]);
+
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      try {
+        setLoading(true);
+        console.log('Fetching course data for:', courseId);
+        
+        // Use the new fetchCourseContent function for better structured data
+        if (courseId) {
+          const courseContent = await fetchCourseContent(courseId);
+          
+          if (courseContent) {
+            // Transform API data to match our display model
+            const formattedChapters: DisplayChapter[] = courseContent.chapters.map(chapter => ({
+              id: chapter.id,
+              title: chapter.title,
+              description: chapter.description || '',
+              lessons: chapter.lessons.map(lesson => ({
+                id: lesson.id,
+                title: lesson.title,
+                type: lesson.type as 'lesson' | 'test' | 'video',
+                duration: lesson.duration,
+                completed: false, // Will be updated if user is enrolled
+                questions: lesson.type === 'test' ? 
+                  chapter.tests?.filter(test => test.chapter_id === chapter.id)?.length || 0 : 0
+              }))
+            }));
+            
+            // Calculate total lessons and tests
+            let totalLessons = 0;
+            let totalTests = 0;
+            
+            formattedChapters.forEach(chapter => {
+              chapter.lessons.forEach(lesson => {
+                if (lesson.type === 'lesson' || lesson.type === 'video') {
+                  totalLessons++;
+                } else if (lesson.type === 'test') {
+                  totalTests++;
+                }
+              });
+            });
+            
+            setCourse({
+              id: courseContent.id,
+              title: courseContent.title,
+              description: courseContent.description,
+              fullDescription: courseContent.full_description || courseContent.description,
+              level: courseContent.level,
+              duration: courseContent.duration,
+              totalLessons,
+              totalTests,
+              image: courseContent.thumbnail_url || '/placeholder.svg',
+              color: getCourseColor(courseContent.category),
+              requirements: courseContent.requirements || [],
+              objectives: courseContent.objectives || [],
+              chapters: formattedChapters
+            } as DisplayCourse);
+            
+            console.log('Course data loaded successfully');
+          } else {
+            console.error('No course found with ID:', courseId);
+            navigate('/courses');
+            toast({
+              title: "Khóa học không tồn tại",
+              description: "Không tìm thấy khóa học này.",
+              variant: "destructive"
+            });
+          }
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching course data:', error);
+        setLoading(false);
+        toast({
+          title: "Lỗi tải dữ liệu",
+          description: "Đã có lỗi xảy ra khi tải thông tin khóa học.",
+          variant: "destructive"
+        });
+      }
+    };
     
-    if (course.chapters.length > 0 && course.chapters[0].lessons.length > 0) {
-      return { 
-        chapter: course.chapters[0].id, 
-        lesson: course.chapters[0].lessons[0].id 
-      };
+    fetchCourseData();
+  }, [courseId, navigate, toast]);
+
+  const handleEnroll = async () => {
+    setEnrolling(true);
+    try {
+      // Add user to course
+      const { error } = await supabase
+        .from('user_courses')
+        .upsert({
+          user_id: user?.id,
+          course_id: courseId,
+          progress_percentage: 0,
+          enrolled_at: new Date().toISOString(),
+          last_accessed: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error enrolling in course:', error);
+        toast({
+          title: "Lỗi đăng ký",
+          description: "Đã có lỗi xảy ra khi đăng ký khóa học.",
+          variant: "destructive"
+        });
+      } else {
+        setEnrolled(true);
+        setProgress(0);
+        toast({
+          title: "Đăng ký thành công",
+          description: "Bạn đã đăng ký khóa học thành công!",
+        });
+      }
+    } catch (error) {
+      console.error('Error during enrollment:', error);
+      toast({
+        title: "Lỗi đăng ký",
+        description: "Đã có lỗi xảy ra khi đăng ký khóa học.",
+        variant: "destructive"
+      });
+    } finally {
+      setEnrolling(false);
     }
-    
-    return { chapter: '', lesson: '' };
   };
-  
-  const getLessonTypeColor = (type: string, completed: boolean): string => {
-    if (completed) return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
-    if (type === 'test') return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
-    if (type === 'video') return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400";
-    return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
-  };
-  
-  const getLessonIcon = (type: string, completed: boolean) => {
-    if (completed) return <Check className="h-4 w-4" />;
-    if (type === 'test') return <FileText className="h-4 w-4" />;
-    if (type === 'video') return <Play className="h-4 w-4" />;
-    return <BookOpen className="h-4 w-4" />;
-  };
-  
-  const nextLesson = getNextLesson();
-  
-  if (isLoading) {
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen bg-background">
         <Navbar />
-        <main className="flex-grow flex items-center justify-center">
-          <div className="flex flex-col items-center">
-            <Loader2 className="h-12 w-12 animate-spin text-green-500 mb-4" />
-            <p className="text-gray-500">Đang tải khóa học...</p>
+        <div className="container max-w-screen-xl mx-auto px-4 pt-24 pb-10">
+          <div className="animate-pulse space-y-4">
+            <div className="h-10 bg-muted rounded w-1/3"></div>
+            <div className="h-4 bg-muted rounded w-1/2"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-40 bg-muted rounded"></div>
+              ))}
+            </div>
           </div>
-        </main>
-        <Footer />
+        </div>
       </div>
     );
   }
-  
-  if (error || !course) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-grow flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Không tìm thấy khóa học</h2>
-            <p className="text-gray-500 mb-6">Không thể tải dữ liệu khóa học hoặc khóa học không tồn tại.</p>
-            <Button asChild>
-              <Link to="/courses">Trở về trang khóa học</Link>
-            </Button>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-  
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      
-      <main className="flex-grow">
-        <div className="w-full py-16 relative overflow-hidden">
-          <div 
-            className="absolute inset-0 -z-10" 
-            style={{ 
-              background: course.color,
-              opacity: 0.9 
-            }}
-          ></div>
-          <div className="absolute inset-0 -z-5 opacity-20">
-            <div className="absolute right-[10%] top-1/4 w-40 h-40 rounded-full bg-white/20 blur-xl"></div>
-            <div className="absolute left-[5%] bottom-1/4 w-32 h-32 rounded-full bg-white/10 blur-xl"></div>
-          </div>
-          <div className="container mx-auto px-4 relative z-10 text-white">
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-              <div className="w-20 h-20 flex items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
-                <Code className="h-10 w-10" />
-              </div>
-              <div className="flex-grow">
-                <h1 className="text-3xl md:text-4xl font-bold">{course.title}</h1>
-                <p className="mt-2 text-white/80 max-w-3xl">{course.description}</p>
-                <div className="flex flex-wrap gap-4 mt-4">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-white/20 text-white border-white/40">
-                      {course.level}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-white/20 text-white border-white/40">
-                      {course.duration}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-white/20 text-white border-white/40">
-                      {course.totalLessons} bài học
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="bg-white/20 text-white border-white/40">
-                      {course.totalTests} bài kiểm tra
-                    </Badge>
-                  </div>
+      <div className="pt-16">
+        {/* Course Hero Header */}
+        <div className={`bg-${course.color}-50 dark:bg-${course.color}-900/10 py-12 border-b`}>
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col md:flex-row items-start gap-8">
+              {/* Course Image */}
+              <div className="w-full md:w-1/3 lg:w-1/4">
+                <div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg">
+                  <img
+                    src={course.image || '/placeholder.svg'}
+                    alt={course.title}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
-              <div className="md:w-48 w-full mt-4 md:mt-0">
-                <Button 
-                  size="lg" 
-                  className="w-full bg-white hover:bg-white/90 text-blue-600"
-                  onClick={() => {
-                    if (nextLesson.chapter && nextLesson.lesson) {
-                      navigate(`/course/${courseId}/chapter/${nextLesson.chapter}/lesson/${nextLesson.lesson}`);
-                    } else {
-                      toast.error("Không tìm thấy bài học");
-                    }
-                  }}
-                >
-                  {progress > 0 ? "Tiếp Tục Học" : "Bắt Đầu Học"}
-                </Button>
-                <div className="mt-3">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Tiến độ</span>
-                    <span>{progress}%</span>
+              
+              {/* Course Info */}
+              <div className="flex-1">
+                <div className="space-y-4">
+                  <h1 className="text-3xl font-bold tracking-tight">{course.title}</h1>
+                  <p className="text-muted-foreground">{course.description}</p>
+                  
+                  <div className="flex flex-wrap gap-3">
+                    <Badge variant="outline" className="text-xs">
+                      <Zap className="h-3 w-3 mr-1" />
+                      {course.level}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {course.duration}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      <BookOpen className="h-3 w-3 mr-1" />
+                      {course.totalLessons} Bài học
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      <FileText className="h-3 w-3 mr-1" />
+                      {course.totalTests} Bài kiểm tra
+                    </Badge>
                   </div>
-                  <Progress value={progress} className="h-2 bg-white/30" />
+                  
+                  {enrolled ? (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Tiến độ khóa học</span>
+                          <span>{progress}%</span>
+                        </div>
+                        <Progress value={progress} className="h-2" />
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-3">
+                        <Button 
+                          onClick={() => navigate(`/course/${courseId}/chapter/${course.chapters[0]?.id}/lesson/${course.chapters[0]?.lessons[0]?.id}`)}
+                        >
+                          {progress > 0 ? 'Tiếp tục học' : 'Bắt đầu khóa học'}
+                        </Button>
+                        
+                        <Button variant="outline" onClick={() => navigate(`/course/${courseId}/test`)}>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Kiểm tra tổng quát
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button 
+                      onClick={handleEnroll} 
+                      disabled={enrolling}
+                      className="mt-2"
+                    >
+                      {enrolling ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Đang xử lý
+                        </>
+                      ) : (
+                        'Đăng ký khóa học'
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
         
+        {/* Course Content */}
         <div className="container mx-auto px-4 py-10">
-          <Tabs defaultValue="content">
-            <TabsList className="mb-8">
-              <TabsTrigger value="content">Nội Dung Khóa Học</TabsTrigger>
-              <TabsTrigger value="overview">Tổng Quan</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="content">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
-                  <h2 className="text-2xl font-bold mb-6">Chương Trình Học</h2>
-                  <div className="space-y-6">
-                    {course.chapters.map(chapter => (
-                      <div key={chapter.id} className="chapter-card">
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-lg font-medium">Chương {chapter.id.slice(-2)}: {chapter.title}</h3>
-                          <Badge variant="outline">
-                            {chapter.lessons.length} bài học
-                          </Badge>
-                        </div>
-                        <p className="text-muted-foreground mb-4">{chapter.description}</p>
-                        <Separator className="my-4" />
-                        <div className="space-y-1">
-                          {chapter.lessons.map(lesson => (
-                            <Button 
-                              key={lesson.id} 
-                              variant="ghost" 
-                              className="w-full justify-start text-left h-auto py-3"
-                              onClick={() => navigate(`/course/${courseId}/chapter/${chapter.id}/lesson/${lesson.id}`)}
-                            >
-                              <div className={`w-8 h-8 flex items-center justify-center rounded-full mr-3 ${getLessonTypeColor(lesson.type, lesson.completed)}`}>
-                                {getLessonIcon(lesson.type, lesson.completed)}
-                              </div>
-                              <div className="flex-grow">
-                                <div className="font-medium">{lesson.title}</div>
-                                <div className="text-xs text-muted-foreground flex items-center mt-1">
-                                  {lesson.type === 'lesson' ? (
-                                    <BookOpen className="h-3 w-3 mr-1" />
-                                  ) : lesson.type === 'video' ? (
-                                    <Play className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <FileText className="h-3 w-3 mr-1" />
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Main Content */}
+            <div className="lg:w-2/3 space-y-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="w-full border-b rounded-none justify-start">
+                  <TabsTrigger value="overview" className="text-base">Tổng quan</TabsTrigger>
+                  <TabsTrigger value="content" className="text-base">Nội dung khóa học</TabsTrigger>
+                </TabsList>
+                <TabsContent value="overview" className="space-y-6 pt-4">
+                  <div>
+                    <h2 className="text-2xl font-semibold mb-4">Giới thiệu khóa học</h2>
+                    <div className="prose dark:prose-invert max-w-none">
+                      <p>{course.fullDescription}</p>
+                    </div>
+                  </div>
+                  
+                  {course.objectives.length > 0 && (
+                    <div>
+                      <h2 className="text-2xl font-semibold mb-4">Bạn sẽ học được gì</h2>
+                      <ul className="space-y-2">
+                        {course.objectives.map((objective, index) => (
+                          <li key={index} className="flex items-start">
+                            <CheckCircle className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
+                            <span>{objective}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {course.requirements.length > 0 && (
+                    <div>
+                      <h2 className="text-2xl font-semibold mb-4">Yêu cầu</h2>
+                      <ul className="space-y-2">
+                        {course.requirements.map((req, index) => (
+                          <li key={index} className="flex items-start">
+                            <Info className="h-5 w-5 text-blue-500 mr-2 shrink-0 mt-0.5" />
+                            <span>{req}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="content" className="pt-4">
+                  <h2 className="text-2xl font-semibold mb-4">Nội dung khóa học</h2>
+                  
+                  <Accordion type="multiple" className="w-full">
+                    {course.chapters.map((chapter, chapterIndex) => (
+                      <AccordionItem key={chapter.id} value={`chapter-${chapterIndex}`}>
+                        <AccordionTrigger className="text-base hover:no-underline">
+                          <div className="text-left">
+                            <div className="font-semibold">Phần {chapterIndex + 1}: {chapter.title}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {chapter.lessons.length} bài học
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-1 pt-2">
+                            {chapter.description && (
+                              <p className="text-sm text-muted-foreground mb-3">{chapter.description}</p>
+                            )}
+                            
+                            {chapter.lessons.map((lesson, lessonIndex) => {
+                              const isAvailable = enrolled || lessonIndex === 0;
+                              const lessonUrl = enrolled ? 
+                                `/course/${courseId}/chapter/${chapter.id}/lesson/${lesson.id}` : 
+                                null;
+                                
+                              return (
+                                <div 
+                                  key={lesson.id} 
+                                  className={`flex items-center p-2 rounded-md ${
+                                    isAvailable ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-60'
+                                  }`}
+                                  onClick={() => isAvailable && lessonUrl && navigate(lessonUrl)}
+                                >
+                                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-muted mr-3">
+                                    {lesson.type === 'video' && <Video className="h-4 w-4" />}
+                                    {lesson.type === 'lesson' && <BookOpen className="h-4 w-4" />}
+                                    {lesson.type === 'test' && <FileText className="h-4 w-4" />}
+                                  </div>
+                                  
+                                  <div className="flex-1">
+                                    <div className="text-sm font-medium flex items-center">
+                                      {lesson.title}
+                                      {lesson.completed && (
+                                        <CheckCircle className="h-4 w-4 text-green-500 ml-2" />
+                                      )}
+                                    </div>
+                                    <div className="flex items-center text-xs text-muted-foreground mt-0.5">
+                                      <Clock className="h-3 w-3 mr-1" />
+                                      {lesson.duration}
+                                      
+                                      {lesson.type === 'test' && lesson.questions > 0 && (
+                                        <span className="ml-2 flex items-center">
+                                          <FileText className="h-3 w-3 mr-1" />
+                                          {lesson.questions} câu hỏi
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {!isAvailable && (
+                                    <Lock className="h-4 w-4 text-muted-foreground" />
                                   )}
-                                  {lesson.type === 'lesson' ? 'Bài học' : 
-                                   lesson.type === 'video' ? 'Video' : 'Bài kiểm tra'} • {lesson.duration}
-                                  {lesson.type === 'test' && lesson.questions && ` • ${lesson.questions} câu hỏi`}
                                 </div>
-                              </div>
-                              {lesson.completed ? (
-                                <Badge variant="outline" className="ml-2 bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800">
-                                  Hoàn thành
-                                </Badge>
-                              ) : (
-                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                              )}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
+                              );
+                            })}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
                     ))}
-                  </div>
-                </div>
-                <div>
-                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6 sticky top-24">
-                    <h3 className="text-lg font-medium mb-4 flex items-center">
-                      <Trophy className="h-5 w-5 mr-2 text-yellow-500" />
-                      Sẽ học được gì?
-                    </h3>
-                    <ul className="space-y-3">
-                      {course.objectives.map((objective, index) => (
-                        <li key={index} className="flex">
-                          <Check className="h-5 w-5 mr-2 text-green-500 flex-shrink-0" />
-                          <span>{objective}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Separator className="my-6" />
-                    <h3 className="text-lg font-medium mb-4">Yêu cầu</h3>
-                    <ul className="space-y-3">
-                      {course.requirements.map((requirement, index) => (
-                        <li key={index} className="flex">
-                          <ChevronRight className="h-5 w-5 mr-2 text-blue-500 flex-shrink-0" />
-                          <span>{requirement}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
+                  </Accordion>
+                </TabsContent>
+              </Tabs>
+            </div>
             
-            <TabsContent value="overview">
-              <div className="max-w-3xl">
-                <h2 className="text-2xl font-bold mb-4">Giới Thiệu Về Khóa Học</h2>
-                <p className="text-muted-foreground mb-6">{course.fullDescription}</p>
-                <h3 className="text-xl font-semibold mt-8 mb-4">Ai nên học khóa học này?</h3>
-                <div className="space-y-4">
-                  <div className="flex">
-                    <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mr-4 flex-shrink-0">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Người mới bắt đầu học lập trình</h4>
-                      <p className="text-muted-foreground">Nếu bạn chưa có kinh nghiệm lập trình, đây là điểm bắt đầu lý tưởng cho hành trình học code của bạn.</p>
-                    </div>
+            {/* Sidebar */}
+            <div className="lg:w-1/3 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Thông tin khóa học</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Cấp độ</span>
+                    <span className="font-medium">{course.level}</span>
                   </div>
-                  <div className="flex">
-                    <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mr-4 flex-shrink-0">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Người muốn xây dựng ứng dụng</h4>
-                      <p className="text-muted-foreground">Bạn sẽ học cách tạo nền tảng cho ứng dụng của mình với các công nghệ hiện đại.</p>
-                    </div>
+                  <Separator />
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Tổng thời gian</span>
+                    <span className="font-medium">{course.duration}</span>
                   </div>
-                  <div className="flex">
-                    <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center mr-4 flex-shrink-0">
-                      <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Người học chuyển ngành</h4>
-                      <p className="text-muted-foreground">Nếu bạn đang chuyển đổi sang lĩnh vực phát triển phần mềm, đây là khóa học cơ bản bạn cần phải nắm vững.</p>
-                    </div>
+                  <Separator />
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Số bài học</span>
+                    <span className="font-medium">{course.totalLessons}</span>
                   </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+                  <Separator />
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Bài kiểm tra</span>
+                    <span className="font-medium">{course.totalTests}</span>
+                  </div>
+                  
+                  {enrolled && (
+                    <>
+                      <Separator />
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Tiến độ</span>
+                        <span className="font-medium">{progress}%</span>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+                
+                {!enrolled && (
+                  <CardFooter>
+                    <Button 
+                      onClick={handleEnroll} 
+                      disabled={enrolling}
+                      className="w-full"
+                    >
+                      {enrolling ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Đang xử lý
+                        </>
+                      ) : (
+                        'Đăng ký khóa học'
+                      )}
+                    </Button>
+                  </CardFooter>
+                )}
+              </Card>
+            </div>
+          </div>
         </div>
-      </main>
-      
-      <Footer />
+      </div>
     </div>
   );
 };

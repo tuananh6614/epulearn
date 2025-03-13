@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +20,7 @@ const UserProfile = lazy(() => import("./pages/UserProfile"));
 const Certification = lazy(() => import("./pages/Certification"));
 const VipCourses = lazy(() => import("./pages/VipCourses"));
 const ChapterTestPage = lazy(() => import("./pages/ChapterTestPage"));
+const CourseTest = lazy(() => import("./pages/CourseTest"));
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -46,74 +46,86 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              
-              {/* Public routes */}
-              <Route path="/courses" element={<Courses />} />
-              <Route path="/certification" element={<Certification />} />
-              
-              {/* Protected routes - require login */}
-              <Route path="/course/:courseId" element={
-                <ProtectedRoute>
-                  <CourseDetail />
-                </ProtectedRoute>
-              } />
-              <Route path="/my-courses" element={
-                <ProtectedRoute>
-                  <MyCourses />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <UserProfile />
-                </ProtectedRoute>
-              } />
-              
-              {/* Course lessons */}
-              <Route path="/course/:courseId/chapter/:chapterId/lesson/:lessonId" element={
-                <ProtectedRoute>
-                  <LessonDetail />
-                </ProtectedRoute>
-              } />
-              <Route path="/lesson-demo" element={<LessonDemo />} />
-              <Route path="/demo" element={<LessonDemo />} />
-              
-              {/* Chapter test route */}
-              <Route path="/course/:courseId/chapter/:chapterId/test" element={
-                <ProtectedRoute>
-                  <ChapterTestPage />
-                </ProtectedRoute>
-              } />
-              
-              {/* Update route path for certificates */}
-              <Route path="/profile/certificates" element={
-                <ProtectedRoute>
-                  <Navigate to="/profile" replace />
-                </ProtectedRoute>
-              } />
-              
-              {/* VIP courses route */}
-              <Route path="/vip-courses" element={<VipCourses />} />
-              
-              {/* Catch-all route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <Toaster />
+            <Sonner />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                
+                {/* Public routes */}
+                <Route path="/courses" element={<Courses />} />
+                <Route path="/certification" element={<Certification />} />
+                
+                {/* Protected routes - require login */}
+                <Route path="/course/:courseId" element={
+                  <ProtectedRoute>
+                    <CourseDetail />
+                  </ProtectedRoute>
+                } />
+                <Route path="/my-courses" element={
+                  <ProtectedRoute>
+                    <MyCourses />
+                  </ProtectedRoute>
+                } />
+                <Route path="/profile" element={
+                  <ProtectedRoute>
+                    <UserProfile />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Course lessons */}
+                <Route path="/course/:courseId/chapter/:chapterId/lesson/:lessonId" element={
+                  <ProtectedRoute>
+                    <LessonDetail />
+                  </ProtectedRoute>
+                } />
+                <Route path="/lesson-demo" element={<LessonDemo />} />
+                <Route path="/demo" element={<LessonDemo />} />
+                
+                {/* Chapter test route */}
+                <Route path="/course/:courseId/chapter/:chapterId/test" element={
+                  <ProtectedRoute>
+                    <ChapterTestPage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Course test route */}
+                <Route path="/course/:courseId/test" element={<CourseTest />} />
+                
+                {/* Chapter test route with lessonId */}
+                <Route path="/course/:courseId/chapter/:chapterId/test/:lessonId" element={
+                  <ProtectedRoute>
+                    <ChapterTestPage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Update route path for certificates */}
+                <Route path="/profile/certificates" element={
+                  <ProtectedRoute>
+                    <Navigate to="/profile" replace />
+                  </ProtectedRoute>
+                } />
+                
+                {/* VIP courses route */}
+                <Route path="/vip-courses" element={<VipCourses />} />
+                
+                {/* Catch-all route */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

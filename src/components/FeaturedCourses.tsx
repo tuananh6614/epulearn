@@ -5,7 +5,7 @@ import { ArrowRight, RefreshCw } from "lucide-react";
 import CourseCard from './CourseCard';
 import { Link } from "react-router-dom";
 import { toast } from 'sonner';
-import { fetchFeaturedCourses } from '@/services/apiUtils';
+import { fetchFeaturedCourses } from '@/integrations/supabase/apiUtils';
 import { Course } from '@/models/lesson';
 import { supabase } from '@/integrations/supabase/client';
 

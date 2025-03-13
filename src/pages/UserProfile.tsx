@@ -13,6 +13,8 @@ import UserSidebar from '@/components/UserSidebar';
 import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 const UserProfile = React.memo(() => {
   const { currentUser } = useAuth();
@@ -91,8 +93,10 @@ const UserProfile = React.memo(() => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Navbar />
+      
+      <div className="container mx-auto px-4 py-8 pt-24">
         {hasError && (
           <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 flex items-center">
             <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
@@ -172,6 +176,8 @@ const UserProfile = React.memo(() => {
           </div>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 });

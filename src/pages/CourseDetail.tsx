@@ -1,19 +1,25 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, BookOpen, Check, Play, FileText, Code, Trophy } from 'lucide-react';
+import { ChevronRight, BookOpen, Check, Play, FileText, Code, Trophy, Loader2 } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { getCourseProgress } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 // Định nghĩa kiểu cho bài học
 interface Lesson {
   id: string;
   title: string;
-  type: 'lesson' | 'test';
+  type: 'lesson' | 'test' | 'video';
   duration: string;
   completed: boolean;
   questions?: number; // Chỉ áp dụng cho bài test
@@ -21,7 +27,7 @@ interface Lesson {
 
 // Định nghĩa kiểu cho chương học
 interface Chapter {
-  id: number;
+  id: string;
   title: string;
   description: string;
   lessons: Lesson[];
@@ -44,60 +50,220 @@ interface Course {
   chapters: Chapter[];
 }
 
-// Hàm tính tiến độ dựa trên danh sách chương và bài học
-const calculateProgress = (chapters: Chapter[]): number => {
-  let completedLessons = 0;
-  let totalLessons = 0;
-  
-  chapters.forEach(chapter => {
-    chapter.lessons.forEach((lesson) => {
-      if (lesson.type === 'lesson') {
-        totalLessons++;
-        if (lesson.completed) completedLessons++;
-      }
-    });
-  });
-  
-  return totalLessons ? Math.round((completedLessons / totalLessons) * 100) : 0;
-};
-
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
-  const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   
-  useEffect(() => {
-    setLoading(true);
-    
-    // Lấy dữ liệu từ API thật (thay URL dưới đây bằng endpoint của bạn)
-    fetch(`http://localhost:3000/api/courses/${courseId}`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Không thể tải dữ liệu khóa học");
-        }
-        return response.json();
-      })
-      .then((data: Course) => {
-        setCourse(data);
-        setProgress(calculateProgress(data.chapters));
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error("Lỗi khi tải dữ liệu:", error);
-        setLoading(false);
-      });
-  }, [courseId]);
+  // Fetch course data
+  const { data: courseData, isLoading, error } = useQuery({
+    queryKey: ['course', courseId],
+    queryFn: async () => {
+      try {
+        // First, fetch the course details
+        const { data: courseDetails, error: courseError } = await supabase
+          .from('courses')
+          .select('*')
+          .eq('id', courseId)
+          .single();
+        
+        if (courseError) throw courseError;
+        
+        // Then fetch the chapters for this course
+        const { data: chaptersData, error: chaptersError } = await supabase
+          .from('chapters')
+          .select('*')
+          .eq('course_id', courseId)
+          .order('order_index', { ascending: true });
+        
+        if (chaptersError) throw chaptersError;
+        
+        // For each chapter, fetch its lessons
+        const chaptersWithLessons = await Promise.all(chaptersData.map(async (chapter) => {
+          const { data: lessonsData, error: lessonsError } = await supabase
+            .from('lessons')
+            .select('*')
+            .eq('chapter_id', chapter.id)
+            .order('order_index', { ascending: true });
+          
+          if (lessonsError) throw lessonsError;
+          
+          // If user is logged in, fetch their lesson progress
+          let lessonsWithProgress = lessonsData;
+          
+          if (currentUser) {
+            const { data: progressData, error: progressError } = await supabase
+              .from('user_lesson_progress')
+              .select('*')
+              .eq('user_id', currentUser.id)
+              .eq('course_id', courseId)
+              .in('lesson_id', lessonsData.map(lesson => lesson.id));
+            
+            if (!progressError && progressData) {
+              // Mark lessons as completed based on user progress
+              lessonsWithProgress = lessonsData.map(lesson => {
+                const lessonProgress = progressData.find(p => p.lesson_id === lesson.id);
+                return {
+                  ...lesson,
+                  completed: lessonProgress ? lessonProgress.completed : false
+                };
+              });
+            }
+          }
+          
+          return {
+            id: chapter.id,
+            title: chapter.title,
+            description: chapter.description || '',
+            lessons: lessonsWithProgress.map(lesson => ({
+              id: lesson.id,
+              title: lesson.title,
+              type: lesson.type,
+              duration: lesson.duration,
+              completed: lesson.completed || false,
+              questions: lesson.type === 'test' ? 10 : undefined // Mock data for questions count
+            }))
+          };
+        }));
+        
+        // Count total lessons and tests
+        let totalLessons = 0;
+        let totalTests = 0;
+        
+        chaptersWithLessons.forEach(chapter => {
+          chapter.lessons.forEach(lesson => {
+            if (lesson.type === 'test') {
+              totalTests++;
+            } else {
+              totalLessons++;
+            }
+          });
+        });
+        
+        // Construct the course object
+        return {
+          id: courseDetails.id,
+          title: courseDetails.title,
+          description: courseDetails.description,
+          fullDescription: courseDetails.full_description || courseDetails.description,
+          level: courseDetails.level,
+          duration: courseDetails.duration,
+          totalLessons,
+          totalTests,
+          image: courseDetails.thumbnail_url || '/placeholder.svg',
+          color: courseDetails.category === 'JavaScript' ? '#F7DF1E' : 
+                 courseDetails.category === 'React' ? '#61DAFB' : 
+                 courseDetails.category === 'Node' ? '#339933' : '#3182CE',
+          requirements: courseDetails.requirements || [
+            'Máy tính có kết nối internet',
+            'Kiến thức cơ bản về máy tính',
+            'Không cần kinh nghiệm lập trình trước đó'
+          ],
+          objectives: courseDetails.objectives || [
+            'Hiểu cách hoạt động của web',
+            'Xây dựng trang web từ đầu',
+            'Làm việc với dữ liệu động',
+            'Xử lý form và validate dữ liệu'
+          ],
+          chapters: chaptersWithLessons
+        };
+      } catch (error) {
+        console.error('Error fetching course:', error);
+        toast.error('Không thể tải dữ liệu khóa học');
+        throw error;
+      }
+    },
+    enabled: !!courseId,
+    retry: 1
+  });
   
-  if (loading) {
+  // Fetch user's progress for this course
+  const { data: userProgress } = useQuery({
+    queryKey: ['courseProgress', courseId, currentUser?.id],
+    queryFn: () => {
+      if (!courseId || !currentUser) return { success: false, progress: 0 };
+      return getCourseProgress(currentUser.id, courseId);
+    },
+    enabled: !!courseId && !!currentUser?.id
+  });
+  
+  useEffect(() => {
+    if (courseData) {
+      setCourse(courseData);
+      
+      // Set progress from user data or calculate it
+      if (userProgress && userProgress.success) {
+        setProgress(userProgress.progress);
+      } else if (courseData.chapters) {
+        // Calculate progress based on completed lessons
+        let completedLessons = 0;
+        let totalLessons = 0;
+        
+        courseData.chapters.forEach(chapter => {
+          chapter.lessons.forEach(lesson => {
+            if (lesson.type === 'lesson' || lesson.type === 'video') {
+              totalLessons++;
+              if (lesson.completed) completedLessons++;
+            }
+          });
+        });
+        
+        const calculatedProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+        setProgress(calculatedProgress);
+      }
+    }
+  }, [courseData, userProgress]);
+  
+  // Xác định bài học tiếp theo để học
+  const getNextLesson = () => {
+    if (!course) return { chapter: '', lesson: '' };
+    
+    for (const chapter of course.chapters) {
+      for (const lesson of chapter.lessons) {
+        if ((lesson.type === 'lesson' || lesson.type === 'video') && !lesson.completed) {
+          return { chapter: chapter.id, lesson: lesson.id };
+        }
+      }
+    }
+    
+    // Nếu đã hoàn thành tất cả bài học, trả về bài học đầu tiên
+    if (course.chapters.length > 0 && course.chapters[0].lessons.length > 0) {
+      return { 
+        chapter: course.chapters[0].id, 
+        lesson: course.chapters[0].lessons[0].id 
+      };
+    }
+    
+    return { chapter: '', lesson: '' };
+  };
+  
+  // Xác định màu và icon dựa trên loại bài học
+  const getLessonTypeColor = (type: string, completed: boolean): string => {
+    if (completed) return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+    if (type === 'test') return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
+    if (type === 'video') return "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400";
+    return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+  };
+  
+  const getLessonIcon = (type: string, completed: boolean) => {
+    if (completed) return <Check className="h-4 w-4" />;
+    if (type === 'test') return <FileText className="h-4 w-4" />;
+    if (type === 'video') return <Play className="h-4 w-4" />;
+    return <BookOpen className="h-4 w-4" />;
+  };
+  
+  const nextLesson = getNextLesson();
+  
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-grow flex items-center justify-center">
-          <div className="animate-pulse text-center">
-            <div className="h-8 w-64 bg-gray-200 dark:bg-gray-700 rounded mb-4 mx-auto"></div>
-            <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div>
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-12 w-12 animate-spin text-green-500 mb-4" />
+            <p className="text-gray-500">Đang tải khóa học...</p>
           </div>
         </main>
         <Footer />
@@ -105,13 +271,14 @@ const CourseDetail = () => {
     );
   }
   
-  if (!course) {
+  if (error || !course) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-grow flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">Không tìm thấy khóa học</h2>
+            <p className="text-gray-500 mb-6">Không thể tải dữ liệu khóa học hoặc khóa học không tồn tại.</p>
             <Button asChild>
               <Link to="/courses">Trở về trang khóa học</Link>
             </Button>
@@ -121,34 +288,6 @@ const CourseDetail = () => {
       </div>
     );
   }
-  
-  // Xác định bài học tiếp theo để học
-  const getNextLesson = (): { chapter: number; lesson: string } => {
-    for (const chapter of course.chapters) {
-      for (const lesson of chapter.lessons) {
-        if (lesson.type === 'lesson' && !lesson.completed) {
-          return { chapter: chapter.id, lesson: lesson.id };
-        }
-      }
-    }
-    // Nếu đã hoàn thành tất cả bài học, trả về bài học đầu tiên
-    return { chapter: course.chapters[0].id, lesson: course.chapters[0].lessons[0].id };
-  };
-  
-  const nextLesson = getNextLesson();
-  
-  // Xác định màu và icon dựa trên loại bài học
-  const getLessonTypeColor = (type: string, completed: boolean): string => {
-    if (completed) return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
-    if (type === 'test') return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
-    return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
-  };
-  
-  const getLessonIcon = (type: string, completed: boolean) => {
-    if (completed) return <Check className="h-4 w-4" />;
-    if (type === 'test') return <FileText className="h-4 w-4" />;
-    return <Play className="h-4 w-4" />;
-  };
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -203,7 +342,13 @@ const CourseDetail = () => {
                 <Button 
                   size="lg" 
                   className="w-full bg-white hover:bg-white/90 text-blue-600"
-                  onClick={() => navigate(`/course/${courseId}/chapter/${nextLesson.chapter}/lesson/${nextLesson.lesson}`)}
+                  onClick={() => {
+                    if (nextLesson.chapter && nextLesson.lesson) {
+                      navigate(`/course/${courseId}/chapter/${nextLesson.chapter}/lesson/${nextLesson.lesson}`);
+                    } else {
+                      toast.error("Không tìm thấy bài học");
+                    }
+                  }}
                 >
                   {progress > 0 ? "Tiếp Tục Học" : "Bắt Đầu Học"}
                 </Button>
@@ -235,7 +380,7 @@ const CourseDetail = () => {
                     {course.chapters.map(chapter => (
                       <div key={chapter.id} className="chapter-card">
                         <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-lg font-medium">Chương {chapter.id}: {chapter.title}</h3>
+                          <h3 className="text-lg font-medium">Chương {chapter.id.slice(-2)}: {chapter.title}</h3>
                           <Badge variant="outline">
                             {chapter.lessons.length} bài học
                           </Badge>
@@ -258,11 +403,14 @@ const CourseDetail = () => {
                                 <div className="text-xs text-muted-foreground flex items-center mt-1">
                                   {lesson.type === 'lesson' ? (
                                     <BookOpen className="h-3 w-3 mr-1" />
+                                  ) : lesson.type === 'video' ? (
+                                    <Play className="h-3 w-3 mr-1" />
                                   ) : (
                                     <FileText className="h-3 w-3 mr-1" />
                                   )}
-                                  {lesson.type === 'lesson' ? 'Bài học' : 'Bài kiểm tra'} • {lesson.duration}
-                                  {lesson.type === 'test' && ` • ${lesson.questions} câu hỏi`}
+                                  {lesson.type === 'lesson' ? 'Bài học' : 
+                                   lesson.type === 'video' ? 'Video' : 'Bài kiểm tra'} • {lesson.duration}
+                                  {lesson.type === 'test' && lesson.questions && ` • ${lesson.questions} câu hỏi`}
                                 </div>
                               </div>
                               {lesson.completed ? (
@@ -320,7 +468,7 @@ const CourseDetail = () => {
                     </div>
                     <div>
                       <h4 className="font-medium">Người mới bắt đầu học lập trình</h4>
-                      <p className="text-muted-foreground">Nếu bạn chưa có kinh nghiệm lập trình, HTML là điểm bắt đầu lý tưởng cho hành trình học code của bạn.</p>
+                      <p className="text-muted-foreground">Nếu bạn chưa có kinh nghiệm lập trình, đây là điểm bắt đầu lý tưởng cho hành trình học code của bạn.</p>
                     </div>
                   </div>
                   <div className="flex">
@@ -328,8 +476,8 @@ const CourseDetail = () => {
                       <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
-                      <h4 className="font-medium">Người muốn xây dựng trang web</h4>
-                      <p className="text-muted-foreground">Bạn sẽ học cách tạo nền tảng cho trang web của mình với HTML trước khi chuyển sang CSS và JavaScript.</p>
+                      <h4 className="font-medium">Người muốn xây dựng ứng dụng</h4>
+                      <p className="text-muted-foreground">Bạn sẽ học cách tạo nền tảng cho ứng dụng của mình với các công nghệ hiện đại.</p>
                     </div>
                   </div>
                   <div className="flex">
@@ -338,7 +486,7 @@ const CourseDetail = () => {
                     </div>
                     <div>
                       <h4 className="font-medium">Người học chuyển ngành</h4>
-                      <p className="text-muted-foreground">Nếu bạn đang chuyển đổi sang lĩnh vực phát triển web, đây là khóa học cơ bản bạn cần phải nắm vững.</p>
+                      <p className="text-muted-foreground">Nếu bạn đang chuyển đổi sang lĩnh vực phát triển phần mềm, đây là khóa học cơ bản bạn cần phải nắm vững.</p>
                     </div>
                   </div>
                 </div>

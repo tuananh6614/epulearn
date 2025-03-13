@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,7 +57,7 @@ const VipPlan: React.FC<VipPlanProps> = ({
       
       <CardContent className="space-y-4">
         <div className="flex items-end gap-2">
-          <span className="text-3xl font-bold">{finalPrice.toLocaleString('vi-VN')}₫</span>
+          <div className="text-3xl font-bold">{finalPrice.toLocaleString('vi-VN')}₫</div>
           {discount > 0 && (
             <span className="text-sm text-muted-foreground line-through">{price.toLocaleString('vi-VN')}₫</span>
           )}

@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SupabaseCourseResponse as ModelSupabaseCourseResponse } from '@/models/lesson';
+import { SupabaseCourseResponse } from '@/models/lesson';
 
 // Re-export the interface from models/lesson to avoid duplication
 export type { SupabaseCourseResponse } from '@/models/lesson';
@@ -27,10 +27,11 @@ export interface EnrolledCourse {
   status: string;
 }
 
-// Performance-optimized function to fetch user enrolled courses
+// Optimized function with better error handling and retry logic
 export const fetchUserEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> => {
   try {
     if (!userId) {
+      console.log('No user ID provided for fetching enrolled courses');
       return [];
     }
 
@@ -125,22 +126,34 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
 };
 
 // Function to fetch courses - optimized with specific column selection
-export const fetchCourses = async (): Promise<ModelSupabaseCourseResponse[]> => {
+export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
   try {
     const { data, error } = await supabase
       .from('courses')
-      .select('id, title, description, thumbnail_url, category, level, duration, is_premium, is_featured, created_at')
-      .order('created_at', { ascending: false });
+      .select('id, title, description, thumbnail_url, category, level, duration, is_premium, is_featured, created_at');
 
     if (error) {
       console.error('Error fetching courses:', error);
       throw error;
     }
 
+    // Transform the data to match SupabaseCourseResponse
     return data?.map(course => ({
-      ...course,
+      id: course.id,
+      title: course.title,
+      description: course.description,
       thumbnail_url: course.thumbnail_url || null,
-      status: 'published'
+      category: course.category,
+      level: course.level,
+      duration: course.duration,
+      is_premium: course.is_premium,
+      is_featured: course.is_featured, 
+      created_at: course.created_at,
+      updated_at: course.created_at, // Use created_at as fallback
+      status: 'published',
+      instructor: 'EPU Learning', // Default instructor
+      price: course.is_premium ? '299.000₫' : '0₫', // Default price
+      discount_price: course.is_premium ? '149.000₫' : null // Default discount
     })) || [];
   } catch (error) {
     console.error('Error fetching courses:', error);
@@ -149,7 +162,7 @@ export const fetchCourses = async (): Promise<ModelSupabaseCourseResponse[]> => 
 };
 
 // Function to fetch featured courses - optimized with only needed fields
-export const fetchFeaturedCourses = async (): Promise<ModelSupabaseCourseResponse[]> => {
+export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> => {
   try {
     const { data, error } = await supabase
       .from('courses')
@@ -163,10 +176,23 @@ export const fetchFeaturedCourses = async (): Promise<ModelSupabaseCourseRespons
       throw error;
     }
 
+    // Transform the data to match SupabaseCourseResponse
     return data?.map(course => ({
-      ...course,
+      id: course.id,
+      title: course.title,
+      description: course.description,
       thumbnail_url: course.thumbnail_url || null,
-      status: 'published'
+      category: course.category,
+      level: course.level,
+      duration: course.duration,
+      is_premium: course.is_premium,
+      is_featured: true, 
+      created_at: course.created_at,
+      updated_at: course.created_at, // Use created_at as fallback
+      status: 'published',
+      instructor: 'EPU Learning', // Default instructor
+      price: course.is_premium ? '299.000₫' : '0₫', // Default price
+      discount_price: course.is_premium ? '149.000₫' : null // Default discount
     })) || [];
   } catch (error) {
     console.error('Error fetching featured courses:', error);

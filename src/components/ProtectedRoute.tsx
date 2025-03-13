@@ -1,12 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { checkApiHealth } from '@/services/apiUtils';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { isMobile, isOnline, retryPromise } from '@/lib/utils';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [healthCheckAttempted, setHealthCheckAttempted] = useState(false);
   const [showEmailAlert, setShowEmailAlert] = useState(false);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   
   // Check for auth error in URL
   useEffect(() => {
@@ -48,32 +50,43 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     }
   }, [location]);
   
-  useEffect(() => {
-    const performHealthCheck = async () => {
-      try {
-        console.log("ProtectedRoute: Starting API health check");
-        const isAvailable = await checkApiHealth();
-        console.log("ProtectedRoute: API available:", isAvailable);
-        setApiAvailable(isAvailable);
-        
-        if (!isAvailable) {
-          toast.warning("Không thể kết nối đến Supabase. Vui lòng kiểm tra kết nối mạng.", {
-            duration: 8000,
-          });
-        }
-      } catch (error) {
-        console.error('API health check error:', error);
+  const performHealthCheck = useCallback(async () => {
+    try {
+      if (!isOnline()) {
         setApiAvailable(false);
-        toast.error("Lỗi kết nối đến Supabase. Hãy kiểm tra kết nối internet.", {
+        toast.warning("Không có kết nối mạng. Vui lòng kiểm tra kết nối internet của bạn.", {
           duration: 8000,
         });
-      } finally {
-        setHealthCheckAttempted(true);
+        return false;
       }
-    };
-    
-    performHealthCheck();
+
+      setIsRetrying(true);
+      const isAvailable = await retryPromise(() => checkApiHealth(), 2, 1000);
+      setApiAvailable(isAvailable);
+      
+      if (!isAvailable) {
+        toast.warning("Không thể kết nối đến Supabase. Vui lòng kiểm tra kết nối mạng.", {
+          duration: 8000,
+        });
+      }
+      
+      return isAvailable;
+    } catch (error) {
+      console.error('API health check error:', error);
+      setApiAvailable(false);
+      toast.error("Lỗi kết nối đến Supabase. Hãy kiểm tra kết nối internet.", {
+        duration: 8000,
+      });
+      return false;
+    } finally {
+      setHealthCheckAttempted(true);
+      setIsRetrying(false);
+    }
   }, []);
+  
+  useEffect(() => {
+    performHealthCheck();
+  }, [performHealthCheck]);
   
   useEffect(() => {
     if (currentUser && (currentUser.email_confirmed_at === undefined || currentUser.email_confirmed_at === null)) {
@@ -98,26 +111,52 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     }
   };
   
+  const handleRetry = () => {
+    performHealthCheck();
+  };
+  
   if (authLoading || !healthCheckAttempted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mb-4"></div>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">Đang tải...</p>
+        </div>
       </div>
     );
   }
   
-  if (apiAvailable === false) {
-    toast.warning("Không thể kết nối đến Supabase. Một số tính năng có thể không hoạt động.", {
-      duration: 10000,
-      id: "offline-mode-warning", // prevent duplicates
-    });
-    
-    if (!isAuthenticated) {
-      toast.error("Bạn cần đăng nhập để truy cập trang này");
-      return <Navigate to="/login" replace />;
-    }
-    
-    return <>{children}</>;
+  if (apiAvailable === false && !isRetrying) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500" />
+            <h2 className="text-xl font-bold">Lỗi kết nối</h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet của bạn và thử lại.
+            </p>
+            <Button 
+              onClick={handleRetry}
+              className="mt-2 w-full"
+              disabled={isRetrying}
+            >
+              {isRetrying ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang kết nối lại...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Thử lại
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
   
   if (!isAuthenticated) {
@@ -159,4 +198,4 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   );
 };
 
-export default ProtectedRoute;
+export default React.memo(ProtectedRoute);

@@ -3,31 +3,44 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Courses from "./pages/Courses";
-import CourseDetail from "./pages/CourseDetail";
-import LessonDetail from "./pages/LessonDetail";
-import LessonDemo from "./pages/LessonDemo";
-import MyCourses from "./pages/MyCourses";
-import UserProfile from "./pages/UserProfile";
-import Certification from "./pages/Certification";
-import VipCourses from "./pages/VipCourses";
-import ChapterTestPage from "./pages/ChapterTestPage";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
+
+// Lazy-loaded components for better performance
+const Index = lazy(() => import("./pages/Index"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const Courses = lazy(() => import("./pages/Courses"));
+const CourseDetail = lazy(() => import("./pages/CourseDetail"));
+const LessonDetail = lazy(() => import("./pages/LessonDetail"));
+const LessonDemo = lazy(() => import("./pages/LessonDemo"));
+const MyCourses = lazy(() => import("./pages/MyCourses"));
+const UserProfile = lazy(() => import("./pages/UserProfile"));
+const Certification = lazy(() => import("./pages/Certification"));
+const VipCourses = lazy(() => import("./pages/VipCourses"));
+const ChapterTestPage = lazy(() => import("./pages/ChapterTestPage"));
+
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+// Loading component for suspense fallback
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <Loader2 className="h-10 w-10 animate-spin text-green-500" />
+  </div>
+);
 
-// Configure query client with error handling
+// Configure query client with error handling and optimized caching
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: 2,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnMount: true,
     },
   },
 });
@@ -39,61 +52,63 @@ const App = () => (
         <AuthProvider>
           <Toaster />
           <Sonner />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            
-            {/* Public routes */}
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/certification" element={<Certification />} />
-            
-            {/* Protected routes - require login */}
-            <Route path="/course/:courseId" element={
-              <ProtectedRoute>
-                <CourseDetail />
-              </ProtectedRoute>
-            } />
-            <Route path="/my-courses" element={
-              <ProtectedRoute>
-                <MyCourses />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <UserProfile />
-              </ProtectedRoute>
-            } />
-            
-            {/* Course lessons */}
-            <Route path="/course/:courseId/chapter/:chapterId/lesson/:lessonId" element={
-              <ProtectedRoute>
-                <LessonDetail />
-              </ProtectedRoute>
-            } />
-            <Route path="/lesson-demo" element={<LessonDemo />} />
-            <Route path="/demo" element={<LessonDemo />} />
-            
-            {/* Chapter test route */}
-            <Route path="/course/:courseId/chapter/:chapterId/test" element={
-              <ProtectedRoute>
-                <ChapterTestPage />
-              </ProtectedRoute>
-            } />
-            
-            {/* Update route path for certificates */}
-            <Route path="/profile/certificates" element={
-              <ProtectedRoute>
-                <UserProfile />
-              </ProtectedRoute>
-            } />
-            
-            {/* VIP courses route */}
-            <Route path="/vip-courses" element={<VipCourses />} />
-            
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              
+              {/* Public routes */}
+              <Route path="/courses" element={<Courses />} />
+              <Route path="/certification" element={<Certification />} />
+              
+              {/* Protected routes - require login */}
+              <Route path="/course/:courseId" element={
+                <ProtectedRoute>
+                  <CourseDetail />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-courses" element={
+                <ProtectedRoute>
+                  <MyCourses />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <UserProfile />
+                </ProtectedRoute>
+              } />
+              
+              {/* Course lessons */}
+              <Route path="/course/:courseId/chapter/:chapterId/lesson/:lessonId" element={
+                <ProtectedRoute>
+                  <LessonDetail />
+                </ProtectedRoute>
+              } />
+              <Route path="/lesson-demo" element={<LessonDemo />} />
+              <Route path="/demo" element={<LessonDemo />} />
+              
+              {/* Chapter test route */}
+              <Route path="/course/:courseId/chapter/:chapterId/test" element={
+                <ProtectedRoute>
+                  <ChapterTestPage />
+                </ProtectedRoute>
+              } />
+              
+              {/* Update route path for certificates */}
+              <Route path="/profile/certificates" element={
+                <ProtectedRoute>
+                  <Navigate to="/profile" replace />
+                </ProtectedRoute>
+              } />
+              
+              {/* VIP courses route */}
+              <Route path="/vip-courses" element={<VipCourses />} />
+              
+              {/* Catch-all route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

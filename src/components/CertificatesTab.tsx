@@ -1,107 +1,107 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, FileText, Loader2, Award } from 'lucide-react';
 import { UserCertificate } from '@/services/apiUtils';
-import { toast } from 'sonner';
+import { GraduationCap, Award, Calendar, ChevronRight, Download } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { formatDate } from '@/lib/utils';
 
-interface CertificatesTabProps {
-  certificates: UserCertificate[];
-  isLoading: boolean;
+interface CertificateItemProps {
+  certificate: UserCertificate;
 }
 
-const CertificateItem = React.memo(({ certificate, onView, onDownload }: {
-  certificate: UserCertificate;
-  onView: (id: string) => void;
-  onDownload: (id: string) => void;
-}) => (
-  <div className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-950/30 dark:to-green-950/30">
-    <div className="flex justify-between items-start">
-      <div>
-        <h3 className="font-semibold">{certificate.courseName}</h3>
-        <p className="text-sm text-muted-foreground">
-          Ngày cấp: {new Date(certificate.issueDate).toLocaleDateString('vi-VN')}
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">ID: {certificate.certificateId}</p>
-      </div>
-      <div className="flex space-x-2">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex items-center gap-1" 
-          onClick={() => onView(certificate.certificateId)}
-        >
-          <FileText className="h-4 w-4" />
-          Xem
-        </Button>
-        <Button 
-          variant="default" 
-          size="sm" 
-          className="flex items-center gap-1" 
-          onClick={() => onDownload(certificate.certificateId)}
-        >
-          <Download className="h-4 w-4" />
-          Tải xuống
-        </Button>
-      </div>
-    </div>
-  </div>
-));
+const CertificateItem = React.memo(({ certificate }: CertificateItemProps) => {
+  // Parse date once
+  const formattedDate = useMemo(() => {
+    try {
+      return formatDate(new Date(certificate.issueDate));
+    } catch (e) {
+      return 'Ngày không xác định';
+    }
+  }, [certificate.issueDate]);
 
-const CertificatesTab: React.FC<CertificatesTabProps> = React.memo(({ certificates, isLoading }) => {
-  const handleDownloadCertificate = React.useCallback((certificateId: string) => {
-    console.log(`Downloading certificate with ID: ${certificateId}`);
-    toast.info(`Chứng chỉ ${certificateId} sẽ được tải xuống (chức năng đang phát triển)`);
-  }, []);
-  
-  const handleViewCertificate = React.useCallback((certificateId: string) => {
-    toast.info(`Đang mở chứng chỉ ${certificateId} (chức năng đang phát triển)`);
-  }, []);
-  
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <h2 className="text-xl font-semibold mb-6 flex items-center">
-          <Award className="h-5 w-5 mr-2 text-yellow-500" />
-          Chứng chỉ của tôi
-        </h2>
-        
-        {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+    <Card className="mb-4 overflow-hidden hover:shadow-md transition-all duration-300">
+      <CardContent className="p-0">
+        <div className="flex flex-col md:flex-row">
+          <div className="bg-green-500 p-5 flex items-center justify-center md:w-20">
+            <Award className="h-10 w-10 text-white" />
           </div>
-        ) : certificates.length > 0 ? (
-          <div className="space-y-4">
-            {certificates.map((certificate) => (
-              <CertificateItem 
-                key={certificate.id}
-                certificate={certificate}
-                onView={handleViewCertificate}
-                onDownload={handleDownloadCertificate}
-              />
-            ))}
+          
+          <div className="p-4 flex-1">
+            <div className="flex flex-col md:flex-row justify-between">
+              <div>
+                <h3 className="font-semibold text-lg mb-1 text-gray-800 dark:text-white">
+                  {certificate.courseName}
+                </h3>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
+                    <Calendar className="h-4 w-4 mr-1" />
+                    <span>{formattedDate}</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800">
+                    <GraduationCap className="h-3 w-3 mr-1" />
+                    Chứng chỉ hoàn thành
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="flex gap-2 mt-2 md:mt-0">
+                <Button variant="outline" size="sm" asChild>
+                  <Link to={`/certificate/${certificate.certificateId}`}>
+                    <ChevronRight className="h-4 w-4 mr-1" />
+                    Xem
+                  </Link>
+                </Button>
+                <Button variant="default" size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                  <Download className="h-4 w-4 mr-1" />
+                  Tải xuống
+                </Button>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="text-center py-10 border rounded-lg">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">Bạn chưa có chứng chỉ nào</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Hoàn thành khóa học để nhận chứng chỉ. Chứng chỉ là minh chứng cho kỹ năng và kiến thức bạn đã đạt được.
-            </p>
-            <Button asChild>
-              <Link to="/courses">Khám phá khóa học</Link>
-            </Button>
-          </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
 });
 
-// Add display names for better debugging
-CertificatesTab.displayName = 'CertificatesTab';
 CertificateItem.displayName = 'CertificateItem';
+
+interface CertificatesTabProps {
+  certificates: UserCertificate[];
+}
+
+const CertificatesTab = React.memo(({ certificates }: CertificatesTabProps) => {
+  if (!certificates || certificates.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <GraduationCap className="h-10 w-10 mx-auto mb-4 text-gray-400" />
+        <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Chưa có chứng chỉ</h3>
+        <p className="text-gray-500 dark:text-gray-400 mb-6">
+          Hãy hoàn thành các khóa học để nhận chứng chỉ của bạn
+        </p>
+        <Button asChild className="bg-green-600 hover:bg-green-700 text-white">
+          <Link to="/courses">Khám phá khóa học</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-6 dark:text-white">Chứng chỉ của tôi</h2>
+      <div className="space-y-4">
+        {certificates.map(certificate => (
+          <CertificateItem key={certificate.id} certificate={certificate} />
+        ))}
+      </div>
+    </div>
+  );
+});
+
+CertificatesTab.displayName = 'CertificatesTab';
 
 export default CertificatesTab;

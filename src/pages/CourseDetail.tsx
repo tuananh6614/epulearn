@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -14,27 +13,25 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { getCourseProgress } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Course, Chapter, Lesson } from '@/models/lesson';
 
-// Định nghĩa kiểu cho bài học
-interface Lesson {
+interface DisplayLesson {
   id: string;
   title: string;
   type: 'lesson' | 'test' | 'video';
   duration: string;
   completed: boolean;
-  questions?: number; // Chỉ áp dụng cho bài test
+  questions?: number;
 }
 
-// Định nghĩa kiểu cho chương học
-interface Chapter {
+interface DisplayChapter {
   id: string;
   title: string;
   description: string;
-  lessons: Lesson[];
+  lessons: DisplayLesson[];
 }
 
-// Định nghĩa kiểu cho khóa học
-interface Course {
+interface DisplayCourse {
   id: string;
   title: string;
   description: string;
@@ -47,22 +44,20 @@ interface Course {
   color: string;
   requirements: string[];
   objectives: string[];
-  chapters: Chapter[];
+  chapters: DisplayChapter[];
 }
 
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const [course, setCourse] = useState<Course | null>(null);
+  const [course, setCourse] = useState<DisplayCourse | null>(null);
   const [progress, setProgress] = useState(0);
   
-  // Fetch course data
   const { data: courseData, isLoading, error } = useQuery({
     queryKey: ['course', courseId],
     queryFn: async () => {
       try {
-        // First, fetch the course details
         const { data: courseDetails, error: courseError } = await supabase
           .from('courses')
           .select('*')
@@ -71,7 +66,6 @@ const CourseDetail = () => {
         
         if (courseError) throw courseError;
         
-        // Then fetch the chapters for this course
         const { data: chaptersData, error: chaptersError } = await supabase
           .from('chapters')
           .select('*')
@@ -80,7 +74,6 @@ const CourseDetail = () => {
         
         if (chaptersError) throw chaptersError;
         
-        // For each chapter, fetch its lessons
         const chaptersWithLessons = await Promise.all(chaptersData.map(async (chapter) => {
           const { data: lessonsData, error: lessonsError } = await supabase
             .from('lessons')
@@ -90,8 +83,10 @@ const CourseDetail = () => {
           
           if (lessonsError) throw lessonsError;
           
-          // If user is logged in, fetch their lesson progress
-          let lessonsWithProgress = lessonsData;
+          let lessonsWithProgress = lessonsData.map(lesson => ({
+            ...lesson,
+            completed: false
+          }));
           
           if (currentUser) {
             const { data: progressData, error: progressError } = await supabase
@@ -102,7 +97,6 @@ const CourseDetail = () => {
               .in('lesson_id', lessonsData.map(lesson => lesson.id));
             
             if (!progressError && progressData) {
-              // Mark lessons as completed based on user progress
               lessonsWithProgress = lessonsData.map(lesson => {
                 const lessonProgress = progressData.find(p => p.lesson_id === lesson.id);
                 return {
@@ -120,15 +114,16 @@ const CourseDetail = () => {
             lessons: lessonsWithProgress.map(lesson => ({
               id: lesson.id,
               title: lesson.title,
-              type: lesson.type,
+              type: (lesson.type === 'lesson' || lesson.type === 'video' || lesson.type === 'test') 
+                ? lesson.type as 'lesson' | 'test' | 'video'
+                : 'lesson',
               duration: lesson.duration,
               completed: lesson.completed || false,
-              questions: lesson.type === 'test' ? 10 : undefined // Mock data for questions count
+              questions: lesson.type === 'test' ? 10 : undefined
             }))
           };
         }));
         
-        // Count total lessons and tests
         let totalLessons = 0;
         let totalTests = 0;
         
@@ -142,7 +137,6 @@ const CourseDetail = () => {
           });
         });
         
-        // Construct the course object
         return {
           id: courseDetails.id,
           title: courseDetails.title,
@@ -168,7 +162,7 @@ const CourseDetail = () => {
             'Xử lý form và validate dữ liệu'
           ],
           chapters: chaptersWithLessons
-        };
+        } as DisplayCourse;
       } catch (error) {
         console.error('Error fetching course:', error);
         toast.error('Không thể tải dữ liệu khóa học');
@@ -179,7 +173,6 @@ const CourseDetail = () => {
     retry: 1
   });
   
-  // Fetch user's progress for this course
   const { data: userProgress } = useQuery({
     queryKey: ['courseProgress', courseId, currentUser?.id],
     queryFn: () => {
@@ -193,11 +186,9 @@ const CourseDetail = () => {
     if (courseData) {
       setCourse(courseData);
       
-      // Set progress from user data or calculate it
       if (userProgress && userProgress.success) {
         setProgress(userProgress.progress);
       } else if (courseData.chapters) {
-        // Calculate progress based on completed lessons
         let completedLessons = 0;
         let totalLessons = 0;
         
@@ -216,7 +207,6 @@ const CourseDetail = () => {
     }
   }, [courseData, userProgress]);
   
-  // Xác định bài học tiếp theo để học
   const getNextLesson = () => {
     if (!course) return { chapter: '', lesson: '' };
     
@@ -228,7 +218,6 @@ const CourseDetail = () => {
       }
     }
     
-    // Nếu đã hoàn thành tất cả bài học, trả về bài học đầu tiên
     if (course.chapters.length > 0 && course.chapters[0].lessons.length > 0) {
       return { 
         chapter: course.chapters[0].id, 
@@ -239,7 +228,6 @@ const CourseDetail = () => {
     return { chapter: '', lesson: '' };
   };
   
-  // Xác định màu và icon dựa trên loại bài học
   const getLessonTypeColor = (type: string, completed: boolean): string => {
     if (completed) return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
     if (type === 'test') return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
@@ -294,7 +282,6 @@ const CourseDetail = () => {
       <Navbar />
       
       <main className="flex-grow">
-        {/* Header với thông tin khóa học */}
         <div className="w-full py-16 relative overflow-hidden">
           <div 
             className="absolute inset-0 -z-10" 
@@ -364,7 +351,6 @@ const CourseDetail = () => {
           </div>
         </div>
         
-        {/* Nội dung khóa học */}
         <div className="container mx-auto px-4 py-10">
           <Tabs defaultValue="content">
             <TabsList className="mb-8">

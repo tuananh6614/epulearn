@@ -99,7 +99,7 @@ const CourseCard = ({
         
         {isPremium && price && (
           <div className="mt-3 flex justify-between items-center">
-            {discountPrice && (
+            {discountPrice ? (
               <div className="flex flex-col">
                 <span className="text-sm line-through text-muted-foreground">{formatPrice(price)}đ</span>
                 <span className="text-lg font-semibold text-green-600 dark:text-green-500">{formatPrice(discountPrice)}đ</span>

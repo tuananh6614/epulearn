@@ -38,8 +38,22 @@ const Login = () => {
     }
   }, []);
 
+  // Add a debug console log
+  useEffect(() => {
+    console.log("Login component mounted, isAuthenticated:", isAuthenticated);
+    
+    // Check if the token is available in localStorage
+    const session = localStorage.getItem('epu_supabase_auth');
+    console.log("Session in localStorage:", session ? "Available" : "Not available");
+    
+    return () => {
+      console.log("Login component unmounted");
+    };
+  }, [isAuthenticated]);
+
   // Redirect if already logged in
   if (isAuthenticated) {
+    console.log("User is authenticated, redirecting to home");
     return <Navigate to="/" replace />;
   }
 
@@ -55,10 +69,17 @@ const Login = () => {
     setAuthError(null);
     
     try {
+      console.log("Attempting login with:", email);
       // Using plain text password for login
       const success = await login(email, password);
+      console.log("Login result:", success);
+      
       if (success) {
+        console.log("Login successful, navigating to home");
         navigate('/');
+      } else {
+        console.log("Login failed but no error was thrown");
+        setAuthError("Đăng nhập thất bại. Vui lòng thử lại.");
       }
     } catch (error) {
       console.error("Login error:", error);

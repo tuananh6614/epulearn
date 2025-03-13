@@ -1,4 +1,3 @@
-
 import { User } from "@/types/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
@@ -12,9 +11,11 @@ export const FIXED_ACCOUNT = {
   password: "password123"
 };
 
-// Fetch user profile from Supabase with better error handling
+// Fetch user profile from Supabase with better error handling and debugging
 export const fetchUserProfile = async (userId: string, userEmail: string, emailConfirmedAt: string | null): Promise<User | null> => {
   try {
+    console.log(`Fetching profile for user ID: ${userId}, email: ${userEmail}`);
+    
     const { data: profileData, error } = await supabase
       .from('profiles')
       .select('*')
@@ -22,6 +23,7 @@ export const fetchUserProfile = async (userId: string, userEmail: string, emailC
       .single();
         
     if (profileData) {
+      console.log("Profile found:", profileData);
       const userData: User = {
         id: userId,
         email: userEmail,
@@ -39,6 +41,7 @@ export const fetchUserProfile = async (userId: string, userEmail: string, emailC
         const expirationDate = new Date(userData.vipExpirationDate);
         
         if (expirationDate <= now && userData.isVip) {
+          console.log("VIP status expired, updating profile");
           await supabase
             .from('profiles')
             .update({ 
@@ -52,10 +55,37 @@ export const fetchUserProfile = async (userId: string, userEmail: string, emailC
         }
       }
       
+      console.log("Saving user to localStorage:", userData.email);
       localStorage.setItem('epu_user', JSON.stringify(userData));
       return userData;
     } else if (error) {
       console.warn('Error fetching profile:', error);
+      
+      // Check if this is a new user without a profile
+      if (error.code === 'PGRST116') {
+        console.log("Profile not found, attempting to create minimal user");
+        
+        // Try to create a profile for this user
+        try {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              email: userEmail,
+              first_name: '',
+              last_name: ''
+            });
+            
+          if (insertError) {
+            console.error("Failed to create profile:", insertError);
+          } else {
+            console.log("Created new profile for user");
+          }
+        } catch (insertErr) {
+          console.error("Error creating profile:", insertErr);
+        }
+      }
+      
       // Create minimal user when profile fetch fails
       const userData: User = {
         id: userId,
@@ -63,9 +93,13 @@ export const fetchUserProfile = async (userId: string, userEmail: string, emailC
         email_confirmed_at: emailConfirmedAt
       };
       
+      console.log("Creating minimal user data:", userData);
       localStorage.setItem('epu_user', JSON.stringify(userData));
       return userData;
     }
+    
+    console.warn("No profile data and no error - unexpected state");
+    return null;
   } catch (error) {
     console.error('Profile fetch error:', error);
     // Return minimal user in case of errors to prevent login failures
@@ -74,6 +108,7 @@ export const fetchUserProfile = async (userId: string, userEmail: string, emailC
       email: userEmail,
       email_confirmed_at: emailConfirmedAt
     };
+    console.log("Using fallback user due to error:", fallbackUser);
     localStorage.setItem('epu_user', JSON.stringify(fallbackUser));
     return fallbackUser;
   }
@@ -81,10 +116,11 @@ export const fetchUserProfile = async (userId: string, userEmail: string, emailC
 
 // Handle auth state change with better error handling
 export const handleAuthStateChange = async (event: string, session: any, setCurrentUser: (user: User | null) => void): Promise<void> => {
-  console.log('Auth state changed:', event);
+  console.log('Auth state changed:', event, session?.user?.email || 'no session');
   
   try {
     if (event === 'SIGNED_IN' && session) {
+      console.log("User signed in, fetching profile");
       const userData = await fetchUserProfile(session.user.id, session.user.email || '', session.user.email_confirmed_at);
       if (userData) {
         setCurrentUser(userData);
@@ -94,11 +130,13 @@ export const handleAuthStateChange = async (event: string, session: any, setCurr
         toast.success("Email của bạn đã được xác thực thành công!");
       }
     } else if (event === 'SIGNED_OUT') {
+      console.log("User signed out, clearing data");
       setCurrentUser(null);
       localStorage.removeItem('epu_user');
       // Clear all other related items
       localStorage.removeItem('epu_supabase_auth');
     } else if (event === 'USER_UPDATED' && session) {
+      console.log("User updated");
       const storedUser = localStorage.getItem('epu_user');
       if (storedUser) {
         try {

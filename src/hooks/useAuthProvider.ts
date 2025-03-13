@@ -18,11 +18,15 @@ export const useAuthProvider = () => {
     const storedUser = localStorage.getItem('epu_user');
     if (storedUser) {
       try {
-        setCurrentUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        console.log("Loaded user from localStorage:", parsedUser.email);
+        setCurrentUser(parsedUser);
       } catch (error) {
         console.error('Failed to parse user from localStorage', error);
         localStorage.removeItem('epu_user');
       }
+    } else {
+      console.log("No user found in localStorage");
     }
   }, []);
 
@@ -30,19 +34,27 @@ export const useAuthProvider = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log("Checking auth session...");
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
+          console.log("Session found for user:", session.user.email);
           const userData = await fetchUserProfile(session.user.id, session.user.email || '', session.user.email_confirmed_at);
           if (userData) {
+            console.log("User profile loaded successfully");
             setCurrentUser(userData);
+          } else {
+            console.log("Failed to load user profile");
           }
+        } else {
+          console.log("No active session found");
         }
       } catch (error) {
         console.error('Session check error:', error);
       } finally {
         setLoading(false);
         setAuthInitialized(true);
+        console.log("Auth initialization complete");
       }
     };
     
@@ -50,11 +62,13 @@ export const useAuthProvider = () => {
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state change event:", event);
         await handleAuthStateChange(event, session, setCurrentUser);
       }
     );
     
     return () => {
+      console.log("Cleaning up auth subscription");
       subscription.unsubscribe();
     };
   }, []);
@@ -200,6 +214,7 @@ export const useAuthProvider = () => {
 
   // Login with fixed account
   const loginWithFixedAccount = () => {
+    console.log("Logging in with fixed account");
     if (!FIXED_ACCOUNT.email || !FIXED_ACCOUNT.password) {
       toast.error("Không có tài khoản cố định được thiết lập");
       return;
@@ -221,6 +236,7 @@ export const useAuthProvider = () => {
 
   // Login
   const login = async (email: string, password: string): Promise<boolean> => {
+    console.log("Login attempt with email:", email);
     setLoading(true);
     
     try {
@@ -229,8 +245,10 @@ export const useAuthProvider = () => {
         return false;
       }
       
+      // Check for demo account first
       if (FIXED_ACCOUNT.email && FIXED_ACCOUNT.password && 
           email === FIXED_ACCOUNT.email && password === FIXED_ACCOUNT.password) {
+        console.log("Using demo account login");
         const user: User = {
           id: FIXED_ACCOUNT.id,
           email: FIXED_ACCOUNT.email,
@@ -245,24 +263,37 @@ export const useAuthProvider = () => {
         return true;
       }
       
+      console.log("Attempting Supabase login");
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
       if (error) {
-        console.error('Login error:', error);
+        console.error('Login error from Supabase:', error);
         toast.error(error.message || "Đăng nhập thất bại");
         return false;
       }
       
-      const userData = await fetchUserProfile(data.user.id, data.user.email || '', data.user.email_confirmed_at);
-      if (userData) {
-        setCurrentUser(userData);
+      if (!data?.user) {
+        console.error('No user data returned from Supabase');
+        toast.error("Đăng nhập thất bại: Không có dữ liệu người dùng");
+        return false;
       }
       
-      toast.success("Đăng nhập thành công");
-      return true;
+      console.log("Login successful, user ID:", data.user.id);
+      const userData = await fetchUserProfile(data.user.id, data.user.email || '', data.user.email_confirmed_at);
+      
+      if (userData) {
+        console.log("User profile fetched successfully");
+        setCurrentUser(userData);
+        toast.success("Đăng nhập thành công");
+        return true;
+      } else {
+        console.error('Failed to fetch user profile after login');
+        toast.error("Đăng nhập thất bại: Không thể tải thông tin người dùng");
+        return false;
+      }
     } catch (error) {
       console.error('Login error:', error);
       toast.error((error as Error).message || "Đăng nhập thất bại");

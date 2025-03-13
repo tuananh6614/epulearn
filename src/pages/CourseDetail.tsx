@@ -11,8 +11,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Clock, FileText, Info, Loader2, Lock, Zap, BookOpen, Video, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/components/ui/use-toast";
 import { fetchCourseContent, supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 // Define types for our UI components to correctly handle the data
 interface DisplayLesson {
@@ -51,7 +52,7 @@ const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   
   const [course, setCourse] = useState<DisplayCourse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,11 +74,7 @@ const CourseDetail = () => {
         
         if (!courseData) {
           console.error('No course data returned');
-          toast({
-            title: "Lỗi",
-            description: "Không thể tải thông tin khóa học",
-            variant: "destructive",
-          });
+          toast.error("Không thể tải thông tin khóa học");
           setLoading(false);
           return;
         }
@@ -89,9 +86,9 @@ const CourseDetail = () => {
             .select('*')
             .eq('user_id', user.id)
             .eq('course_id', courseId)
-            .single();
+            .maybeSingle(); // Changed from single() to maybeSingle()
             
-          if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
+          if (error) {
             console.error('Error checking enrollment:', error);
           } else {
             setEnrolled(!!enrollment);
@@ -139,24 +136,17 @@ const CourseDetail = () => {
         
       } catch (error) {
         console.error('Error loading course:', error);
-        toast({
-          title: "Lỗi",
-          description: "Đã xảy ra lỗi khi tải dữ liệu khóa học",
-          variant: "destructive",
-        });
+        toast.error("Đã xảy ra lỗi khi tải dữ liệu khóa học");
         setLoading(false);
       }
     };
     
     loadCourse();
-  }, [courseId, user, toast]);
+  }, [courseId, user, uiToast]);
   
   const handleEnroll = async () => {
     if (!user) {
-      toast({
-        title: "Yêu cầu đăng nhập",
-        description: "Vui lòng đăng nhập để đăng ký khóa học",
-      });
+      toast.error("Vui lòng đăng nhập để đăng ký khóa học");
       navigate('/login');
       return;
     }
@@ -172,7 +162,7 @@ const CourseDetail = () => {
         .select('*')
         .eq('user_id', user.id)
         .eq('course_id', courseId)
-        .single();
+        .maybeSingle(); // Changed from single() to maybeSingle()
         
       if (!checkError && existingEnrollment) {
         // Already enrolled, just update the last_accessed
@@ -185,10 +175,7 @@ const CourseDetail = () => {
           .eq('course_id', courseId);
           
         setEnrolled(true);
-        toast({
-          title: "Đã đăng ký",
-          description: "Bạn đã đăng ký khóa học này trước đó",
-        });
+        toast.success("Bạn đã đăng ký khóa học này trước đó");
       } else {
         // New enrollment
         const { error: enrollError } = await supabase
@@ -202,23 +189,19 @@ const CourseDetail = () => {
             has_paid: false // For free courses
           });
           
-        if (enrollError) throw enrollError;
+        if (enrollError) {
+          console.error('Error enrolling in course:', enrollError);
+          throw enrollError;
+        }
         
         setEnrolled(true);
-        toast({
-          title: "Đăng ký thành công",
-          description: "Bạn đã đăng ký khóa học thành công",
-        });
+        toast.success("Đăng ký khóa học thành công");
       }
       
       setEnrolling(false);
     } catch (error) {
       console.error('Error enrolling in course:', error);
-      toast({
-        title: "Lỗi",
-        description: "Không thể đăng ký khóa học",
-        variant: "destructive",
-      });
+      toast.error("Không thể đăng ký khóa học");
       setEnrolling(false);
     }
   };

@@ -191,9 +191,9 @@ export const getCourseProgress = async (userId: string, courseId: string) => {
       .select('progress_percentage, last_accessed')
       .eq('user_id', userId)
       .eq('course_id', courseId)
-      .single();
+      .maybeSingle(); // Using maybeSingle instead of single to avoid errors if no data
       
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116 means no rows returned
+    if (error) throw error;
     
     return {
       success: true,

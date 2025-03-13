@@ -36,11 +36,12 @@ const PageLoader = () => (
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 2,
+      retry: 1, // Giảm số lần thử lại xuống 1 lần
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-      refetchOnMount: true,
+      staleTime: 2 * 60 * 1000, // 2 phút
+      gcTime: 5 * 60 * 1000, // 5 phút
+      refetchOnMount: "always",
+      refetchOnReconnect: true,
     },
   },
 });

@@ -1,48 +1,86 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { fetchUserEnrolledCourses, fetchUserCertificates } from '@/services/apiUtils';
+import { fetchUserEnrolledCourses, fetchUserCertificates, checkApiHealth } from '@/services/apiUtils';
 import ProfileForm from '@/components/ProfileForm';
 import SecurityForm from '@/components/SecurityForm';
 import CertificatesTab from '@/components/CertificatesTab';
 import VipTab from '@/components/VipTab';
 import UserSidebar from '@/components/UserSidebar';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const UserProfile = React.memo(() => {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [apiHealthy, setApiHealthy] = useState(true);
+  
+  // Kiểm tra sức khỏe của API trước khi tải dữ liệu
+  useEffect(() => {
+    const checkHealth = async () => {
+      const isHealthy = await checkApiHealth();
+      setApiHealthy(isHealthy);
+      if (!isHealthy) {
+        toast.error("Không thể kết nối tới máy chủ. Một số tính năng có thể không hoạt động.");
+      }
+    };
+    
+    checkHealth();
+  }, []);
   
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value);
   }, []);
 
+  // Xử lý thử lại khi gặp lỗi
+  const handleRetry = () => {
+    setIsRetrying(true);
+    // Làm mới danh sách khóa học
+    enrolledCoursesRefetch().then(() => {
+      // Làm mới danh sách chứng chỉ
+      certificatesRefetch().then(() => {
+        setIsRetrying(false);
+        toast.success("Đã làm mới dữ liệu");
+      });
+    });
+  };
+
   // Optimized query with proper staleTime and appropriate key
   const { 
     data: enrolledCourses, 
-    isLoading: coursesLoading 
+    isLoading: coursesLoading,
+    error: coursesError,
+    refetch: enrolledCoursesRefetch
   } = useQuery({
     queryKey: ['enrolledCourses', currentUser?.id],
     queryFn: () => currentUser?.id ? fetchUserEnrolledCourses(currentUser.id) : Promise.resolve([]),
-    enabled: !!currentUser?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000,  // 10 minutes
+    enabled: !!currentUser?.id && apiHealthy,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000,  // 5 minutes
+    retry: 1, // Giảm số lần thử lại xuống 1
   });
 
   // Optimized certificates query with proper staleTime
   const { 
     data: certificates, 
-    isLoading: certificatesLoading 
+    isLoading: certificatesLoading,
+    error: certificatesError,
+    refetch: certificatesRefetch
   } = useQuery({
     queryKey: ['certificates', currentUser?.id],
     queryFn: () => currentUser?.id ? fetchUserCertificates(currentUser.id) : Promise.resolve([]),
-    enabled: !!currentUser?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000,  // 10 minutes
+    enabled: !!currentUser?.id && apiHealthy,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000,  // 5 minutes
+    retry: 1, // Giảm số lần thử lại xuống 1
   });
+
+  const hasError = coursesError || certificatesError;
 
   if (!currentUser) {
     return (
@@ -55,6 +93,28 @@ const UserProfile = React.memo(() => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20">
       <div className="container mx-auto px-4 py-8">
+        {hasError && (
+          <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 flex items-center">
+            <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+            <div className="flex-grow">
+              <p>Không thể tải dữ liệu từ máy chủ. Vui lòng thử lại sau.</p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRetry} 
+              disabled={isRetrying}
+              className="ml-4 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800"
+            >
+              {isRetrying ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Đang thử lại</>
+              ) : (
+                <><RefreshCw className="h-4 w-4 mr-2" /> Thử lại</>
+              )}
+            </Button>
+          </div>
+        )}
+        
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="w-full lg:w-1/4">
             <UserSidebar 
@@ -86,6 +146,18 @@ const UserProfile = React.memo(() => {
                   {certificatesLoading ? (
                     <div className="flex justify-center py-10">
                       <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+                    </div>
+                  ) : certificatesError ? (
+                    <div className="text-center py-10">
+                      <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Không thể tải dữ liệu chứng chỉ</h3>
+                      <p className="text-gray-500 dark:text-gray-400 mb-4">
+                        Đã xảy ra lỗi khi tải danh sách chứng chỉ của bạn.
+                      </p>
+                      <Button onClick={() => certificatesRefetch()} variant="outline">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Thử lại
+                      </Button>
                     </div>
                   ) : (
                     <CertificatesTab certificates={certificates || []} />

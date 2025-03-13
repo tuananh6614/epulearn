@@ -23,7 +23,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
       'Pragma': 'no-cache',
     },
     fetch: (url, options) => {
-      const timeout = 30000; // 30 seconds timeout
+      const timeout = 15000; // Giảm timeout xuống 15 giây thay vì 30 giây
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
       
@@ -37,6 +37,9 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     params: {
       eventsPerSecond: 10 // Reduce events per second for better performance
     }
+  },
+  db: {
+    schema: 'public'
   }
 });
 
@@ -46,10 +49,11 @@ export const fetchTestQuestions = async (chapterId: string) => {
     const { data, error } = await supabase
       .from('chapter_tests')
       .select('*')
-      .eq('chapter_id', chapterId);
+      .eq('chapter_id', chapterId)
+      .order('created_at', { ascending: true });
       
     if (error) throw error;
-    return data;
+    return data || [];
   } catch (error) {
     console.error('Error fetching test questions:', error);
     return [];
@@ -93,42 +97,34 @@ export const saveTestResult = async (
   }
 };
 
-// Thêm hàm fetchCourseTests để lấy bài kiểm tra của khóa học
+// Tối ưu hóa hàm fetchCourseTests để cải thiện hiệu suất
 export const fetchCourseTests = async (courseId: string) => {
   try {
-    // Fetch test info
+    console.log('Fetching course tests for course:', courseId);
+    
+    // Fetch test info with single query containing both tests and questions
     const { data: testsData, error: testsError } = await supabase
       .from('course_tests')
-      .select('*')
+      .select(`
+        *,
+        questions:course_test_questions(*)
+      `)
       .eq('course_id', courseId);
       
-    if (testsError) throw testsError;
+    if (testsError) {
+      console.error('Error fetching course tests:', testsError);
+      throw testsError;
+    }
     
     if (!testsData || testsData.length === 0) {
+      console.log('No tests found for course:', courseId);
       return [];
     }
     
-    // For each test, fetch its questions
-    const testsWithQuestions = await Promise.all(
-      testsData.map(async (test) => {
-        const { data: questionsData, error: questionsError } = await supabase
-          .from('course_test_questions')
-          .select('*')
-          .eq('course_test_id', test.id);
-          
-        if (questionsError) throw questionsError;
-        
-        return {
-          ...test,
-          questions: questionsData || []
-        };
-      })
-    );
-    
-    return testsWithQuestions;
+    console.log('Successfully fetched tests data:', testsData.length);
+    return testsData;
   } catch (error) {
     console.error('Error fetching course tests:', error);
     return [];
   }
 };
-

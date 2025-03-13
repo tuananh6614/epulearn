@@ -27,6 +27,20 @@ export interface EnrolledCourse {
   status: string;
 }
 
+// Thêm bộ nhớ cache để giảm số lượng request
+const cache = {
+  enrolledCourses: new Map<string, { data: EnrolledCourse[], timestamp: number }>(),
+  courses: { data: null as SupabaseCourseResponse[] | null, timestamp: 0 },
+  featuredCourses: { data: null as SupabaseCourseResponse[] | null, timestamp: 0 },
+  certificates: new Map<string, { data: UserCertificate[], timestamp: number }>(),
+  CACHE_TIME: 60000, // 1 phút
+};
+
+// Hàm kiểm tra cache có hợp lệ không
+const isCacheValid = (timestamp: number) => {
+  return Date.now() - timestamp < cache.CACHE_TIME;
+};
+
 // Optimized function with better error handling and retry logic
 export const fetchUserEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> => {
   try {
@@ -34,6 +48,15 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
       console.log('No user ID provided for fetching enrolled courses');
       return [];
     }
+
+    // Kiểm tra cache
+    const cachedData = cache.enrolledCourses.get(userId);
+    if (cachedData && isCacheValid(cachedData.timestamp)) {
+      console.log('Using cached enrolled courses data');
+      return cachedData.data;
+    }
+
+    console.log('Fetching enrolled courses for user:', userId);
 
     // Use an optimized single JOIN query with specific column selection
     const { data, error } = await supabase
@@ -55,11 +78,14 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
     }
 
     if (!data || data.length === 0) {
+      console.log('No enrolled courses found for user:', userId);
       return [];
     }
 
+    console.log('Successfully fetched enrolled courses:', data.length);
+
     // Transform data to EnrolledCourse format with optimized mapping
-    return data.map(item => {
+    const enrolledCourses = data.map(item => {
       const isCompleted = item.progress_percentage >= 100;
       
       // Special handling for VIP courses with early return pattern
@@ -119,6 +145,13 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
       };
     });
     
+    // Lưu cache
+    cache.enrolledCourses.set(userId, {
+      data: enrolledCourses,
+      timestamp: Date.now()
+    });
+    
+    return enrolledCourses;
   } catch (error) {
     console.error('Error fetching enrolled courses:', error);
     return [];
@@ -128,18 +161,25 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
 // Function to fetch courses - optimized with specific column selection
 export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
   try {
+    // Kiểm tra cache
+    if (cache.courses.data && isCacheValid(cache.courses.timestamp)) {
+      console.log('Using cached courses data');
+      return cache.courses.data;
+    }
+    
     console.log('Fetching courses from Supabase');
     
     const { data, error } = await supabase
       .from('courses')
-      .select('*');
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching courses:', error);
       throw error;
     }
 
-    console.log('Supabase returned data:', data);
+    console.log('Supabase returned data:', data ? data.length : 0, 'courses');
     
     if (!data || data.length === 0) {
       console.warn('No courses found in database');
@@ -147,7 +187,7 @@ export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
     }
 
     // Transform the data to match SupabaseCourseResponse
-    return data.map(course => ({
+    const formattedCourses = data.map(course => ({
       id: course.id,
       title: course.title,
       description: course.description || '',
@@ -167,6 +207,14 @@ export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
       objectives: course.objectives || [],
       requirements: course.requirements || []
     }));
+    
+    // Lưu cache
+    cache.courses = {
+      data: formattedCourses,
+      timestamp: Date.now()
+    };
+    
+    return formattedCourses;
   } catch (error) {
     console.error('Error fetching courses:', error);
     return [];
@@ -176,6 +224,14 @@ export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
 // Function to fetch featured courses - optimized with only needed fields
 export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> => {
   try {
+    // Kiểm tra cache
+    if (cache.featuredCourses.data && isCacheValid(cache.featuredCourses.timestamp)) {
+      console.log('Using cached featured courses data');
+      return cache.featuredCourses.data;
+    }
+    
+    console.log('Fetching featured courses from Supabase');
+    
     const { data, error } = await supabase
       .from('courses')
       .select('*')
@@ -188,13 +244,15 @@ export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> 
       throw error;
     }
 
+    console.log('Supabase returned data:', data ? data.length : 0, 'featured courses');
+
     if (!data || data.length === 0) {
       console.warn('No featured courses found in database');
       return [];
     }
 
     // Transform the data to match SupabaseCourseResponse
-    return data.map(course => ({
+    const formattedCourses = data.map(course => ({
       id: course.id,
       title: course.title,
       description: course.description || '',
@@ -214,6 +272,14 @@ export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> 
       objectives: course.objectives || [],
       requirements: course.requirements || []
     }));
+    
+    // Lưu cache
+    cache.featuredCourses = {
+      data: formattedCourses,
+      timestamp: Date.now()
+    };
+    
+    return formattedCourses;
   } catch (error) {
     console.error('Error fetching featured courses:', error);
     return [];
@@ -225,6 +291,12 @@ export const fetchUserCertificates = async (userId: string): Promise<UserCertifi
   try {
     if (!userId) {
       return [];
+    }
+    
+    // Kiểm tra cache
+    const cachedData = cache.certificates.get(userId);
+    if (cachedData && isCacheValid(cachedData.timestamp)) {
+      return cachedData.data;
     }
     
     const { data, error } = await supabase
@@ -241,7 +313,7 @@ export const fetchUserCertificates = async (userId: string): Promise<UserCertifi
       throw error;
     }
 
-    return data?.map(cert => ({
+    const certificates = data?.map(cert => ({
       id: cert.id,
       userId: cert.user_id,
       courseId: cert.course_id,
@@ -249,6 +321,14 @@ export const fetchUserCertificates = async (userId: string): Promise<UserCertifi
       issueDate: cert.issue_date,
       courseName: cert.courses?.title || 'Unknown Course'
     })) || [];
+    
+    // Lưu cache
+    cache.certificates.set(userId, {
+      data: certificates,
+      timestamp: Date.now()
+    });
+    
+    return certificates;
   } catch (error) {
     console.error('Error fetching certificates:', error);
     return [];
@@ -300,4 +380,15 @@ export const fetchCertificationPrograms = async () => {
     console.error('Error fetching certification programs:', error);
     return [];
   }
+};
+
+// Xóa cache
+export const clearCache = () => {
+  cache.enrolledCourses.clear();
+  cache.courses.data = null;
+  cache.courses.timestamp = 0;
+  cache.featuredCourses.data = null;
+  cache.featuredCourses.timestamp = 0;
+  cache.certificates.clear();
+  console.log('Cache cleared');
 };

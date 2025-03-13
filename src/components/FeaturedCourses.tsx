@@ -6,23 +6,39 @@ import CourseCard from './CourseCard';
 import { Link } from "react-router-dom";
 import { toast } from 'sonner';
 import { fetchFeaturedCourses } from '@/services/apiUtils';
-import { Course, SupabaseCourseResponse } from '@/models/lesson';
+import { Course } from '@/models/lesson';
+import { supabase } from '@/integrations/supabase/client';
 
-// Component hiển thị các khóa học nổi bật
 const FeaturedCourses = () => {
   const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0); // Thêm state để thử lại
 
   const loadFeaturedCourses = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       
+      console.log('Đang tải khóa học nổi bật...');
+      
+      // Kiểm tra kết nối với Supabase trước
+      const { error: healthCheckError } = await supabase
+        .from('courses')
+        .select('count', { count: 'exact', head: true })
+        .limit(1);
+      
+      if (healthCheckError) {
+        console.error('Lỗi kết nối Supabase:', healthCheckError);
+        throw new Error('Không thể kết nối đến máy chủ dữ liệu. Vui lòng thử lại sau.');
+      }
+      
+      // Truy vấn dữ liệu khóa học
       const coursesData = await fetchFeaturedCourses();
-      console.log('Featured courses data:', coursesData);
+      console.log('Dữ liệu khóa học nổi bật:', coursesData);
       
-      if (coursesData.length === 0) {
-        console.warn('No featured courses found');
+      if (!coursesData || coursesData.length === 0) {
+        console.warn('Không tìm thấy khóa học nổi bật');
         setFeaturedCourses([]);
         setIsLoading(false);
         return;
@@ -47,25 +63,24 @@ const FeaturedCourses = () => {
       }));
       
       setFeaturedCourses(formattedCourses);
-      setIsLoading(false);
       setError(null);
     } catch (err) {
       console.error('Lỗi khi tải khóa học nổi bật:', err);
-      setError((err as Error).message);
-      setIsLoading(false);
+      setError((err as Error).message || 'Có lỗi xảy ra khi tải khóa học');
       
       toast.error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối của bạn hoặc thử lại sau.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
     loadFeaturedCourses();
-  }, []);
+  }, [retry]);
 
   // Thử lại khi gặp lỗi
   const handleRetry = () => {
-    setError(null);
-    loadFeaturedCourses();
+    setRetry(prev => prev + 1);
   };
 
   if (isLoading) {
@@ -128,44 +143,28 @@ const FeaturedCourses = () => {
           </Button>
         </div>
         
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((_, index) => (
-              <div key={index} className="bg-gray-200 dark:bg-gray-800 animate-pulse h-80 rounded-lg"></div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="flex justify-center items-center flex-col py-10">
-            <p className="text-gray-700 dark:text-gray-300 mb-4">Không thể tải khóa học. {error}</p>
-            <Button onClick={handleRetry} variant="outline" className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Thử lại
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredCourses.length > 0 ? (
-              featuredCourses.map((course) => (
-                <CourseCard 
-                  key={course.id} 
-                  id={course.id}
-                  title={course.title}
-                  description={course.description}
-                  level={course.level}
-                  duration={course.duration}
-                  category={course.category}
-                  image={course.image}
-                  color={course.color}
-                  isPremium={course.isPremium}
-                  price={course.price}
-                  discountPrice={course.discountPrice}
-                />
-              ))
-            ) : (
-              <p className="col-span-4 text-center text-gray-500 dark:text-gray-400 py-10">Không có khóa học nổi bật nào.</p>
-            )}
-          </div>
-        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {featuredCourses.length > 0 ? (
+            featuredCourses.map((course) => (
+              <CourseCard 
+                key={course.id} 
+                id={course.id}
+                title={course.title}
+                description={course.description}
+                level={course.level}
+                duration={course.duration}
+                category={course.category}
+                image={course.image}
+                color={course.color}
+                isPremium={course.isPremium}
+                price={course.price}
+                discountPrice={course.discountPrice}
+              />
+            ))
+          ) : (
+            <p className="col-span-4 text-center text-gray-500 dark:text-gray-400 py-10">Không có khóa học nổi bật nào. Vui lòng quay lại sau.</p>
+          )}
+        </div>
       </div>
     </section>
   );

@@ -38,13 +38,30 @@ const Login = () => {
     }
   }, []);
 
-  // Add a debug console log
+  // Improved debugging
   useEffect(() => {
     console.log("Login component mounted, isAuthenticated:", isAuthenticated);
     
-    // Check if the token is available in localStorage
-    const session = localStorage.getItem('epu_supabase_auth');
-    console.log("Session in localStorage:", session ? "Available" : "Not available");
+    try {
+      // Check if the token is available in localStorage
+      const session = localStorage.getItem('epu_supabase_auth');
+      console.log("Session in localStorage:", session ? "Available" : "Not available");
+      
+      if (session) {
+        const parsedSession = JSON.parse(session);
+        console.log("Session expires at:", new Date(parsedSession.expires_at * 1000).toLocaleString());
+        console.log("Current time:", new Date().toLocaleString());
+        
+        // Check if session is expired
+        if (parsedSession.expires_at * 1000 < Date.now()) {
+          console.log("Session is expired, clearing localStorage");
+          localStorage.removeItem('epu_supabase_auth');
+          localStorage.removeItem('epu_user');
+        }
+      }
+    } catch (error) {
+      console.error("Error parsing session:", error);
+    }
     
     return () => {
       console.log("Login component unmounted");
@@ -77,9 +94,10 @@ const Login = () => {
       if (success) {
         console.log("Login successful, navigating to home");
         navigate('/');
+        toast.success("Đăng nhập thành công!");
       } else {
         console.log("Login failed but no error was thrown");
-        setAuthError("Đăng nhập thất bại. Vui lòng thử lại.");
+        setAuthError("Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu của bạn.");
       }
     } catch (error) {
       console.error("Login error:", error);

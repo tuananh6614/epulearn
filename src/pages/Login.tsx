@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,16 +14,29 @@ import { Label } from "@/components/ui/label";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Code, Loader2 } from 'lucide-react';
+import { Code, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { parseAuthErrorFromURL } from '@/utils/authUtils';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Check for authentication errors on load
+  useEffect(() => {
+    const { message } = parseAuthErrorFromURL();
+    if (message) {
+      setAuthError(message);
+      // Remove the error from the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   // Redirect if already logged in
   if (isAuthenticated) {
@@ -39,6 +52,7 @@ const Login = () => {
     }
     
     setIsSubmitting(true);
+    setAuthError(null);
     
     try {
       // Using plain text password for login
@@ -46,6 +60,9 @@ const Login = () => {
       if (success) {
         navigate('/');
       }
+    } catch (error) {
+      console.error("Login error:", error);
+      setAuthError("Đăng nhập thất bại. Vui lòng thử lại.");
     } finally {
       setIsSubmitting(false);
     }
@@ -71,6 +88,15 @@ const Login = () => {
             </CardDescription>
           </CardHeader>
 
+          {authError && (
+            <div className="px-6">
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4 mr-2" />
+                <AlertDescription>{authError}</AlertDescription>
+              </Alert>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -83,6 +109,7 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -101,6 +128,7 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isSubmitting}
                 />
               </div>
             </CardContent>

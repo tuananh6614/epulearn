@@ -15,14 +15,23 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
     detectSessionInUrl: true, // Enable this to detect auth in URL
     flowType: 'pkce', // Use PKCE flow for more secure authentication
+    storageKey: 'epu_supabase_auth', // Use a specific key for storage to avoid conflicts
   },
   global: {
     headers: {
       'Cache-Control': 'no-cache',
       'Pragma': 'no-cache',
     },
-    // Reduce fetch timeouts for faster response
-    fetch: undefined // Use default fetch with no timeout
+    fetch: (url, options) => {
+      const timeout = 30000; // 30 seconds timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      return fetch(url, {
+        ...options,
+        signal: controller.signal
+      }).finally(() => clearTimeout(timeoutId));
+    }
   },
   realtime: {
     params: {

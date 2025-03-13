@@ -34,8 +34,8 @@ export interface Course {
   image: string;
   color: string;
   isPremium?: boolean;
-  price?: number;
-  discountPrice?: number;
+  price?: string | number;
+  discountPrice?: string | number;
   isFeatured?: boolean;
   instructor?: string;
   chapters: Chapter[];
@@ -100,8 +100,8 @@ export interface EnrolledCourse {
   image: string;
   color: string;
   isPremium?: boolean;
-  price?: number;
-  discountPrice?: number;
+  price?: string | number;
+  discountPrice?: string | number;
   level?: string;
   duration?: string;
   category?: string;
@@ -123,8 +123,8 @@ export interface SupabaseCourseResponse {
   duration: string;
   level: string;
   is_premium: boolean;
-  price: number | string | null;
-  discount_price: number | string | null;
+  price: string | number | null;
+  discount_price: string | number | null;
 }
 
 export interface SupabaseChapterResponse {

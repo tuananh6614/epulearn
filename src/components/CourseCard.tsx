@@ -18,8 +18,8 @@ interface CourseCardProps {
   image: string;
   color: string;
   isPremium?: boolean;
-  price?: number;
-  discountPrice?: number;
+  price?: string | number;
+  discountPrice?: string | number;
 }
 
 // Component hiển thị thẻ khóa học với thiết kế của Lovable
@@ -37,6 +37,15 @@ const CourseCard = ({
   price,
   discountPrice
 }: CourseCardProps) => {
+  // Helper function to format price values
+  const formatPrice = (price: string | number | undefined): string => {
+    if (price === undefined) return '';
+    if (typeof price === 'number') {
+      return price.toLocaleString('vi-VN');
+    }
+    return price.toString();
+  };
+
   return (
     <Card className="course-card h-full overflow-hidden border shadow-sm hover:shadow-xl transition-all duration-500 bg-card dark:bg-card/60 hover:-translate-y-2">
       <div 
@@ -90,13 +99,13 @@ const CourseCard = ({
         
         {isPremium && price && (
           <div className="mt-3 flex justify-between items-center">
-            {discountPrice && discountPrice < price ? (
+            {discountPrice && (
               <div className="flex flex-col">
-                <span className="text-sm line-through text-muted-foreground">{price.toLocaleString('vi-VN')}đ</span>
-                <span className="text-lg font-semibold text-green-600 dark:text-green-500">{discountPrice.toLocaleString('vi-VN')}đ</span>
+                <span className="text-sm line-through text-muted-foreground">{formatPrice(price)}đ</span>
+                <span className="text-lg font-semibold text-green-600 dark:text-green-500">{formatPrice(discountPrice)}đ</span>
               </div>
             ) : (
-              <span className="text-lg font-semibold">{price.toLocaleString('vi-VN')}đ</span>
+              <span className="text-lg font-semibold">{formatPrice(price)}đ</span>
             )}
           </div>
         )}

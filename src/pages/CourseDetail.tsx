@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -11,7 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { CheckCircle, Clock, FileText, Info, Loader2, Lock, Zap, BookOpen, Video } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/components/ui/use-toast"
-import { fetchCourseContent } from '@/integrations/supabase/client';
+import { fetchCourseContent, supabase } from '@/integrations/supabase/client';
 
 // Define types for our UI components to correctly handle the data
 interface DisplayLesson {

@@ -1,399 +1,67 @@
 
 import { supabase } from './client';
-import { SupabaseCourseResponse } from '@/models/lesson';
 
-// Re-export the interface from models/lesson to avoid duplication
-export type { SupabaseCourseResponse } from '@/models/lesson';
-
-export interface UserCertificate {
-  id: string;
-  userId: string;
-  courseId: string;
-  certificateId: string;
-  issueDate: string;
-  courseName: string;
-}
-
-export interface EnrolledCourse {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  color: string;
-  progress: number;
-  isCompleted: boolean;
-  lastAccessed: string;
-  enrolledAt: string;
-  status: string;
-}
-
-// Thêm bộ nhớ cache để giảm số lượng request
-const cache = {
-  enrolledCourses: new Map<string, { data: EnrolledCourse[], timestamp: number }>(),
-  courses: { data: null as SupabaseCourseResponse[] | null, timestamp: 0 },
-  featuredCourses: { data: null as SupabaseCourseResponse[] | null, timestamp: 0 },
-  certificates: new Map<string, { data: UserCertificate[], timestamp: number }>(),
-  CACHE_TIME: 60000, // 1 phút
-};
-
-// Hàm kiểm tra cache có hợp lệ không
-const isCacheValid = (timestamp: number) => {
-  return Date.now() - timestamp < cache.CACHE_TIME;
-};
-
-// Optimized function with better error handling and retry logic
-export const fetchUserEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> => {
+// Function to enroll a user in a course
+export const enrollUserInCourse = async (userId: string, courseId: string): Promise<{success: boolean; error?: any}> => {
   try {
-    if (!userId) {
-      console.log('No user ID provided for fetching enrolled courses');
-      return [];
+    if (!userId || !courseId) {
+      console.error('Missing required parameters for course enrollment');
+      return { success: false, error: 'Missing user ID or course ID' };
     }
 
-    // Kiểm tra cache
-    const cachedData = cache.enrolledCourses.get(userId);
-    if (cachedData && isCacheValid(cachedData.timestamp)) {
-      console.log('Using cached enrolled courses data');
-      return cachedData.data;
-    }
-
-    console.log('Fetching enrolled courses for user:', userId);
-
-    // Use an optimized single JOIN query with specific column selection
-    const { data, error } = await supabase
+    // Check if user is already enrolled
+    const { data: existingEnrollment, error: checkError } = await supabase
       .from('user_courses')
-      .select(`
-        course_id,
-        progress_percentage,
-        last_accessed,
-        enrolled_at,
-        has_paid,
-        course:courses(id, title, description, thumbnail_url, category)
-      `)
+      .select('id')
       .eq('user_id', userId)
-      .order('last_accessed', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching enrolled courses:', error);
-      throw error;
+      .eq('course_id', courseId)
+      .maybeSingle();
+    
+    if (checkError) {
+      console.error('Error checking existing enrollment:', checkError);
+      return { success: false, error: checkError };
     }
 
-    if (!data || data.length === 0) {
-      console.log('No enrolled courses found for user:', userId);
-      return [];
+    // If already enrolled, return success
+    if (existingEnrollment) {
+      return { success: true };
     }
 
-    console.log('Successfully fetched enrolled courses:', data.length);
+    // Enroll the user in the course
+    const { error: enrollError } = await supabase
+      .from('user_courses')
+      .insert({
+        user_id: userId,
+        course_id: courseId,
+        progress_percentage: 0,
+        has_paid: false,
+        last_accessed: new Date().toISOString()
+      });
 
-    // Transform data to EnrolledCourse format with optimized mapping
-    const enrolledCourses = data.map(item => {
-      const isCompleted = item.progress_percentage >= 100;
-      
-      // Special handling for VIP courses with early return pattern
-      if (typeof item.course_id === 'string' && item.course_id.startsWith('vip-')) {
-        const duration = item.course_id.split('vip-')[1];
-        const durationMap: Record<string, string> = {
-          '1-month': '1 tháng',
-          '3-months': '3 tháng',
-          '6-months': '6 tháng',
-          '1-year': '1 năm'
-        };
-        
-        return {
-          id: item.course_id,
-          title: `Gói VIP ${durationMap[duration] || duration}`,
-          description: `Gói VIP đăng ký ${durationMap[duration] || duration}`,
-          image: '/public/vip-badge.png',
-          color: 'yellow',
-          progress: 100,
-          isCompleted: true,
-          lastAccessed: item.last_accessed,
-          enrolledAt: item.enrolled_at,
-          status: item.has_paid ? 'published' : 'draft'
-        };
-      }
-      
-      // Handle regular courses
-      if (item.course) {
-        return {
-          id: item.course_id,
-          title: item.course.title,
-          description: item.course.description || '',
-          image: item.course.thumbnail_url || '/placeholder.svg',
-          color: item.course.category === 'JavaScript' ? 'yellow' : 
-                 item.course.category === 'React' ? 'blue' : 
-                 item.course.category === 'Node' ? 'green' : 'gray',
-          progress: item.progress_percentage,
-          isCompleted,
-          lastAccessed: item.last_accessed,
-          enrolledAt: item.enrolled_at,
-          status: 'published'
-        };
-      }
-      
-      // Fallback for undefined courses
-      return {
-        id: item.course_id,
-        title: 'Khóa học không xác định',
-        description: 'Khóa học này không còn tồn tại',
-        image: '/placeholder.svg',
-        color: 'gray',
-        progress: item.progress_percentage,
-        isCompleted,
-        lastAccessed: item.last_accessed,
-        enrolledAt: item.enrolled_at,
-        status: 'archived'
-      };
-    });
-    
-    // Lưu cache
-    cache.enrolledCourses.set(userId, {
-      data: enrolledCourses,
-      timestamp: Date.now()
-    });
-    
-    return enrolledCourses;
+    if (enrollError) {
+      console.error('Error enrolling user in course:', enrollError);
+      return { success: false, error: enrollError };
+    }
+
+    return { success: true };
   } catch (error) {
-    console.error('Error fetching enrolled courses:', error);
-    return [];
+    console.error('Error in enrollUserInCourse:', error);
+    return { success: false, error };
   }
 };
 
-// Function to fetch courses - optimized with specific column selection
-export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
-  try {
-    // Kiểm tra cache
-    if (cache.courses.data && isCacheValid(cache.courses.timestamp)) {
-      console.log('Using cached courses data');
-      return cache.courses.data;
-    }
-    
-    console.log('Fetching courses from Supabase');
-    
-    const { data, error } = await supabase
-      .from('courses')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching courses:', error);
-      throw error;
-    }
-
-    console.log('Supabase returned data:', data ? data.length : 0, 'courses');
-    
-    if (!data || data.length === 0) {
-      console.warn('No courses found in database');
-      return [];
-    }
-
-    // Transform the data to match SupabaseCourseResponse
-    const formattedCourses = data.map(course => ({
-      id: course.id,
-      title: course.title,
-      description: course.description || '',
-      thumbnail_url: course.thumbnail_url || null,
-      category: course.category || 'General',
-      level: course.level || 'Beginner',
-      duration: course.duration || '0h',
-      is_premium: course.is_premium || false,
-      is_featured: course.is_featured || false, 
-      created_at: course.created_at,
-      updated_at: course.updated_at || course.created_at, 
-      status: 'published',
-      instructor: course.instructor || 'EPU Learning',
-      price: course.is_premium ? '299.000₫' : '0₫', 
-      discount_price: course.is_premium ? '149.000₫' : null,
-      full_description: course.full_description || '',
-      objectives: course.objectives || [],
-      requirements: course.requirements || []
-    }));
-    
-    // Lưu cache
-    cache.courses = {
-      data: formattedCourses,
-      timestamp: Date.now()
-    };
-    
-    return formattedCourses;
-  } catch (error) {
-    console.error('Error fetching courses:', error);
-    return [];
-  }
-};
-
-// Function to fetch featured courses - optimized with only needed fields
-export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> => {
-  try {
-    // Kiểm tra cache
-    if (cache.featuredCourses.data && isCacheValid(cache.featuredCourses.timestamp)) {
-      console.log('Using cached featured courses data');
-      return cache.featuredCourses.data;
-    }
-    
-    console.log('Fetching featured courses from Supabase');
-    
-    const { data, error } = await supabase
-      .from('courses')
-      .select('*')
-      .eq('is_featured', true)
-      .order('created_at', { ascending: false })
-      .limit(4);
-
-    if (error) {
-      console.error('Error fetching featured courses:', error);
-      throw error;
-    }
-
-    console.log('Supabase returned data:', data ? data.length : 0, 'featured courses');
-
-    if (!data || data.length === 0) {
-      console.warn('No featured courses found in database');
-      return [];
-    }
-
-    // Transform the data to match SupabaseCourseResponse
-    const formattedCourses = data.map(course => ({
-      id: course.id,
-      title: course.title,
-      description: course.description || '',
-      thumbnail_url: course.thumbnail_url || null,
-      category: course.category || 'General',
-      level: course.level || 'Beginner',
-      duration: course.duration || '0h',
-      is_premium: course.is_premium || false,
-      is_featured: true, 
-      created_at: course.created_at,
-      updated_at: course.updated_at || course.created_at,
-      status: 'published',
-      instructor: course.instructor || 'EPU Learning',
-      price: course.is_premium ? '299.000₫' : '0₫',
-      discount_price: course.is_premium ? '149.000₫' : null,
-      full_description: course.full_description || '',
-      objectives: course.objectives || [],
-      requirements: course.requirements || []
-    }));
-    
-    // Lưu cache
-    cache.featuredCourses = {
-      data: formattedCourses,
-      timestamp: Date.now()
-    };
-    
-    return formattedCourses;
-  } catch (error) {
-    console.error('Error fetching featured courses:', error);
-    return [];
-  }
-};
-
-// Function to fetch user certificates - optimized join query
-export const fetchUserCertificates = async (userId: string): Promise<UserCertificate[]> => {
-  try {
-    if (!userId) {
-      return [];
-    }
-    
-    // Kiểm tra cache
-    const cachedData = cache.certificates.get(userId);
-    if (cachedData && isCacheValid(cachedData.timestamp)) {
-      return cachedData.data;
-    }
-    
-    const { data, error } = await supabase
-      .from('certificates')
-      .select(`
-        id, user_id, course_id, certificate_id, issue_date,
-        courses(title)
-      `)
-      .eq('user_id', userId)
-      .order('issue_date', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching certificates:', error);
-      throw error;
-    }
-
-    const certificates = data?.map(cert => ({
-      id: cert.id,
-      userId: cert.user_id,
-      courseId: cert.course_id,
-      certificateId: cert.certificate_id,
-      issueDate: cert.issue_date,
-      courseName: cert.courses?.title || 'Unknown Course'
-    })) || [];
-    
-    // Lưu cache
-    cache.certificates.set(userId, {
-      data: certificates,
-      timestamp: Date.now()
-    });
-    
-    return certificates;
-  } catch (error) {
-    console.error('Error fetching certificates:', error);
-    return [];
-  }
-};
-
-// Function to check API health
-export const checkApiHealth = async (): Promise<boolean> => {
+// Function to update the last accessed timestamp for a course
+export const updateCourseLastAccessed = async (userId: string, courseId: string): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .from('profiles')
-      .select('count', { count: 'exact', head: true })
-      .limit(1);
-    
+      .from('user_courses')
+      .update({ last_accessed: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('course_id', courseId);
+
     return !error;
   } catch (error) {
-    console.error('API health check error:', error);
+    console.error('Error updating last accessed timestamp:', error);
     return false;
   }
 };
-
-// Optimized function to fetch certification programs
-export const fetchCertificationPrograms = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('courses')
-      .select('id, title, description, duration, level, category')
-      .eq('is_premium', true)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching certification programs:', error);
-      throw error;
-    }
-
-    return data?.map(course => ({
-      id: course.id,
-      title: course.title,
-      description: course.description,
-      duration: course.duration,
-      level: course.level,
-      requirements: [
-        `Kiến thức cơ bản về ${course.category}`,
-        `Hoàn thành tất cả các bài học trong khóa học`,
-        `Đạt điểm tối thiểu 80% trong bài kiểm tra cuối khóa`
-      ]
-    })) || [];
-  } catch (error) {
-    console.error('Error fetching certification programs:', error);
-    return [];
-  }
-};
-
-// Xóa cache
-export const clearCache = () => {
-  cache.enrolledCourses.clear();
-  cache.courses.data = null;
-  cache.courses.timestamp = 0;
-  cache.featuredCourses.data = null;
-  cache.featuredCourses.timestamp = 0;
-  cache.certificates.clear();
-  console.log('Cache cleared');
-};
-
-// Export these functions for use in other files
-export * from './courseServices';
-export * from './testServices';
-export * from './userProgressServices';

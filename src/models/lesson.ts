@@ -122,9 +122,9 @@ export interface SupabaseCourseResponse {
   instructor: string;
   duration: string;
   level: string;
-  price: number | null;
-  discount_price: number | null;
   is_premium: boolean;
+  price: number | string | null;
+  discount_price: number | string | null;
 }
 
 export interface SupabaseChapterResponse {

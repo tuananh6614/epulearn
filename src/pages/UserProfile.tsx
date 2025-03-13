@@ -58,7 +58,6 @@ const UserProfile = React.memo(() => {
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="w-full lg:w-1/4">
             <UserSidebar 
-              user={currentUser}
               enrolledCoursesCount={enrolledCourses?.length || 0}
               certificatesCount={certificates?.length || 0}
               isLoading={coursesLoading || certificatesLoading}

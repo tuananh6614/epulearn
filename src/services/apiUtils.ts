@@ -152,8 +152,8 @@ export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
       updated_at: course.created_at, // Use created_at as fallback
       status: 'published',
       instructor: 'EPU Learning', // Default instructor
-      price: course.is_premium ? '299.000₫' : '0₫', // Default price
-      discount_price: course.is_premium ? '149.000₫' : null // Default discount
+      price: course.is_premium ? '299.000₫' : '0₫', // Now compatible with updated interface
+      discount_price: course.is_premium ? '149.000₫' : null // Now compatible with updated interface
     })) || [];
   } catch (error) {
     console.error('Error fetching courses:', error);

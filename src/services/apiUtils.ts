@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SupabaseCourseResponse as ModelSupabaseCourseResponse } from '@/models/lesson';
 
@@ -26,21 +27,26 @@ export interface EnrolledCourse {
   status: string;
 }
 
-// Function to fetch user enrolled courses
+// Performance-optimized function to fetch user enrolled courses
 export const fetchUserEnrolledCourses = async (userId: string): Promise<EnrolledCourse[]> => {
   try {
     if (!userId) {
       return [];
     }
 
-    // Use a single JOIN query instead of multiple separate queries
+    // Use an optimized single JOIN query with specific column selection
     const { data, error } = await supabase
       .from('user_courses')
       .select(`
-        *,
-        course:courses(*)
+        course_id,
+        progress_percentage,
+        last_accessed,
+        enrolled_at,
+        has_paid,
+        course:courses(id, title, description, thumbnail_url, category)
       `)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .order('last_accessed', { ascending: false });
 
     if (error) {
       console.error('Error fetching enrolled courses:', error);
@@ -51,12 +57,12 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
       return [];
     }
 
-    // Transform data to EnrolledCourse format
+    // Transform data to EnrolledCourse format with optimized mapping
     return data.map(item => {
       const isCompleted = item.progress_percentage >= 100;
       
-      // Special handling for VIP courses
-      if (item.course_id.startsWith('vip-')) {
+      // Special handling for VIP courses with early return pattern
+      if (typeof item.course_id === 'string' && item.course_id.startsWith('vip-')) {
         const duration = item.course_id.split('vip-')[1];
         const durationMap: Record<string, string> = {
           '1-month': '1 tháng',
@@ -118,12 +124,12 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
   }
 };
 
-// Function to fetch courses
+// Function to fetch courses - optimized with specific column selection
 export const fetchCourses = async (): Promise<ModelSupabaseCourseResponse[]> => {
   try {
     const { data, error } = await supabase
       .from('courses')
-      .select('*')
+      .select('id, title, description, thumbnail_url, category, level, duration, is_premium, is_featured, created_at')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -142,12 +148,12 @@ export const fetchCourses = async (): Promise<ModelSupabaseCourseResponse[]> => 
   }
 };
 
-// Function to fetch featured courses
+// Function to fetch featured courses - optimized with only needed fields
 export const fetchFeaturedCourses = async (): Promise<ModelSupabaseCourseResponse[]> => {
   try {
     const { data, error } = await supabase
       .from('courses')
-      .select('*')
+      .select('id, title, description, thumbnail_url, category, level, duration, is_premium, created_at')
       .eq('is_featured', true)
       .order('created_at', { ascending: false })
       .limit(4);
@@ -168,16 +174,21 @@ export const fetchFeaturedCourses = async (): Promise<ModelSupabaseCourseRespons
   }
 };
 
-// Function to fetch user certificates
+// Function to fetch user certificates - optimized join query
 export const fetchUserCertificates = async (userId: string): Promise<UserCertificate[]> => {
   try {
+    if (!userId) {
+      return [];
+    }
+    
     const { data, error } = await supabase
       .from('certificates')
       .select(`
-        *,
+        id, user_id, course_id, certificate_id, issue_date,
         courses(title)
       `)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .order('issue_date', { ascending: false });
 
     if (error) {
       console.error('Error fetching certificates:', error);
@@ -201,9 +212,10 @@ export const fetchUserCertificates = async (userId: string): Promise<UserCertifi
 // Function to check API health
 export const checkApiHealth = async (): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('profiles')
-      .select('count', { count: 'exact', head: true });
+      .select('count', { count: 'exact', head: true })
+      .limit(1);
     
     return !error;
   } catch (error) {
@@ -212,12 +224,12 @@ export const checkApiHealth = async (): Promise<boolean> => {
   }
 };
 
-// New function to fetch certification programs (courses that can offer certificates)
+// Optimized function to fetch certification programs
 export const fetchCertificationPrograms = async () => {
   try {
     const { data, error } = await supabase
       .from('courses')
-      .select('*')
+      .select('id, title, description, duration, level, category')
       .eq('is_premium', true)
       .order('created_at', { ascending: false });
 
@@ -226,7 +238,6 @@ export const fetchCertificationPrograms = async () => {
       throw error;
     }
 
-    // Transform course data into certification program format
     return data?.map(course => ({
       id: course.id,
       title: course.title,

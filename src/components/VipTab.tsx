@@ -1,23 +1,23 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import VipManager from './VipManager';
 import VipActivationPending from './VipActivationPending';
 
-const VipTab = () => {
+const VipTab = React.memo(() => {
   const { currentUser } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
   const [showActivationPending, setShowActivationPending] = useState(false);
   
-  const handleVipStatusChanged = () => {
+  const handleVipStatusChanged = useCallback(() => {
     setRefreshKey(prev => prev + 1);
-  };
+  }, []);
   
-  const handleActivationPending = () => {
+  const handleActivationPending = useCallback(() => {
     setShowActivationPending(true);
-  };
+  }, []);
   
   if (!currentUser) {
     return (
@@ -47,6 +47,8 @@ const VipTab = () => {
       />
     </div>
   );
-};
+});
+
+VipTab.displayName = 'VipTab';
 
 export default VipTab;

@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
-import { Crown, Check, Timer, UserCheck } from 'lucide-react';
+import { Crown, Check, UserCheck } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 
 interface VipManagerProps {
@@ -17,7 +17,7 @@ interface VipManagerProps {
   onActivationPending: () => void;
 }
 
-const VipManager: React.FC<VipManagerProps> = ({ 
+const VipManager: React.FC<VipManagerProps> = React.memo(({ 
   userId, 
   userEmail, 
   isCurrentUserVip, 
@@ -29,7 +29,7 @@ const VipManager: React.FC<VipManagerProps> = ({
   const [selectedDuration, setSelectedDuration] = useState<string>("1-month");
   const [showSuccess, setShowSuccess] = useState(false);
   
-  const durations = {
+  const durations = useMemo(() => ({
     "1-month": {
       label: "1 tháng",
       months: 1,
@@ -50,7 +50,7 @@ const VipManager: React.FC<VipManagerProps> = ({
       months: 12,
       planType: "vip1year"
     }
-  };
+  }), []);
   
   const calculateExpiryDate = (months: number): Date => {
     const now = new Date();
@@ -186,6 +186,12 @@ const VipManager: React.FC<VipManagerProps> = ({
     );
   }
   
+  // Calculate days remaining for VIP
+  const daysRemaining = useMemo(() => {
+    if (!vipExpirationDate) return null;
+    return Math.ceil((vipExpirationDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+  }, [vipExpirationDate]);
+  
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -203,7 +209,8 @@ const VipManager: React.FC<VipManagerProps> = ({
                 <p className="font-medium">User currently has VIP access</p>
                 {vipExpirationDate && (
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Expires: {vipExpirationDate.toLocaleDateString()}
+                    Expires: {vipExpirationDate.toLocaleDateString()} 
+                    {daysRemaining !== null && ` (${daysRemaining} days remaining)`}
                   </p>
                 )}
               </div>
@@ -248,6 +255,8 @@ const VipManager: React.FC<VipManagerProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
+
+VipManager.displayName = 'VipManager';
 
 export default VipManager;

@@ -1,4 +1,5 @@
-import React, { Suspense, lazy } from 'react';
+
+import React, { Suspense, lazy, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,16 +21,28 @@ const VipTab = lazy(() => import('@/components/VipTab'));
 // Import fetch functions with optimized queries
 import { fetchUserEnrolledCourses, fetchUserCertificates } from '@/services/apiUtils';
 
+// Component for loading state
+const LoadingFallback = () => (
+  <Card>
+    <CardContent className="py-6">
+      <div className="flex justify-center py-4">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    </CardContent>
+  </Card>
+);
+
 const UserProfile = () => {
   const { currentUser, resendVerificationEmail } = useAuth();
   const [isResendingEmail, setIsResendingEmail] = React.useState(false);
 
-  // Optimize data fetching with React Query
+  // Optimize data fetching with React Query - improved caching and stale time
   const { data: userCourses, isLoading: isLoadingCourses } = useQuery({
     queryKey: ['userCourses', currentUser?.id],
     queryFn: () => fetchUserEnrolledCourses(currentUser?.id || ''),
     enabled: !!currentUser?.id,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    cacheTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
     retry: 1,
     refetchOnWindowFocus: false,
   });
@@ -38,12 +51,15 @@ const UserProfile = () => {
     queryKey: ['userCertificates', currentUser?.id],
     queryFn: () => fetchUserCertificates(currentUser?.id || ''),
     enabled: !!currentUser?.id,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    cacheTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
     retry: 1,
     refetchOnWindowFocus: false,
   });
 
-  const isEmailUnverified = currentUser?.email_confirmed_at === undefined || currentUser?.email_confirmed_at === null;
+  const isEmailUnverified = useMemo(() => {
+    return currentUser?.email_confirmed_at === undefined || currentUser?.email_confirmed_at === null;
+  }, [currentUser?.email_confirmed_at]);
 
   const handleResendEmail = async () => {
     if (isResendingEmail) return;
@@ -128,7 +144,10 @@ const UserProfile = () => {
                 {currentUser?.isVip && (
                   <div className="flex items-center bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1 rounded-full">
                     <Crown className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mr-1" />
-                    <span className="text-sm font-medium text-yellow-800 dark:text-yellow-300">VIP</span>
+                    <span className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                      VIP {currentUser.vipExpirationDate ? 
+                        `(Còn ${Math.ceil((new Date(currentUser.vipExpirationDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24))} ngày)` : ''}
+                    </span>
                   </div>
                 )}
               </div>
@@ -195,16 +214,5 @@ const UserProfile = () => {
     </div>
   );
 };
-
-// Component hiển thị khi đang tải
-const LoadingFallback = () => (
-  <Card>
-    <CardContent className="py-6">
-      <div className="flex justify-center py-4">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    </CardContent>
-  </Card>
-);
 
 export default UserProfile;

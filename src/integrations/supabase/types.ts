@@ -117,6 +117,88 @@ export type Database = {
           },
         ]
       }
+      course_test_questions: {
+        Row: {
+          correct_answer: number
+          course_test_id: string | null
+          created_at: string | null
+          id: string
+          options: Json
+          points: number | null
+          question: string
+          updated_at: string | null
+        }
+        Insert: {
+          correct_answer: number
+          course_test_id?: string | null
+          created_at?: string | null
+          id?: string
+          options: Json
+          points?: number | null
+          question: string
+          updated_at?: string | null
+        }
+        Update: {
+          correct_answer?: number
+          course_test_id?: string | null
+          created_at?: string | null
+          id?: string
+          options?: Json
+          points?: number | null
+          question?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_test_questions_course_test_id_fkey"
+            columns: ["course_test_id"]
+            isOneToOne: false
+            referencedRelation: "course_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_tests: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          passing_score: number | null
+          time_limit: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          passing_score?: number | null
+          time_limit?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          passing_score?: number | null
+          time_limit?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_tests_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           category: string
@@ -124,12 +206,15 @@ export type Database = {
           description: string
           discount_price: number | null
           duration: string
+          full_description: string | null
           id: string
           instructor: string
           is_featured: boolean
           is_premium: boolean
           level: string
+          objectives: string[] | null
           price: number | null
+          requirements: string[] | null
           thumbnail_url: string | null
           title: string
           updated_at: string
@@ -140,12 +225,15 @@ export type Database = {
           description: string
           discount_price?: number | null
           duration: string
+          full_description?: string | null
           id?: string
           instructor: string
           is_featured?: boolean
           is_premium?: boolean
           level: string
+          objectives?: string[] | null
           price?: number | null
+          requirements?: string[] | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string
@@ -156,12 +244,15 @@ export type Database = {
           description?: string
           discount_price?: number | null
           duration?: string
+          full_description?: string | null
           id?: string
           instructor?: string
           is_featured?: boolean
           is_premium?: boolean
           level?: string
+          objectives?: string[] | null
           price?: number | null
+          requirements?: string[] | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
@@ -358,6 +449,57 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_test_results: {
+        Row: {
+          answers: Json | null
+          course_id: string | null
+          course_test_id: string | null
+          created_at: string | null
+          id: string
+          passed: boolean
+          score: number
+          time_taken: number | null
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          course_id?: string | null
+          course_test_id?: string | null
+          created_at?: string | null
+          id?: string
+          passed: boolean
+          score: number
+          time_taken?: number | null
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          course_id?: string | null
+          course_test_id?: string | null
+          created_at?: string | null
+          id?: string
+          passed?: boolean
+          score?: number
+          time_taken?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_test_results_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_test_results_course_test_id_fkey"
+            columns: ["course_test_id"]
+            isOneToOne: false
+            referencedRelation: "course_tests"
             referencedColumns: ["id"]
           },
         ]

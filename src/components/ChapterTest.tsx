@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, fetchTestQuestions, saveTestResult } from "@/integrations/supabase/client";
 import { useAuth } from '@/context/AuthContext';
 
 interface TestQuestion {
@@ -38,12 +39,8 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
   React.useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const { data, error } = await supabase
-          .from('chapter_tests')
-          .select('*')
-          .eq('chapter_id', chapterId);
-          
-        if (error) throw error;
+        setIsLoading(true);
+        const data = await fetchTestQuestions(chapterId);
         
         if (data && data.length > 0) {
           const transformedQuestions: TestQuestion[] = data.map(q => ({
@@ -105,7 +102,6 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
   const updateTestProgress = async () => {
     try {
       const finalScore = score + (isCorrect ? 1 : 0);
-      const percentageScore = Math.round((finalScore / questions.length) * 100);
       
       if (user) {
         const { data: lessonData } = await supabase
@@ -118,21 +114,14 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
         if (lessonData && lessonData.length > 0) {
           const testLessonId = lessonData[0].id;
           
-          await supabase
-            .from('user_lesson_progress')
-            .upsert({
-              user_id: user.id,
-              lesson_id: testLessonId,
-              course_id: courseId,
-              completed: percentageScore >= 70,
-              last_position: JSON.stringify({
-                score: finalScore,
-                total: questions.length,
-                percentage: percentageScore
-              }),
-              completed_at: percentageScore >= 70 ? new Date().toISOString() : null,
-              updated_at: new Date().toISOString()
-            });
+          await saveTestResult(
+            user.id,
+            courseId,
+            chapterId,
+            testLessonId,
+            finalScore,
+            questions.length
+          );
         }
       }
     } catch (error) {

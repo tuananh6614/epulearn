@@ -65,3 +65,27 @@ export const updateCourseLastAccessed = async (userId: string, courseId: string)
     return false;
   }
 };
+
+// Function to fetch featured courses for the homepage
+export const fetchFeaturedCourses = async () => {
+  try {
+    console.log('Fetching featured courses from Supabase');
+    
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('is_featured', true)
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching featured courses:', error);
+      throw error;
+    }
+    
+    console.log(`Fetched ${data?.length || 0} featured courses`);
+    return data || [];
+  } catch (error) {
+    console.error('Error in fetchFeaturedCourses:', error);
+    return [];
+  }
+};

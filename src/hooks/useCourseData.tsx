@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { enrollUserInCourse } from '@/integrations/supabase/apiUtils';
 
 // Helper hook to get course content with progress for the current user
 export const useCourseData = (courseId: string | undefined) => {
@@ -100,23 +100,18 @@ export const useCourseData = (courseId: string | undefined) => {
     }
 
     try {
-      const { error } = await supabase
-        .from('user_courses')
-        .insert({
-          user_id: user.id,
-          course_id: courseId,
-          progress_percentage: 0,
-          enrolled_at: new Date().toISOString(),
-          last_accessed: new Date().toISOString(),
-          has_paid: false
-        });
-
-      if (error) throw error;
-
-      setIsEnrolled(true);
-      setUserProgress(0);
-      toast.success("Đăng ký khóa học thành công");
-      return { success: true };
+      const result = await enrollUserInCourse(user.id, courseId);
+      
+      if (result.success) {
+        setIsEnrolled(true);
+        setUserProgress(0);
+        toast.success("Đăng ký khóa học thành công");
+      } else {
+        console.error('Error enrolling in course:', result.error);
+        toast.error("Không thể đăng ký khóa học: " + (result.error?.message || ""));
+      }
+      
+      return result;
     } catch (error) {
       console.error('Error enrolling in course:', error);
       toast.error("Không thể đăng ký khóa học");

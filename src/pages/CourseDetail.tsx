@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -15,7 +14,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { fetchCourseContent, supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Define types for our UI components to correctly handle the data
 interface DisplayLesson {
   id: string;
   title: string;
@@ -68,7 +66,6 @@ const CourseDetail = () => {
         setLoading(true);
         console.log(`Loading course details for ID: ${courseId}`);
         
-        // Load course content from Supabase
         const courseData = await fetchCourseContent(courseId);
         console.log('Fetched course data:', courseData);
         
@@ -79,14 +76,13 @@ const CourseDetail = () => {
           return;
         }
         
-        // Check if user is enrolled in this course
         if (user) {
           const { data: enrollment, error } = await supabase
             .from('user_courses')
             .select('*')
             .eq('user_id', user.id)
             .eq('course_id', courseId)
-            .maybeSingle(); // Changed from single() to maybeSingle()
+            .maybeSingle();
             
           if (error) {
             console.error('Error checking enrollment:', error);
@@ -96,7 +92,6 @@ const CourseDetail = () => {
           }
         }
         
-        // Transform to our UI model
         const displayCourse: DisplayCourse = {
           id: courseData.id,
           title: courseData.title,
@@ -125,15 +120,14 @@ const CourseDetail = () => {
               title: lesson.title,
               type: lesson.type as "lesson" | "test" | "video",
               duration: lesson.duration,
-              completed: false, // We'll set this based on user progress
-              questions: lesson.type === 'test' ? 10 : undefined // Placeholder for test questions count
+              completed: false,
+              questions: lesson.type === 'test' ? 10 : undefined
             }))
           }))
         };
         
         setCourse(displayCourse as DisplayCourse);
         setLoading(false);
-        
       } catch (error) {
         console.error('Error loading course:', error);
         toast.error("Đã xảy ra lỗi khi tải dữ liệu khóa học");
@@ -155,47 +149,17 @@ const CourseDetail = () => {
     
     try {
       setEnrolling(true);
+      console.log("Starting course enrollment process");
       
-      // Check if already enrolled
-      const { data: existingEnrollment, error: checkError } = await supabase
-        .from('user_courses')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('course_id', courseId)
-        .maybeSingle(); // Changed from single() to maybeSingle()
-        
-      if (!checkError && existingEnrollment) {
-        // Already enrolled, just update the last_accessed
-        await supabase
-          .from('user_courses')
-          .update({ 
-            last_accessed: new Date().toISOString() 
-          })
-          .eq('user_id', user.id)
-          .eq('course_id', courseId);
-          
+      const { success, error } = await enrollUserInCourse(user.id, courseId);
+      
+      if (success) {
         setEnrolled(true);
-        toast.success("Bạn đã đăng ký khóa học này trước đó");
-      } else {
-        // New enrollment
-        const { error: enrollError } = await supabase
-          .from('user_courses')
-          .insert({
-            user_id: user.id,
-            course_id: courseId,
-            progress_percentage: 0,
-            enrolled_at: new Date().toISOString(),
-            last_accessed: new Date().toISOString(),
-            has_paid: false // For free courses
-          });
-          
-        if (enrollError) {
-          console.error('Error enrolling in course:', enrollError);
-          throw enrollError;
-        }
-        
-        setEnrolled(true);
+        setProgress(0);
         toast.success("Đăng ký khóa học thành công");
+      } else {
+        console.error('Error enrolling in course:', error);
+        toast.error("Không thể đăng ký khóa học: " + (error?.message || "Lỗi không xác định"));
       }
       
       setEnrolling(false);
@@ -215,7 +179,6 @@ const CourseDetail = () => {
   const continueCourse = () => {
     if (!course) return;
     
-    // Logic to find the next incomplete lesson
     let foundNextLesson = false;
     
     for (const chapter of course.chapters) {
@@ -229,13 +192,11 @@ const CourseDetail = () => {
       if (foundNextLesson) break;
     }
     
-    // If all lessons are completed, start from the beginning
     if (!foundNextLesson && course.chapters[0]?.lessons[0]) {
       navigate(`/course/${courseId}/chapter/${course.chapters[0].id}/lesson/${course.chapters[0].lessons[0].id}`);
     }
   };
   
-  // Helper function to generate a consistent color based on course ID
   const getRandomColor = (id: string) => {
     const colors = ['#3498db', '#e74c3c', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c'];
     const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -294,7 +255,6 @@ const CourseDetail = () => {
       
       <div className="container mx-auto px-4 pt-24 pb-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main content */}
           <div className="lg:col-span-2">
             <div className="mb-8">
               <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
@@ -438,7 +398,6 @@ const CourseDetail = () => {
             </div>
           </div>
           
-          {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="sticky top-24">
               <Card className="overflow-hidden shadow-md">

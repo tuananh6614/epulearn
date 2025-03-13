@@ -28,6 +28,7 @@ export const enrollUserInCourse = async (userId: string, courseId: string): Prom
     }
 
     // Enroll the user in the course
+    console.log(`Enrolling user ${userId} in course ${courseId}`);
     const { error: enrollError } = await supabase
       .from('user_courses')
       .insert({
@@ -35,6 +36,7 @@ export const enrollUserInCourse = async (userId: string, courseId: string): Prom
         course_id: courseId,
         progress_percentage: 0,
         has_paid: false,
+        enrolled_at: new Date().toISOString(),
         last_accessed: new Date().toISOString()
       });
 
@@ -43,6 +45,7 @@ export const enrollUserInCourse = async (userId: string, courseId: string): Prom
       return { success: false, error: enrollError };
     }
 
+    console.log('Enrollment successful');
     return { success: true };
   } catch (error) {
     console.error('Error in enrollUserInCourse:', error);

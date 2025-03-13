@@ -252,21 +252,27 @@ export const fetchCourseContent = async (courseId: string) => {
       throw lessonsError;
     }
     
-    // Get all chapter tests
-    const { data: testsData, error: testsError } = await supabase
-      .from('chapter_tests')
-      .select('*')
-      .eq('chapter_id', chaptersData.map(chapter => chapter.id)[0]);  // FIX: Changed string[] to string by taking first chapter
-      
-    if (testsError) {
-      console.error('Error fetching chapter tests:', testsError);
-      // Don't throw here, just log the error and continue without test data
+    // Get all chapter tests - fetch for all chapters at once
+    const chapterIds = chaptersData.map(chapter => chapter.id);
+    
+    let testsData = [];
+    if (chapterIds.length > 0) {
+      const { data, error: testsError } = await supabase
+        .from('chapter_tests')
+        .select('*')
+        .in('chapter_id', chapterIds);
+        
+      if (testsError) {
+        console.error('Error fetching chapter tests:', testsError);
+      } else {
+        testsData = data || [];
+      }
     }
     
     // Now organize lessons by chapter
     const structuredChapters = chaptersData.map(chapter => {
       const chapterLessons = lessonsData.filter(lesson => lesson.chapter_id === chapter.id);
-      const chapterTests = testsData?.filter(test => test.chapter_id === chapter.id) || [];
+      const chapterTests = testsData.filter(test => test.chapter_id === chapter.id) || [];
       
       return {
         ...chapter,

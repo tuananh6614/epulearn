@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Award, Clock, RotateCcw } from "lucide-react";
+import { Award, Clock, RotateCcw, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CourseTestQuestion {
   id: string;
@@ -41,6 +42,8 @@ const CourseTestForm = ({ test, courseId, onComplete }: CourseTestFormProps) => 
   const [timeLeft, setTimeLeft] = useState(test.time_limit * 60);
   const [showResults, setShowResults] = useState(false);
   const [score, setScore] = useState(0);
+  const [cheatAttempts, setCheatAttempts] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   // Create a form schema for the test
@@ -63,29 +66,59 @@ const CourseTestForm = ({ test, courseId, onComplete }: CourseTestFormProps) => 
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Handle form submission
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    // Calculate score
-    let correctAnswers = 0;
-    let totalPoints = 0;
-    let earnedPoints = 0;
-
-    test.questions.forEach((question, index) => {
-      const points = question.points || 1;
-      totalPoints += points;
-      
-      if (data.answers[index] === question.correct_answer) {
-        correctAnswers++;
-        earnedPoints += points;
+  // Check for tab switching (cheat detection)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && !showResults) {
+        setCheatAttempts(prev => prev + 1);
+        toast.error("Cảnh báo! Chuyển tab được ghi nhận là gian lận trong bài kiểm tra.", {
+          duration: 5000,
+        });
       }
-    });
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [showResults]);
 
-    const percentage = Math.round((earnedPoints / totalPoints) * 100);
-    const passed = percentage >= test.passing_score;
+  // Handle form submission
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
+    
+    try {
+      // Calculate score
+      let correctAnswers = 0;
+      let totalPoints = 0;
+      let earnedPoints = 0;
 
-    setScore(percentage);
-    setShowResults(true);
-    onComplete(percentage, passed);
+      test.questions.forEach((question, index) => {
+        const points = question.points || 1;
+        totalPoints += points;
+        
+        if (data.answers[index] === question.correct_answer) {
+          correctAnswers++;
+          earnedPoints += points;
+        }
+      });
+
+      const percentage = Math.round((earnedPoints / totalPoints) * 100);
+      const passed = percentage >= test.passing_score;
+
+      setScore(percentage);
+      setShowResults(true);
+      
+      // Call the onComplete callback to save results
+      await onComplete(percentage, passed);
+      
+      setIsSubmitting(false);
+    } catch (error) {
+      console.error('Error submitting test:', error);
+      toast.error("Có lỗi xảy ra khi nộp bài kiểm tra");
+      setIsSubmitting(false);
+    }
   };
 
   // Navigate between questions
@@ -107,6 +140,7 @@ const CourseTestForm = ({ test, courseId, onComplete }: CourseTestFormProps) => 
     setCurrentQuestion(0);
     setShowResults(false);
     setTimeLeft(test.time_limit * 60);
+    setCheatAttempts(0);
   };
 
   // Timer effect
@@ -170,6 +204,15 @@ const CourseTestForm = ({ test, courseId, onComplete }: CourseTestFormProps) => 
               <p>{Math.floor((test.time_limit * 60 - timeLeft) / 60)} phút {(test.time_limit * 60 - timeLeft) % 60} giây</p>
             </div>
           </div>
+          
+          {cheatAttempts > 0 && (
+            <Alert variant="warning" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Phát hiện {cheatAttempts} lần chuyển tab trong quá trình làm bài. Hành vi này có thể ảnh hưởng đến kết quả bài kiểm tra của bạn.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" onClick={() => navigate(`/course/${courseId}`)}>
@@ -262,7 +305,9 @@ const CourseTestForm = ({ test, courseId, onComplete }: CourseTestFormProps) => 
             </div>
             
             {currentQuestion === test.questions.length - 1 ? (
-              <Button type="submit">Nộp bài</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Đang nộp bài...' : 'Nộp bài'}
+              </Button>
             ) : (
               <Button type="button" onClick={goToNextQuestion}>Câu tiếp</Button>
             )}

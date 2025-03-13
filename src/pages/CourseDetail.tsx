@@ -4,12 +4,12 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardHeader, CardContent, CardDescription, CardTitle, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { CheckCircle, Clock, FileText, Info, Loader2, Lock, Zap, BookOpen, Video } from 'lucide-react';
+import { CheckCircle, Clock, FileText, Info, Loader2, Lock, Zap, BookOpen, Video, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/components/ui/use-toast"
 import { fetchCourseContent, supabase } from '@/integrations/supabase/client';
@@ -18,7 +18,7 @@ import { fetchCourseContent, supabase } from '@/integrations/supabase/client';
 interface DisplayLesson {
   id: string;
   title: string;
-  type: 'lesson' | 'test' | 'video';
+  type: "lesson" | "test" | "video";
   duration: string;
   completed: boolean;
   questions?: number;
@@ -47,228 +47,242 @@ interface DisplayCourse {
   chapters: DisplayChapter[];
 }
 
-const getCourseColor = (category: string) => {
-  switch (category) {
-    case 'JavaScript':
-      return 'yellow';
-    case 'React':
-      return 'blue';
-    case 'Node':
-      return 'green';
-    default:
-      return 'gray';
-  }
-};
-
 const CourseDetail = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [course, setCourse] = useState<DisplayCourse>({
-    id: '',
-    title: '',
-    description: '',
-    fullDescription: '',
-    level: 'Beginner',
-    duration: '0h',
-    totalLessons: 0,
-    totalTests: 0,
-    image: '',
-    color: 'blue',
-    requirements: [],
-    objectives: [],
-    chapters: []
-  });
+  const { toast } = useToast();
+  
+  const [course, setCourse] = useState<DisplayCourse | null>(null);
   const [loading, setLoading] = useState(true);
   const [enrolled, setEnrolled] = useState(false);
-  const [enrolling, setEnrolling] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [activeTab, setActiveTab] = useState('overview');
-  const { toast } = useToast();
-
+  const [enrolling, setEnrolling] = useState(false);
+  
   useEffect(() => {
-    const checkEnrollmentStatus = async () => {
-      if (!user || !courseId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        // Check if user is enrolled in the course
-        const { data, error } = await supabase
-          .from('user_courses')
-          .select('progress_percentage')
-          .eq('user_id', user.id)
-          .eq('course_id', courseId)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error checking enrollment:', error);
-          toast({
-            title: "Lỗi kiểm tra trạng thái",
-            description: "Đã có lỗi xảy ra khi kiểm tra trạng thái đăng ký khóa học.",
-            variant: "destructive"
-          });
-        }
-
-        if (data) {
-          setEnrolled(true);
-          setProgress(data.progress_percentage || 0);
-        } else {
-          setEnrolled(false);
-          setProgress(0);
-        }
-      } catch (error) {
-        console.error('Error in enrollment check:', error);
-        toast({
-          title: "Lỗi kiểm tra trạng thái",
-          description: "Đã có lỗi xảy ra khi kiểm tra trạng thái đăng ký khóa học.",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkEnrollmentStatus();
-  }, [courseId, user, toast]);
-
-  useEffect(() => {
-    const fetchCourseData = async () => {
+    const loadCourse = async () => {
+      if (!courseId) return;
+      
       try {
         setLoading(true);
-        console.log('Fetching course data for:', courseId);
+        console.log(`Loading course details for ID: ${courseId}`);
         
-        // Use the new fetchCourseContent function for better structured data
-        if (courseId) {
-          const courseContent = await fetchCourseContent(courseId);
-          
-          if (courseContent) {
-            // Transform API data to match our display model
-            const formattedChapters: DisplayChapter[] = courseContent.chapters.map(chapter => ({
-              id: chapter.id,
-              title: chapter.title,
-              description: chapter.description || '',
-              lessons: chapter.lessons.map(lesson => ({
-                id: lesson.id,
-                title: lesson.title,
-                type: lesson.type as 'lesson' | 'test' | 'video',
-                duration: lesson.duration,
-                completed: false, // Will be updated if user is enrolled
-                questions: lesson.type === 'test' ? 
-                  chapter.tests?.filter(test => test.chapter_id === chapter.id)?.length || 0 : 0
-              }))
-            }));
+        // Load course content from Supabase
+        const courseData = await fetchCourseContent(courseId);
+        console.log('Fetched course data:', courseData);
+        
+        if (!courseData) {
+          console.error('No course data returned');
+          toast({
+            title: "Lỗi",
+            description: "Không thể tải thông tin khóa học",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+        
+        // Check if user is enrolled in this course
+        if (user) {
+          const { data: enrollment, error } = await supabase
+            .from('user_courses')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('course_id', courseId)
+            .single();
             
-            // Calculate total lessons and tests
-            let totalLessons = 0;
-            let totalTests = 0;
-            
-            formattedChapters.forEach(chapter => {
-              chapter.lessons.forEach(lesson => {
-                if (lesson.type === 'lesson' || lesson.type === 'video') {
-                  totalLessons++;
-                } else if (lesson.type === 'test') {
-                  totalTests++;
-                }
-              });
-            });
-            
-            setCourse({
-              id: courseContent.id,
-              title: courseContent.title,
-              description: courseContent.description,
-              fullDescription: courseContent.full_description || courseContent.description,
-              level: courseContent.level,
-              duration: courseContent.duration,
-              totalLessons,
-              totalTests,
-              image: courseContent.thumbnail_url || '/placeholder.svg',
-              color: getCourseColor(courseContent.category),
-              requirements: courseContent.requirements || [],
-              objectives: courseContent.objectives || [],
-              chapters: formattedChapters
-            } as DisplayCourse);
-            
-            console.log('Course data loaded successfully');
+          if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
+            console.error('Error checking enrollment:', error);
           } else {
-            console.error('No course found with ID:', courseId);
-            navigate('/courses');
-            toast({
-              title: "Khóa học không tồn tại",
-              description: "Không tìm thấy khóa học này.",
-              variant: "destructive"
-            });
+            setEnrolled(!!enrollment);
+            setProgress(enrollment?.progress_percentage || 0);
           }
         }
         
+        // Transform to our UI model
+        const displayCourse: DisplayCourse = {
+          id: courseData.id,
+          title: courseData.title,
+          description: courseData.description,
+          fullDescription: courseData.full_description || '',
+          level: courseData.level,
+          duration: courseData.duration,
+          totalLessons: courseData.chapters.reduce(
+            (total, chapter) => total + chapter.lessons.filter(l => l.type !== 'test').length, 
+            0
+          ),
+          totalTests: courseData.chapters.reduce(
+            (total, chapter) => total + chapter.lessons.filter(l => l.type === 'test').length, 
+            0
+          ),
+          image: courseData.thumbnail_url || '/placeholder.svg',
+          color: getRandomColor(courseData.id),
+          requirements: courseData.requirements || [],
+          objectives: courseData.objectives || [],
+          chapters: courseData.chapters.map(chapter => ({
+            id: chapter.id,
+            title: chapter.title,
+            description: chapter.description || '',
+            lessons: chapter.lessons.map(lesson => ({
+              id: lesson.id,
+              title: lesson.title,
+              type: lesson.type as "lesson" | "test" | "video",
+              duration: lesson.duration,
+              completed: false, // We'll set this based on user progress
+              questions: lesson.type === 'test' ? 10 : undefined // Placeholder for test questions count
+            }))
+          }))
+        };
+        
+        setCourse(displayCourse as DisplayCourse);
         setLoading(false);
+        
       } catch (error) {
-        console.error('Error fetching course data:', error);
-        setLoading(false);
+        console.error('Error loading course:', error);
         toast({
-          title: "Lỗi tải dữ liệu",
-          description: "Đã có lỗi xảy ra khi tải thông tin khóa học.",
-          variant: "destructive"
+          title: "Lỗi",
+          description: "Đã xảy ra lỗi khi tải dữ liệu khóa học",
+          variant: "destructive",
         });
+        setLoading(false);
       }
     };
     
-    fetchCourseData();
-  }, [courseId, navigate, toast]);
-
+    loadCourse();
+  }, [courseId, user, toast]);
+  
   const handleEnroll = async () => {
-    setEnrolling(true);
+    if (!user) {
+      toast({
+        title: "Yêu cầu đăng nhập",
+        description: "Vui lòng đăng nhập để đăng ký khóa học",
+      });
+      navigate('/login');
+      return;
+    }
+    
+    if (!courseId) return;
+    
     try {
-      // Add user to course
-      const { error } = await supabase
+      setEnrolling(true);
+      
+      // Check if already enrolled
+      const { data: existingEnrollment, error: checkError } = await supabase
         .from('user_courses')
-        .upsert({
-          user_id: user?.id,
-          course_id: courseId,
-          progress_percentage: 0,
-          enrolled_at: new Date().toISOString(),
-          last_accessed: new Date().toISOString()
-        });
-
-      if (error) {
-        console.error('Error enrolling in course:', error);
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('course_id', courseId)
+        .single();
+        
+      if (!checkError && existingEnrollment) {
+        // Already enrolled, just update the last_accessed
+        await supabase
+          .from('user_courses')
+          .update({ 
+            last_accessed: new Date().toISOString() 
+          })
+          .eq('user_id', user.id)
+          .eq('course_id', courseId);
+          
+        setEnrolled(true);
         toast({
-          title: "Lỗi đăng ký",
-          description: "Đã có lỗi xảy ra khi đăng ký khóa học.",
-          variant: "destructive"
+          title: "Đã đăng ký",
+          description: "Bạn đã đăng ký khóa học này trước đó",
         });
       } else {
+        // New enrollment
+        const { error: enrollError } = await supabase
+          .from('user_courses')
+          .insert({
+            user_id: user.id,
+            course_id: courseId,
+            progress_percentage: 0,
+            enrolled_at: new Date().toISOString(),
+            last_accessed: new Date().toISOString(),
+            has_paid: false // For free courses
+          });
+          
+        if (enrollError) throw enrollError;
+        
         setEnrolled(true);
-        setProgress(0);
         toast({
           title: "Đăng ký thành công",
-          description: "Bạn đã đăng ký khóa học thành công!",
+          description: "Bạn đã đăng ký khóa học thành công",
         });
       }
+      
+      setEnrolling(false);
     } catch (error) {
-      console.error('Error during enrollment:', error);
+      console.error('Error enrolling in course:', error);
       toast({
-        title: "Lỗi đăng ký",
-        description: "Đã có lỗi xảy ra khi đăng ký khóa học.",
-        variant: "destructive"
+        title: "Lỗi",
+        description: "Không thể đăng ký khóa học",
+        variant: "destructive",
       });
-    } finally {
       setEnrolling(false);
     }
   };
-
+  
+  const startCourse = () => {
+    if (!course || !course.chapters[0]?.lessons[0]) return;
+    
+    navigate(`/course/${courseId}/chapter/${course.chapters[0].id}/lesson/${course.chapters[0].lessons[0].id}`);
+  };
+  
+  const continueCourse = () => {
+    if (!course) return;
+    
+    // Logic to find the next incomplete lesson
+    let foundNextLesson = false;
+    
+    for (const chapter of course.chapters) {
+      for (const lesson of chapter.lessons) {
+        if (!lesson.completed) {
+          navigate(`/course/${courseId}/chapter/${chapter.id}/lesson/${lesson.id}`);
+          foundNextLesson = true;
+          break;
+        }
+      }
+      if (foundNextLesson) break;
+    }
+    
+    // If all lessons are completed, start from the beginning
+    if (!foundNextLesson && course.chapters[0]?.lessons[0]) {
+      navigate(`/course/${courseId}/chapter/${course.chapters[0].id}/lesson/${course.chapters[0].lessons[0].id}`);
+    }
+  };
+  
+  // Helper function to generate a consistent color based on course ID
+  const getRandomColor = (id: string) => {
+    const colors = ['#3498db', '#e74c3c', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c'];
+    const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[hash % colors.length];
+  };
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container max-w-screen-xl mx-auto px-4 pt-24 pb-10">
-          <div className="animate-pulse space-y-4">
-            <div className="h-10 bg-muted rounded w-1/3"></div>
-            <div className="h-4 bg-muted rounded w-1/2"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+        <div className="container mx-auto px-4 pt-24 pb-10">
+          <div className="animate-pulse space-y-8">
+            <div className="flex flex-col md:flex-row gap-8">
+              <div className="w-full md:w-2/3">
+                <div className="h-10 bg-muted rounded w-3/4 mb-4"></div>
+                <div className="h-4 bg-muted rounded w-1/2 mb-6"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-muted rounded"></div>
+                  <div className="h-4 bg-muted rounded"></div>
+                  <div className="h-4 bg-muted rounded w-5/6"></div>
+                </div>
+              </div>
+              <div className="w-full md:w-1/3">
+                <div className="h-64 bg-muted rounded"></div>
+              </div>
+            </div>
+            <div className="h-8 bg-muted rounded w-48"></div>
+            <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-40 bg-muted rounded"></div>
+                <div key={i} className="h-12 bg-muted rounded"></div>
               ))}
             </div>
           </div>
@@ -276,274 +290,261 @@ const CourseDetail = () => {
       </div>
     );
   }
-
+  
+  if (!course) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24 pb-10 text-center">
+          <Info className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Không tìm thấy khóa học</h1>
+          <p className="text-muted-foreground mb-6">Khóa học này không tồn tại hoặc đã bị xóa</p>
+          <Button onClick={() => navigate('/courses')}>Xem tất cả khóa học</Button>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="pt-16">
-        {/* Course Hero Header */}
-        <div className={`bg-${course.color}-50 dark:bg-${course.color}-900/10 py-12 border-b`}>
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col md:flex-row items-start gap-8">
-              {/* Course Image */}
-              <div className="w-full md:w-1/3 lg:w-1/4">
-                <div className="aspect-video bg-muted rounded-lg overflow-hidden shadow-lg">
-                  <img
-                    src={course.image || '/placeholder.svg'}
-                    alt={course.title}
-                    className="w-full h-full object-cover"
+      
+      <div className="container mx-auto px-4 pt-24 pb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main content */}
+          <div className="lg:col-span-2">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
+              <p className="text-muted-foreground">{course.description}</p>
+              
+              <div className="flex flex-wrap gap-2 mt-4">
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {course.duration}
+                </Badge>
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <BookOpen className="h-3 w-3" />
+                  {course.totalLessons} bài học
+                </Badge>
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <FileText className="h-3 w-3" />
+                  {course.totalTests} bài kiểm tra
+                </Badge>
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Zap className="h-3 w-3" />
+                  {course.level}
+                </Badge>
+              </div>
+            </div>
+            
+            {enrolled && (
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium">Tiến độ của bạn</h3>
+                  <span className="text-sm font-medium">{progress}%</span>
+                </div>
+                <Progress value={progress} className="h-2" />
+              </div>
+            )}
+            
+            <div className="prose dark:prose-invert max-w-none mb-8">
+              <h2 className="text-2xl font-bold mb-4">Tổng quan khóa học</h2>
+              <div dangerouslySetInnerHTML={{ __html: course.fullDescription }} />
+            </div>
+            
+            {course.requirements.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Yêu cầu</h2>
+                <ul className="space-y-2 list-disc pl-5">
+                  {course.requirements.map((req, index) => (
+                    <li key={index}>{req}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {course.objectives.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Bạn sẽ học được</h2>
+                <ul className="space-y-2">
+                  {course.objectives.map((obj, index) => (
+                    <li key={index} className="flex items-start">
+                      <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                      <span>{obj}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-4">Nội dung khóa học</h2>
+              
+              {!enrolled && (
+                <Alert className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Hãy đăng ký khóa học để truy cập đầy đủ nội dung bài học
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <Accordion type="single" collapsible className="w-full">
+                {course.chapters.map((chapter, index) => (
+                  <AccordionItem key={chapter.id} value={`chapter-${index}`}>
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex flex-col items-start text-left">
+                        <div className="text-base font-medium">Chương {index + 1}: {chapter.title}</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {chapter.lessons.length} bài học • {chapter.lessons.reduce((acc, lesson) => acc + parseInt(lesson.duration.split(' ')[0]), 0)} phút
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="pt-2 space-y-2">
+                        {chapter.description && (
+                          <p className="text-sm text-muted-foreground mb-4">{chapter.description}</p>
+                        )}
+                        
+                        {chapter.lessons.map((lesson, lessonIndex) => (
+                          <div 
+                            key={lesson.id}
+                            className={`flex items-center justify-between p-3 rounded-md ${
+                              lesson.completed ? 'bg-green-50 dark:bg-green-900/10' : 'hover:bg-accent/50'
+                            } transition-colors`}
+                          >
+                            <div className="flex items-center">
+                              {lesson.type === 'video' ? (
+                                <Video className="h-4 w-4 mr-3" />
+                              ) : lesson.type === 'test' ? (
+                                <FileText className="h-4 w-4 mr-3" />
+                              ) : (
+                                <BookOpen className="h-4 w-4 mr-3" />
+                              )}
+                              
+                              <div>
+                                <div className="font-medium">{lessonIndex + 1}. {lesson.title}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {lesson.type === 'test' ? `Bài kiểm tra • ${lesson.questions} câu hỏi` : `${lesson.type === 'video' ? 'Video' : 'Bài học'} • ${lesson.duration}`}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              {lesson.completed ? (
+                                <CheckCircle className="h-5 w-5 text-green-500" />
+                              ) : enrolled ? (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => navigate(`/course/${courseId}/chapter/${chapter.id}/lesson/${lesson.id}`)}
+                                >
+                                  Học ngay
+                                </Button>
+                              ) : (
+                                <Lock className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          </div>
+          
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-24">
+              <Card className="overflow-hidden shadow-md">
+                <div 
+                  className="aspect-video w-full" 
+                  style={{ backgroundColor: course.color }} 
+                >
+                  <img 
+                    src={course.image} 
+                    alt={course.title} 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }} 
                   />
                 </div>
-              </div>
-              
-              {/* Course Info */}
-              <div className="flex-1">
-                <div className="space-y-4">
-                  <h1 className="text-3xl font-bold tracking-tight">{course.title}</h1>
-                  <p className="text-muted-foreground">{course.description}</p>
-                  
-                  <div className="flex flex-wrap gap-3">
-                    <Badge variant="outline" className="text-xs">
-                      <Zap className="h-3 w-3 mr-1" />
-                      {course.level}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {course.duration}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      <BookOpen className="h-3 w-3 mr-1" />
-                      {course.totalLessons} Bài học
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      <FileText className="h-3 w-3 mr-1" />
-                      {course.totalTests} Bài kiểm tra
-                    </Badge>
+                
+                <CardContent className="p-6">
+                  <div className="mb-6">
+                    <CardTitle className="text-2xl mb-2">
+                      Miễn phí
+                    </CardTitle>
+                    <CardDescription>
+                      Truy cập toàn bộ nội dung khóa học
+                    </CardDescription>
                   </div>
                   
                   {enrolled ? (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Tiến độ khóa học</span>
-                          <span>{progress}%</span>
-                        </div>
-                        <Progress value={progress} className="h-2" />
-                      </div>
+                    <>
+                      <Button 
+                        className="w-full mb-3" 
+                        onClick={continueCourse}
+                      >
+                        {progress > 0 ? 'Tiếp tục học' : 'Bắt đầu học'}
+                      </Button>
                       
-                      <div className="flex flex-wrap gap-3">
+                      <Link to={`/course-test/${courseId}`}>
                         <Button 
-                          onClick={() => navigate(`/course/${courseId}/chapter/${course.chapters[0]?.id}/lesson/${course.chapters[0]?.lessons[0]?.id}`)}
+                          variant="outline" 
+                          className="w-full"
                         >
-                          {progress > 0 ? 'Tiếp tục học' : 'Bắt đầu khóa học'}
-                        </Button>
-                        
-                        <Button variant="outline" onClick={() => navigate(`/course/${courseId}/test`)}>
                           <FileText className="h-4 w-4 mr-2" />
-                          Kiểm tra tổng quát
+                          Bài kiểm tra tổng quát
                         </Button>
-                      </div>
-                    </div>
+                      </Link>
+                    </>
                   ) : (
                     <Button 
-                      onClick={handleEnroll} 
+                      className="w-full" 
+                      onClick={handleEnroll}
                       disabled={enrolling}
-                      className="mt-2"
                     >
                       {enrolling ? (
                         <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Đang xử lý
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Đang đăng ký...
                         </>
                       ) : (
                         'Đăng ký khóa học'
                       )}
                     </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Course Content */}
-        <div className="container mx-auto px-4 py-10">
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Main Content */}
-            <div className="lg:w-2/3 space-y-6">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="w-full border-b rounded-none justify-start">
-                  <TabsTrigger value="overview" className="text-base">Tổng quan</TabsTrigger>
-                  <TabsTrigger value="content" className="text-base">Nội dung khóa học</TabsTrigger>
-                </TabsList>
-                <TabsContent value="overview" className="space-y-6 pt-4">
-                  <div>
-                    <h2 className="text-2xl font-semibold mb-4">Giới thiệu khóa học</h2>
-                    <div className="prose dark:prose-invert max-w-none">
-                      <p>{course.fullDescription}</p>
-                    </div>
-                  </div>
-                  
-                  {course.objectives.length > 0 && (
-                    <div>
-                      <h2 className="text-2xl font-semibold mb-4">Bạn sẽ học được gì</h2>
-                      <ul className="space-y-2">
-                        {course.objectives.map((objective, index) => (
-                          <li key={index} className="flex items-start">
-                            <CheckCircle className="h-5 w-5 text-green-500 mr-2 shrink-0 mt-0.5" />
-                            <span>{objective}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {course.requirements.length > 0 && (
-                    <div>
-                      <h2 className="text-2xl font-semibold mb-4">Yêu cầu</h2>
-                      <ul className="space-y-2">
-                        {course.requirements.map((req, index) => (
-                          <li key={index} className="flex items-start">
-                            <Info className="h-5 w-5 text-blue-500 mr-2 shrink-0 mt-0.5" />
-                            <span>{req}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="content" className="pt-4">
-                  <h2 className="text-2xl font-semibold mb-4">Nội dung khóa học</h2>
-                  
-                  <Accordion type="multiple" className="w-full">
-                    {course.chapters.map((chapter, chapterIndex) => (
-                      <AccordionItem key={chapter.id} value={`chapter-${chapterIndex}`}>
-                        <AccordionTrigger className="text-base hover:no-underline">
-                          <div className="text-left">
-                            <div className="font-semibold">Phần {chapterIndex + 1}: {chapter.title}</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {chapter.lessons.length} bài học
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-1 pt-2">
-                            {chapter.description && (
-                              <p className="text-sm text-muted-foreground mb-3">{chapter.description}</p>
-                            )}
-                            
-                            {chapter.lessons.map((lesson, lessonIndex) => {
-                              const isAvailable = enrolled || lessonIndex === 0;
-                              const lessonUrl = enrolled ? 
-                                `/course/${courseId}/chapter/${chapter.id}/lesson/${lesson.id}` : 
-                                null;
-                                
-                              return (
-                                <div 
-                                  key={lesson.id} 
-                                  className={`flex items-center p-2 rounded-md ${
-                                    isAvailable ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-60'
-                                  }`}
-                                  onClick={() => isAvailable && lessonUrl && navigate(lessonUrl)}
-                                >
-                                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-muted mr-3">
-                                    {lesson.type === 'video' && <Video className="h-4 w-4" />}
-                                    {lesson.type === 'lesson' && <BookOpen className="h-4 w-4" />}
-                                    {lesson.type === 'test' && <FileText className="h-4 w-4" />}
-                                  </div>
-                                  
-                                  <div className="flex-1">
-                                    <div className="text-sm font-medium flex items-center">
-                                      {lesson.title}
-                                      {lesson.completed && (
-                                        <CheckCircle className="h-4 w-4 text-green-500 ml-2" />
-                                      )}
-                                    </div>
-                                    <div className="flex items-center text-xs text-muted-foreground mt-0.5">
-                                      <Clock className="h-3 w-3 mr-1" />
-                                      {lesson.duration}
-                                      
-                                      {lesson.type === 'test' && lesson.questions > 0 && (
-                                        <span className="ml-2 flex items-center">
-                                          <FileText className="h-3 w-3 mr-1" />
-                                          {lesson.questions} câu hỏi
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  
-                                  {!isAvailable && (
-                                    <Lock className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                </TabsContent>
-              </Tabs>
-            </div>
-            
-            {/* Sidebar */}
-            <div className="lg:w-1/3 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Thông tin khóa học</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Cấp độ</span>
-                    <span className="font-medium">{course.level}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Tổng thời gian</span>
-                    <span className="font-medium">{course.duration}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Số bài học</span>
-                    <span className="font-medium">{course.totalLessons}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Bài kiểm tra</span>
-                    <span className="font-medium">{course.totalTests}</span>
-                  </div>
-                  
-                  {enrolled && (
-                    <>
-                      <Separator />
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Tiến độ</span>
-                        <span className="font-medium">{progress}%</span>
-                      </div>
-                    </>
                   )}
                 </CardContent>
                 
-                {!enrolled && (
-                  <CardFooter>
-                    <Button 
-                      onClick={handleEnroll} 
-                      disabled={enrolling}
-                      className="w-full"
-                    >
-                      {enrolling ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Đang xử lý
-                        </>
-                      ) : (
-                        'Đăng ký khóa học'
-                      )}
-                    </Button>
-                  </CardFooter>
-                )}
+                <Separator />
+                
+                <CardFooter className="px-6 py-4">
+                  <div className="w-full">
+                    <h3 className="font-medium mb-3">Khóa học bao gồm:</h3>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                        <span>{course.totalLessons} bài học</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                        <span>{course.totalTests} bài kiểm tra</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                        <span>Truy cập vĩnh viễn</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                        <span>Chứng chỉ hoàn thành</span>
+                      </li>
+                    </ul>
+                  </div>
+                </CardFooter>
               </Card>
             </div>
           </div>

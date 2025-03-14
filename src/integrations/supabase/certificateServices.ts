@@ -1,6 +1,7 @@
 
 import { supabase } from './client';
 import type { Json } from './types';
+import { v4 as uuidv4 } from 'uuid';
 
 // Function to generate a certificate for a user completing a course
 export const generateCertificate = async (userId: string, courseId: string, courseName: string) => {
@@ -24,23 +25,9 @@ export const generateCertificate = async (userId: string, courseId: string, cour
       return existingCert;
     }
     
-    // Generate a certificate ID using a function or fallback to random ID
-    let certificateId: string;
-    
-    try {
-      // Fix the RPC call type parameters - any is used for both input and output to avoid constraints
-      const { data, error } = await supabase.rpc('generate_certificate_id');
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Explicitly convert to string
-      certificateId = String(data);
-    } catch (error) {
-      console.error('Error generating certificate ID via RPC, using fallback:', error);
-      certificateId = `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-    }
+    // Generate a certificate ID - using UUID with custom prefix instead of RPC
+    // This eliminates the TypeScript errors from the RPC call
+    const certificateId = `CERT-${uuidv4().substring(0, 8).toUpperCase()}`;
     
     // Insert certificate record
     const { data, error } = await supabase

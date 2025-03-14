@@ -26,8 +26,12 @@ export const fetchTestQuestions = async (lessonId: string, chapterId: string) =>
   }
 };
 
-// Type for test answers to prevent deep recursion
-type TestAnswers = Record<string, unknown>;
+// Define a simpler type for test answers to prevent recursion issues
+type SimpleTestAnswer = {
+  questionId: string;
+  selectedOption: string;
+  isCorrect?: boolean;
+};
 
 // Function to save test result
 export const saveTestResult = async (
@@ -36,7 +40,7 @@ export const saveTestResult = async (
   courseTestId: string,
   score: number,
   passed: boolean,
-  answers: TestAnswers, // Using Record<string, unknown> to prevent type recursion
+  answers: Record<string, string>, // Simplified to just store question ID -> selected answer
   timeTaken: number,
   testName: string = 'Course Test'
 ) => {
@@ -58,19 +62,14 @@ export const saveTestResult = async (
       ? previousAttempts.length + 1 
       : 1;
     
-    // Create safe copy of answers to break type reference chains
-    // Use a primitive approach that doesn't trigger infinite type instantiation
-    let safeAnswers: Json = null;
-    try {
-      // Create a string representation first, then parse it back
-      const stringified = JSON.stringify(answers);
-      safeAnswers = JSON.parse(stringified);
-    } catch (e) {
-      console.error('Error processing answers:', e);
-      safeAnswers = {}; // Fallback to empty object if serialization fails
-    }
+    // Simplify the answers to avoid type issues
+    // Convert the answers object to a simple array of answers
+    const simplifiedAnswers: SimpleTestAnswer[] = Object.entries(answers).map(([questionId, selectedOption]) => ({
+      questionId,
+      selectedOption
+    }));
     
-    // Create the test result
+    // Create the test result with the simplified answers
     const { data, error } = await supabase
       .from('user_test_results')
       .insert({
@@ -79,7 +78,7 @@ export const saveTestResult = async (
         course_test_id: courseTestId,
         score,
         passed,
-        answers: safeAnswers,
+        answers: simplifiedAnswers as unknown as Json,
         time_taken: timeTaken
       })
       .select();

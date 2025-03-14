@@ -33,7 +33,7 @@ export const saveTestResult = async (
   courseTestId: string,
   score: number,
   passed: boolean,
-  answers: Record<string, unknown>, // Using unknown type to prevent infinite recursion
+  answers: any, // Using any type to bypass type recursion issues
   timeTaken: number,
   testName: string = 'Course Test'
 ) => {
@@ -55,14 +55,10 @@ export const saveTestResult = async (
       ? previousAttempts.length + 1 
       : 1;
     
-    // Break the deep type reference chain with JSON serialization
-    const serializedAnswers = JSON.stringify(answers);
-    const parsedAnswers = JSON.parse(serializedAnswers);
+    // Perform a deep clone to break type reference chains
+    const clonedAnswers = JSON.parse(JSON.stringify(answers));
     
-    // Now it's safe to cast to Json type
-    const answersJson = parsedAnswers as Json;
-    
-    // Save the test result
+    // Create the test result
     const { data, error } = await supabase
       .from('user_test_results')
       .insert({
@@ -71,7 +67,7 @@ export const saveTestResult = async (
         course_test_id: courseTestId,
         score,
         passed,
-        answers: answersJson,
+        answers: clonedAnswers,
         time_taken: timeTaken
       })
       .select();

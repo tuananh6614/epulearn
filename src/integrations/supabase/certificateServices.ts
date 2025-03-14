@@ -28,8 +28,8 @@ export const generateCertificate = async (userId: string, courseId: string, cour
     let certificateId: string;
     
     try {
-      // Use any to bypass the type constraint, then convert to string
-      const response = await supabase.rpc('generate_certificate_id', {});
+      // Call RPC without parameters and use type assertion
+      const response = await supabase.rpc('generate_certificate_id');
       
       if (response.error) {
         throw response.error;

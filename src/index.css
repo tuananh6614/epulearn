@@ -1,60 +1,158 @@
 
-/* Import Google fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Import theme and animations */
-@import './styles/theme.css';
-@import './styles/animations.css';
-
-/* Custom CSS for pricing tables */
-.pricing-card {
-  transition: all 0.3s ease;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 142.1 76.2% 36.3%;
+    --primary-foreground: 355.7 100% 97.3%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+  }
+ 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 142.1 70.6% 45.3%;
+    --primary-foreground: 144.9 80.4% 10%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
 }
 
-.pricing-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
+/* Global font settings */
+@layer base {
+  html {
+    @apply font-sans antialiased;
+  }
+  
+  body {
+    @apply text-foreground bg-background font-normal leading-normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+  
+  /* Fixing the metrics display */
+  .metric-value {
+    @apply font-bold text-2xl sm:text-3xl md:text-4xl;
+  }
+  
+  .metric-label {
+    @apply font-medium text-sm sm:text-base text-gray-700 dark:text-gray-300;
+  }
 }
 
-.featured-card {
-  position: relative;
-  z-index: 10;
-  transform: scale(1.02);
+/* Add shimmer effect for loading states */
+.shimmer {
+  @apply bg-gray-200 dark:bg-gray-800 relative overflow-hidden;
 }
 
-.price-value {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+.shimmer::after {
+  @apply absolute top-0 -right-full h-full w-1/2;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 1.5s infinite;
 }
 
-.discount-badge {
+@keyframes shimmer {
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+/* Lazy loading animations */
+.lazy-fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.lazy-fade-in.lazy-loaded {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Style for fireflies effect (dark mode) */
+.firefly {
   position: absolute;
-  top: -10px;
-  right: -10px;
-  background: linear-gradient(45deg, #4f46e5, #2563eb);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  z-index: 20;
+  width: 3px;
+  height: 3px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 5px 2px rgba(255, 255, 255, 0.3);
+  animation: firefly 6s ease-in-out infinite;
 }
 
-.benefit-item {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 8px;
+@keyframes firefly {
+  0% {
+    opacity: 0;
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100px) translateY(-100px);
+  }
 }
 
-.benefit-icon {
-  color: #10b981;
-  margin-right: 8px;
-  flex-shrink: 0;
-}
-
-.benefit-text {
+/* Style for number rain */
+.digit {
+  position: absolute;
+  font-family: monospace;
   font-size: 14px;
-  color: #6b7280;
+  color: rgba(0, 255, 0, 0.8);
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Custom card styling */
+.highlight-card {
+  @apply border border-gray-200 dark:border-gray-800 rounded-xl p-6 
+    shadow-sm hover:shadow-md transition-all duration-300
+    hover:border-green-200 dark:hover:border-green-800
+    bg-white dark:bg-gray-900;
+}
+
+.highlight-card-icon {
+  @apply rounded-lg p-3 mb-4 
+    bg-green-100 dark:bg-green-900/30 
+    text-green-600 dark:text-green-400;
 }

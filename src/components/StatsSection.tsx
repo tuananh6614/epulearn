@@ -18,7 +18,7 @@ const StatsSection = () => {
               suffix="+" 
               className="text-3xl font-bold text-gray-900 dark:text-white" 
             />
-            <p className="text-gray-700 dark:text-gray-300 mt-2">Học Viên Đang Học</p>
+            <p className="text-gray-700 dark:text-gray-300 mt-2 font-medium">Học Viên Đang Học</p>
           </div>
           
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center flex flex-col items-center group hover:shadow-md transition-all hover:-translate-y-1 duration-300">
@@ -30,7 +30,7 @@ const StatsSection = () => {
               suffix="+" 
               className="text-3xl font-bold text-gray-900 dark:text-white" 
             />
-            <p className="text-gray-700 dark:text-gray-300 mt-2">Khóa Học Lập Trình</p>
+            <p className="text-gray-700 dark:text-gray-300 mt-2 font-medium">Khóa Học Lập Trình</p>
           </div>
           
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center flex flex-col items-center group hover:shadow-md transition-all hover:-translate-y-1 duration-300">
@@ -42,7 +42,7 @@ const StatsSection = () => {
               suffix="+" 
               className="text-3xl font-bold text-gray-900 dark:text-white" 
             />
-            <p className="text-gray-700 dark:text-gray-300 mt-2">Giờ Nội Dung</p>
+            <p className="text-gray-700 dark:text-gray-300 mt-2 font-medium">Giờ Nội Dung</p>
           </div>
           
           <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center flex flex-col items-center group hover:shadow-md transition-all hover:-translate-y-1 duration-300">
@@ -54,7 +54,7 @@ const StatsSection = () => {
               suffix="+" 
               className="text-3xl font-bold text-gray-900 dark:text-white" 
             />
-            <p className="text-gray-700 dark:text-gray-300 mt-2">Chứng Chỉ Đã Cấp</p>
+            <p className="text-gray-700 dark:text-gray-300 mt-2 font-medium">Chứng Chỉ Đã Cấp</p>
           </div>
         </div>
       </div>

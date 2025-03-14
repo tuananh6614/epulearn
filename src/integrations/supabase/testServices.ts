@@ -6,7 +6,7 @@ import { updateCourseProgress } from './userProgressServices';
 export interface CourseTestQuestion {
   id: string;
   question: string;
-  options: string[];
+  options: string[];  // Changed from Json[] to string[]
   correct_answer: number;
   points?: number;
 }
@@ -96,7 +96,10 @@ export const fetchCourseTests = async (courseId: string): Promise<CourseTest[]> 
         const formattedQuestions: CourseTestQuestion[] = questions?.map(q => ({
           id: q.id,
           question: q.question,
-          options: Array.isArray(q.options) ? q.options : [],
+          // Ensure options is always a string array
+          options: Array.isArray(q.options) ? 
+            q.options.map(opt => String(opt)) : // Convert each option to string
+            [], // Fallback to empty array if not an array
           correct_answer: q.correct_answer,
           points: q.points || 1
         })) || [];
@@ -154,7 +157,7 @@ export const saveTestResult = async (
         score,
         passed,
         time_taken: timeTaken,
-        answers: formattedAnswers as unknown as any, // Use type assertion to avoid deep typing issues
+        answers: formattedAnswers,
         created_at: new Date().toISOString()
       })
       .select('id')

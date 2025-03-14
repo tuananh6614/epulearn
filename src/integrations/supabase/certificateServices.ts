@@ -28,8 +28,8 @@ export const generateCertificate = async (userId: string, courseId: string, cour
     let certificateId: string;
     
     try {
-      // Call RPC with proper type parameters - first is the return type, second is the input type
-      const { data, error } = await supabase.rpc<string, {}>('generate_certificate_id', {});
+      // Fix the RPC call type parameters - any is used for both input and output to avoid constraints
+      const { data, error } = await supabase.rpc('generate_certificate_id');
       
       if (error) {
         throw error;

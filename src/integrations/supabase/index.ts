@@ -10,13 +10,11 @@ export type { VipStatus } from './client';
 export * from './apiUtils';
 export * from './courseServices';
 
-// Export the test services functions
+// Similar to client.ts, selectively export from testServices to avoid duplicates
 export { 
   fetchTestQuestions, 
   saveTestResult, 
   getChapterTestProgress,
   fetchCourseTests
 } from './testServices';
-
 export * from './userProgressServices';
-export * from './testServices';

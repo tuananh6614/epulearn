@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,7 +21,6 @@ const Certification = lazy(() => import("./pages/Certification"));
 const VipCourses = lazy(() => import("./pages/VipCourses"));
 const ChapterTestPage = lazy(() => import("./pages/ChapterTestPage"));
 const CourseTest = lazy(() => import("./pages/CourseTest"));
-const TestResultsPage = lazy(() => import("./pages/TestResultsPage"));
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -99,17 +97,8 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                {/* Course test routes */}
-                <Route path="/course/:courseId/test" element={
-                  <ProtectedRoute>
-                    <CourseTest />
-                  </ProtectedRoute>
-                } />
-                <Route path="/course/:courseId/test-results" element={
-                  <ProtectedRoute>
-                    <TestResultsPage />
-                  </ProtectedRoute>
-                } />
+                {/* Course test route */}
+                <Route path="/course/:courseId/test" element={<CourseTest />} />
                 
                 {/* Chapter test route with lessonId */}
                 <Route path="/course/:courseId/chapter/:chapterId/test/:lessonId" element={

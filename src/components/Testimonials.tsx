@@ -45,7 +45,7 @@ const Testimonials = () => {
               <CardContent className="p-6 relative">
                 <Quote className="absolute top-6 right-6 h-10 w-10 text-gray-200 dark:text-gray-700 z-0" />
                 <div className="relative z-10">
-                  <p className="text-gray-700 dark:text-gray-300 mb-6 italic font-medium">{testimonial.content}</p>
+                  <p className="text-gray-700 dark:text-gray-300 mb-6 italic">{testimonial.content}</p>
                   <div className="flex items-center gap-4">
                     <Avatar>
                       <AvatarImage src={testimonial.avatar} />

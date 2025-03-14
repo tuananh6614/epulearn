@@ -33,7 +33,7 @@ export const saveTestResult = async (
   courseTestId: string,
   score: number,
   passed: boolean,
-  answers: Record<string, string>,
+  answers: Record<string, string>, // Use Record instead of generic object type
   timeTaken: number,
   testName: string = 'Course Test'
 ) => {
@@ -55,7 +55,8 @@ export const saveTestResult = async (
       ? previousAttempts.length + 1 
       : 1;
     
-    // Convert answers to Json type to avoid deep type instantiation
+    // Force cast answers to Json type with a clear type assertion
+    // This breaks the recursive type inference that causes "excessively deep" errors
     const answersJson = answers as unknown as Json;
     
     // Save the test result

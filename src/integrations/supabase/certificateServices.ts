@@ -28,16 +28,16 @@ export const generateCertificate = async (userId: string, courseId: string, cour
     let certificateId: string;
     
     try {
-      // Explicitly type the result of the RPC call
-      const { data, error: certIdError } = await supabase
-        .rpc('generate_certificate_id');
+      // When using rpc, we need to handle the response type carefully
+      const { data: rpcData, error: certIdError } = await supabase
+        .rpc('generate_certificate_id') as { data: unknown, error: Error | null };
         
       if (certIdError) {
         throw certIdError;
       }
       
-      // Ensure data is treated as a string
-      certificateId = String(data);
+      // Explicitly convert to string no matter what the actual return type is
+      certificateId = String(rpcData);
     } catch (error) {
       console.error('Error generating certificate ID via RPC, using fallback:', error);
       certificateId = `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;

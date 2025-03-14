@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import type { Json } from './types';
 
@@ -28,16 +27,15 @@ export const generateCertificate = async (userId: string, courseId: string, cour
     let certificateId: string;
     
     try {
-      // Use explicitly typed response with any to bypass the type constraint
-      const { data, error: certIdError } = await supabase
-        .rpc('generate_certificate_id') as { data: any, error: Error | null };
-        
-      if (certIdError) {
-        throw certIdError;
+      // Explicitly type the RPC response to handle the return value properly
+      const response = await supabase.rpc('generate_certificate_id');
+      
+      if (response.error) {
+        throw response.error;
       }
       
-      // Explicitly convert to string no matter what the actual return type is
-      certificateId = String(data);
+      // Cast data to string to ensure it's the right type
+      certificateId = String(response.data);
     } catch (error) {
       console.error('Error generating certificate ID via RPC, using fallback:', error);
       certificateId = `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;

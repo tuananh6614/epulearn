@@ -1,3 +1,4 @@
+
 import { supabase } from './client';
 import type { Json } from './types';
 
@@ -32,7 +33,7 @@ export const saveTestResult = async (
   courseTestId: string,
   score: number,
   passed: boolean,
-  answers: Record<string, any>, // Changed to any to avoid deep recursion
+  answers: Record<string, unknown>, // Using unknown to prevent deep recursion
   timeTaken: number,
   testName: string = 'Course Test'
 ) => {
@@ -54,8 +55,10 @@ export const saveTestResult = async (
       ? previousAttempts.length + 1 
       : 1;
     
-    // Use a specific type assertion approach to avoid infinite recursion
-    const answersJson = JSON.parse(JSON.stringify(answers)) as Json;
+    // Convert answers to a simple JSON string and parse it back
+    // This breaks the deep type reference chain
+    const serialized = JSON.stringify(answers);
+    const answersJson = JSON.parse(serialized) as Json;
     
     // Save the test result
     const { data, error } = await supabase

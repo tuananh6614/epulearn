@@ -1,15 +1,22 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Crown, CheckCircle, Clock, QrCode, Download, Share2 } from 'lucide-react';
+import { Crown, CheckCircle, Clock, QrCode, Download, Share2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
 import VipActivationPending from './VipActivationPending';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-const QR_CODE_IMAGE = "/lovable-uploads/a49f5bd6-e4ae-4a5e-8f6a-3669ecdd8196.png";
+// QR codes for different plans
+const QR_CODE_IMAGES = {
+  "1-month": "/lovable-uploads/a49f5bd6-e4ae-4a5e-8f6a-3669ecdd8196.png",
+  "3-months": "/lovable-uploads/a49f5bd6-e4ae-4a5e-8f6a-3669ecdd8196.png",
+  "6-months": "/lovable-uploads/a49f5bd6-e4ae-4a5e-8f6a-3669ecdd8196.png",
+  "1-year": "/lovable-uploads/a49f5bd6-e4ae-4a5e-8f6a-3669ecdd8196.png"
+};
 
 interface VipPlanProps {
   duration: string;
@@ -97,6 +104,8 @@ const VipPurchaseForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showActivationPending, setShowActivationPending] = useState(false);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   
   const plans = {
     "1-month": {
@@ -154,6 +163,98 @@ const VipPurchaseForm = () => {
     }
   };
   
+  // Simulate payment verification (in real app, this would check with payment API)
+  const verifyPayment = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Simulating API call to payment gateway
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // 90% chance of success for demonstration
+      const isSuccessful = Math.random() < 0.9;
+      
+      if (isSuccessful) {
+        setPaymentVerified(true);
+        setPaymentError(null);
+        
+        // Show success toast
+        toast.success("Thanh toán đã được xác nhận!", {
+          description: "Cảm ơn bạn đã đăng ký gói VIP."
+        });
+        
+        // Record payment in database
+        await recordSuccessfulPayment();
+        
+        // Show activation message
+        setShowActivationPending(true);
+      } else {
+        setPaymentVerified(false);
+        setPaymentError("Không thể xác nhận thanh toán. Vui lòng kiểm tra lại thông tin chuyển khoản.");
+        
+        toast.error("Không thể xác nhận thanh toán", {
+          description: "Vui lòng kiểm tra lại thông tin chuyển khoản của bạn."
+        });
+      }
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      setPaymentVerified(false);
+      setPaymentError("Đã xảy ra lỗi khi xác nhận thanh toán. Vui lòng thử lại sau.");
+      
+      toast.error("Lỗi hệ thống", {
+        description: "Đã xảy ra lỗi khi xác nhận thanh toán. Vui lòng thử lại sau."
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const recordSuccessfulPayment = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const plan = plans[selectedPlan as keyof typeof plans];
+      const finalPrice = plan.discount > 0 
+        ? plan.price - (plan.price * plan.discount / 100) 
+        : plan.price;
+      
+      // Record the purchase
+      const { error: purchaseError } = await supabase
+        .from('vip_purchases')
+        .insert({
+          user_id: currentUser.id,
+          plan_type: selectedPlan,
+          amount: finalPrice,
+          status: 'confirmed',
+          purchase_date: new Date().toISOString(),
+          activation_date: new Date().toISOString()
+        });
+      
+      if (purchaseError) throw purchaseError;
+      
+      // Create a user_courses entry for VIP subscription tracking
+      const { error: courseError } = await supabase
+        .from('user_courses')
+        .insert({
+          user_id: currentUser.id,
+          course_id: `vip-${selectedPlan}`,
+          has_paid: true,
+          payment_amount: finalPrice,
+          progress_percentage: 0,
+          enrolled_at: new Date().toISOString(),
+          payment_date: new Date().toISOString()
+        });
+      
+      if (courseError) throw courseError;
+      
+      // Activate VIP status immediately
+      activateVip(plan.months);
+      
+    } catch (error) {
+      console.error("Error recording payment:", error);
+    }
+  };
+  
   const handleSubmitPurchase = async () => {
     if (!currentUser) {
       toast.error("Vui lòng đăng nhập để mua gói VIP");
@@ -168,7 +269,21 @@ const VipPurchaseForm = () => {
         ? plan.price - (plan.price * plan.discount / 100) 
         : plan.price;
       
+      // Record the pending purchase
       const { error: purchaseError } = await supabase
+        .from('vip_purchases')
+        .insert({
+          user_id: currentUser.id,
+          plan_type: selectedPlan,
+          amount: finalPrice,
+          status: 'pending',
+          purchase_date: new Date().toISOString()
+        });
+      
+      if (purchaseError) throw purchaseError;
+      
+      // Record in user_courses for tracking
+      const { error: courseError } = await supabase
         .from('user_courses')
         .insert({
           user_id: currentUser.id,
@@ -179,19 +294,15 @@ const VipPurchaseForm = () => {
           enrolled_at: new Date().toISOString()
         });
       
-      if (purchaseError) throw purchaseError;
+      if (courseError) throw courseError;
       
-      setShowActivationPending(true);
+      // Verify payment (this will be called immediately for demo purposes)
+      // In a real app this might be replaced with a webhook or manual verification
+      await verifyPayment();
       
-      toast.success("Đã ghi nhận thanh toán của bạn. Vui lòng chờ xác nhận.");
-      
-      setTimeout(() => {
-        activateVip(plan.months);
-      }, 10 * 60 * 1000);
     } catch (error) {
       console.error("Error processing payment:", error);
       toast.error("Không thể xử lý giao dịch. Vui lòng thử lại sau.");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -220,6 +331,10 @@ const VipPurchaseForm = () => {
         .eq('user_id', currentUser.id)
         .eq('course_id', `vip-${selectedPlan}`);
       
+      toast.success("Tài khoản VIP đã được kích hoạt!", {
+        description: `Tài khoản của bạn đã được nâng cấp lên VIP và có hiệu lực đến ${expirationDate.toLocaleDateString('vi-VN')}`
+      });
+      
     } catch (error) {
       console.error("Lỗi khi kích hoạt VIP:", error);
     }
@@ -227,12 +342,15 @@ const VipPurchaseForm = () => {
   
   const handleSelectPlan = (plan: string) => {
     setSelectedPlan(plan);
+    setPaymentError(null); // Reset any payment errors when switching plans
   };
   
   const handleDownloadQR = () => {
+    const qrImage = QR_CODE_IMAGES[selectedPlan as keyof typeof QR_CODE_IMAGES] || QR_CODE_IMAGES["6-months"];
+    
     const a = document.createElement('a');
-    a.href = QR_CODE_IMAGE;
-    a.download = 'qr-thanh-toan-vip.png';
+    a.href = qrImage;
+    a.download = `qr-thanh-toan-vip-${selectedPlan}.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -269,6 +387,9 @@ const VipPurchaseForm = () => {
       </div>
     );
   }
+  
+  // Get the current QR code based on selected plan
+  const currentQRCode = QR_CODE_IMAGES[selectedPlan as keyof typeof QR_CODE_IMAGES] || QR_CODE_IMAGES["6-months"];
   
   return (
     <div className="container mx-auto py-8">
@@ -316,6 +437,13 @@ const VipPurchaseForm = () => {
           />
         </div>
         
+        {paymentError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{paymentError}</AlertDescription>
+          </Alert>
+        )}
+        
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -336,7 +464,10 @@ const VipPurchaseForm = () => {
               
               <TabsContent value="qr" className="flex flex-col items-center">
                 <div className="bg-white p-4 rounded-md mb-4">
-                  <img src={QR_CODE_IMAGE} alt="QR Code" className="w-56 h-56 object-contain" />
+                  <img src={currentQRCode} alt="QR Code" className="w-56 h-56 object-contain" />
+                  <p className="text-center text-sm mt-2 text-gray-500">
+                    Mã QR cho gói {plans[selectedPlan as keyof typeof plans].title}
+                  </p>
                 </div>
                 
                 <div className="flex flex-wrap justify-center gap-2">
@@ -351,7 +482,7 @@ const VipPurchaseForm = () => {
                       : selectedPlanDetails.price;
                     
                     navigator.clipboard.writeText(`VIB - 339435005 - NGUYEN TUAN ANH - ${finalPrice.toLocaleString('vi-VN')}đ`);
-                    toast("Đã sao chép");
+                    toast("Đã sao chép thông tin chuyển khoản");
                   }}>
                     <Share2 className="h-4 w-4 mr-2" />
                     Sao chép thông tin
@@ -403,7 +534,7 @@ const VipPurchaseForm = () => {
                     <ul className="list-disc pl-5 space-y-1">
                       <li>Vui lòng ghi đúng nội dung chuyển khoản để chúng tôi có thể xác nhận thanh toán của bạn.</li>
                       <li>Sau khi chuyển khoản, hãy nhấn "Xác nhận đã thanh toán" bên dưới.</li>
-                      <li>Tài khoản VIP của bạn sẽ được kích hoạt trong vòng 24 giờ sau khi xác nhận thanh toán.</li>
+                      <li>Tài khoản VIP của bạn sẽ được kích hoạt ngay sau khi xác nhận thanh toán thành công.</li>
                     </ul>
                   </div>
                 </div>

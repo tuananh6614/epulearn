@@ -6,7 +6,6 @@ import { useAuth } from '@/context/AuthContext';
 import VipManager from './VipManager';
 import VipActivationPending from './VipActivationPending';
 import { formatDate } from '@/lib/utils';
-import { useCourseData } from '@/hooks/useCourseData';
 import { checkVipAccess } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -46,20 +45,23 @@ const VipTab = memo(() => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showActivationPending, setShowActivationPending] = useState(false);
   const [vipStatus, setVipStatus] = useState({ isVip: false, daysRemaining: null });
-  
-  // Fetch VIP courses to check if they load correctly
-  const { courseData: vipCourseExample } = useCourseData('some-vip-course-id');
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     const checkUserVipStatus = async () => {
       if (currentUser?.id) {
+        setIsLoading(true);
         try {
           const status = await checkVipAccess(currentUser.id);
           setVipStatus(status);
         } catch (error) {
           console.error('Error checking VIP status:', error);
           toast.error('Không thể kiểm tra trạng thái VIP');
+        } finally {
+          setIsLoading(false);
         }
+      } else {
+        setIsLoading(false);
       }
     };
     
@@ -74,12 +76,24 @@ const VipTab = memo(() => {
     setShowActivationPending(true);
   }, []);
   
-  if (!currentUser) {
+  if (isLoading) {
     return (
       <Card>
         <CardContent className="py-6">
           <div className="flex justify-center py-4">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (!currentUser) {
+    return (
+      <Card>
+        <CardContent className="py-6">
+          <div className="text-center py-4">
+            <p className="text-muted-foreground">Vui lòng đăng nhập để xem trạng thái VIP</p>
           </div>
         </CardContent>
       </Card>

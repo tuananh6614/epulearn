@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -8,6 +8,13 @@ import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { isMobile, isOnline, retryPromise } from '@/lib/utils';
+
+// Pre-loading component to increase perceived performance
+const PageLoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-[200px]">
+    <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+  </div>
+);
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -50,39 +57,46 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     }
   }, [location]);
   
+  // Prefetch and check API health with debounce to avoid excessive network requests
   const performHealthCheck = useCallback(async () => {
-    try {
-      if (!isOnline()) {
+    // Only perform health check if not already attempted 
+    // or if we're explicitly retrying
+    if (!healthCheckAttempted || isRetrying) {
+      try {
+        if (!isOnline()) {
+          setApiAvailable(false);
+          toast.warning("Không có kết nối mạng. Vui lòng kiểm tra kết nối internet của bạn.", {
+            duration: 8000,
+          });
+          return false;
+        }
+
+        setIsRetrying(true);
+        // Use a faster retry with fewer attempts
+        const isAvailable = await retryPromise(() => checkApiHealth(), 1, 500);
+        setApiAvailable(isAvailable);
+        
+        if (!isAvailable) {
+          toast.warning("Không thể kết nối đến Supabase. Vui lòng kiểm tra kết nối mạng.", {
+            duration: 8000,
+          });
+        }
+        
+        return isAvailable;
+      } catch (error) {
+        console.error('API health check error:', error);
         setApiAvailable(false);
-        toast.warning("Không có kết nối mạng. Vui lòng kiểm tra kết nối internet của bạn.", {
+        toast.error("Lỗi kết nối đến Supabase. Hãy kiểm tra kết nối internet.", {
           duration: 8000,
         });
         return false;
+      } finally {
+        setHealthCheckAttempted(true);
+        setIsRetrying(false);
       }
-
-      setIsRetrying(true);
-      const isAvailable = await retryPromise(() => checkApiHealth(), 2, 1000);
-      setApiAvailable(isAvailable);
-      
-      if (!isAvailable) {
-        toast.warning("Không thể kết nối đến Supabase. Vui lòng kiểm tra kết nối mạng.", {
-          duration: 8000,
-        });
-      }
-      
-      return isAvailable;
-    } catch (error) {
-      console.error('API health check error:', error);
-      setApiAvailable(false);
-      toast.error("Lỗi kết nối đến Supabase. Hãy kiểm tra kết nối internet.", {
-        duration: 8000,
-      });
-      return false;
-    } finally {
-      setHealthCheckAttempted(true);
-      setIsRetrying(false);
     }
-  }, []);
+    return apiAvailable || false;
+  }, [healthCheckAttempted, isRetrying, apiAvailable]);
   
   useEffect(() => {
     performHealthCheck();
@@ -115,15 +129,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     performHealthCheck();
   };
   
-  if (authLoading || !healthCheckAttempted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mb-4"></div>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">Đang tải...</p>
-        </div>
-      </div>
-    );
+  if (authLoading) {
+    return <PageLoadingFallback />;
   }
   
   if (apiAvailable === false && !isRetrying) {
@@ -165,7 +172,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
   
   return (
-    <>
+    <Suspense fallback={<PageLoadingFallback />}>
       {showEmailAlert && (
         <div className="fixed top-16 left-0 right-0 z-50 px-4 py-2 bg-amber-50 border-b border-amber-200">
           <div className="container mx-auto">
@@ -194,7 +201,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
         </div>
       )}
       {children}
-    </>
+    </Suspense>
   );
 };
 

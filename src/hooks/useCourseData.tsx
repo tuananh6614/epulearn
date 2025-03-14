@@ -5,6 +5,10 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { enrollUserInCourse } from '@/integrations/supabase/apiUtils';
 
+// Cache for courses to reduce unnecessary fetches
+const courseCache = new Map<string, {data: any, timestamp: number}>();
+const CACHE_DURATION = 120000; // 2 minutes
+
 // Helper hook to get course content with progress for the current user
 export const useCourseData = (courseId: string | undefined) => {
   const [courseData, setCourseData] = useState<any>(null);
@@ -23,6 +27,23 @@ export const useCourseData = (courseId: string | undefined) => {
 
       try {
         setLoading(true);
+        
+        // Check cache first
+        const now = Date.now();
+        const cached = courseCache.get(courseId);
+        if (cached && now - cached.timestamp < CACHE_DURATION) {
+          console.log('Using cached course data for', courseId);
+          setCourseData(cached.data);
+          
+          // Still need to fetch user-specific progress data
+          if (user) {
+            await fetchUserProgress(courseId, user.id);
+          } else {
+            setLoading(false);
+          }
+          return;
+        }
+        
         // Fetch course details
         const { data: course, error: courseError } = await supabase
           .from('courses')
@@ -59,24 +80,6 @@ export const useCourseData = (courseId: string | undefined) => {
           throw lessonsError;
         }
 
-        // Check enrollment status if user is logged in
-        if (user) {
-          const { data: enrollment, error: enrollmentError } = await supabase
-            .from('user_courses')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('course_id', courseId)
-            .maybeSingle();
-
-          if (enrollmentError && enrollmentError.code !== 'PGRST116') {
-            console.error('Error checking enrollment:', enrollmentError);
-            throw enrollmentError;
-          }
-
-          setIsEnrolled(!!enrollment);
-          setUserProgress(enrollment?.progress_percentage || 0);
-        }
-
         // Check VIP access for premium courses
         let userCanAccess = true;
         if (course.is_premium && user) {
@@ -93,12 +96,47 @@ export const useCourseData = (courseId: string | undefined) => {
           userCanAccess
         };
 
+        // Cache the course data
+        courseCache.set(courseId, {
+          data: structuredData,
+          timestamp: now
+        });
+
         setCourseData(structuredData);
+        
+        // Check enrollment status if user is logged in
+        if (user) {
+          await fetchUserProgress(courseId, user.id);
+        } else {
+          setLoading(false);
+        }
       } catch (err) {
         console.error('Error fetching course data:', err);
         setError(err as Error);
         toast.error("Không thể tải dữ liệu khóa học");
-      } finally {
+        setLoading(false);
+      }
+    };
+    
+    const fetchUserProgress = async (courseId: string, userId: string) => {
+      try {
+        const { data: enrollment, error: enrollmentError } = await supabase
+          .from('user_courses')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('course_id', courseId)
+          .maybeSingle();
+
+        if (enrollmentError && enrollmentError.code !== 'PGRST116') {
+          console.error('Error checking enrollment:', enrollmentError);
+          throw enrollmentError;
+        }
+
+        setIsEnrolled(!!enrollment);
+        setUserProgress(enrollment?.progress_percentage || 0);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching user progress:', error);
         setLoading(false);
       }
     };
@@ -143,12 +181,18 @@ export const useCourseData = (courseId: string | undefined) => {
     }
   };
 
+  // Clear course cache
+  const clearCourseCache = () => {
+    courseCache.delete(courseId || '');
+  };
+
   return {
     courseData,
     userProgress,
     isEnrolled,
     loading,
     error,
-    enrollInCourse
+    enrollInCourse,
+    clearCourseCache
   };
 };

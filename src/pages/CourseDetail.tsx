@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -8,7 +9,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Clock, FileText, Info, Loader2, Lock, Zap, BookOpen, Video, AlertCircle } from 'lucide-react';
+import { CheckCircle, Clock, FileText, Info, Loader2, Lock, Zap, BookOpen, Video, AlertCircle, Crown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
 import { fetchCourseContent, supabase, checkVipAccess } from '@/integrations/supabase/client';

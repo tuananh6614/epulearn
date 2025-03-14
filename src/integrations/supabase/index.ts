@@ -2,9 +2,9 @@
 // Export selective items from the client file to avoid duplicate exports
 export { 
   supabase, 
-  checkVipAccess,
-  VipStatus 
+  checkVipAccess
 } from './client';
+export type { VipStatus } from './client';
 
 // Export everything from the service files
 export * from './apiUtils';

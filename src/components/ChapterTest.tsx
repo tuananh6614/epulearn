@@ -1,383 +1,287 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { toast } from 'sonner';
-import { AlertCircle, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 import { 
-  supabase, 
-  fetchTestQuestions, 
-  saveTestResult, 
-  getTestProgressChartData 
-} from "@/integrations/supabase/client";
+  ChevronRight, 
+  ChevronLeft, 
+  Clock, 
+  CheckCircle, 
+  AlertCircle 
+} from 'lucide-react';
+import { fetchTestQuestions, saveTestResult, getTestProgressChartData } from '@/integrations/supabase';
 import { useAuth } from '@/context/AuthContext';
-import TestProgressChart from './TestProgressChart';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-interface TestQuestion {
+interface ChapterTestProps {
+  lessonId: string;
+  chapterId: string;
+  courseId: string;
+  courseName: string;
+  onTestComplete: () => void;
+}
+
+interface Question {
   id: string;
   question: string;
   options: string[];
-  correct_answer: number;
+  correct_answer: string;
 }
 
-interface ChapterTestProps {
-  chapterId: string;
-  courseId: string;
-  onComplete?: (score: number, total: number) => void;
-}
-
-const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComplete }) => {
-  const [questions, setQuestions] = useState<TestQuestion[]>([]);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [score, setScore] = useState(0);
+const ChapterTest: React.FC<ChapterTestProps> = ({ lessonId, chapterId, courseId, courseName, onTestComplete }) => {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [userAnswers, setUserAnswers] = useState<{ [questionId: string]: string }>({});
   const [testCompleted, setTestCompleted] = useState(false);
-  const [progressData, setProgressData] = useState<any[]>([]);
-  const [showProgressChart, setShowProgressChart] = useState(false);
-  const [testLessonId, setTestLessonId] = useState<string | null>(null);
-  const [attempts, setAttempts] = useState(0);
+  const [score, setScore] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes in seconds
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-
-  React.useEffect(() => {
-    const fetchQuestions = async () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const loadQuestions = async () => {
       try {
-        setIsLoading(true);
-        
-        console.log('Fetching test questions for chapter:', chapterId);
-        const data = await fetchTestQuestions(chapterId);
-        console.log('Received test questions:', data);
-        
-        // Also fetch the lesson ID for this test
-        const { data: lessonData } = await supabase
-          .from('lessons')
-          .select('id')
-          .eq('chapter_id', chapterId)
-          .eq('type', 'test')
-          .limit(1);
-          
-        if (lessonData && lessonData.length > 0) {
-          setTestLessonId(lessonData[0].id);
-          
-          // Fetch progress data if the user is logged in
-          if (user) {
-            const progressData = await getTestProgressChartData(user.id, lessonData[0].id);
-            setProgressData(progressData);
-            setAttempts(progressData.length);
-          }
-        }
-        
-        if (data && data.length > 0) {
-          const transformedQuestions: TestQuestion[] = data.map(q => ({
-            id: q.id,
-            question: q.question,
-            options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
-            correct_answer: q.correct_answer
-          }));
-          
-          console.log('Transformed questions:', transformedQuestions);
-          setQuestions(transformedQuestions);
-        } else {
-          console.warn('No test questions found for chapter:', chapterId);
-          toast.error("Không tìm thấy bài kiểm tra cho chương này");
-        }
-      } catch (error) {
-        console.error("Error fetching test questions:", error);
-        toast.error("Không thể tải bài kiểm tra. Vui lòng thử lại sau.");
+        setLoading(true);
+        const questionsData = await fetchTestQuestions(lessonId, chapterId);
+        setQuestions(questionsData as Question[]);
+        setError(null);
+      } catch (err: any) {
+        console.error("Error fetching questions:", err);
+        setError(err.message || "Failed to load questions.");
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
     
-    fetchQuestions();
-  }, [chapterId, user]);
+    loadQuestions();
+  }, [lessonId, chapterId]);
   
-  const handleSelectAnswer = (value: string) => {
-    setSelectedAnswer(parseInt(value));
+  useEffect(() => {
+    if (timeRemaining > 0 && !testCompleted) {
+      const timerId = setInterval(() => {
+        setTimeRemaining(timeRemaining - 1);
+      }, 1000);
+      return () => clearInterval(timerId);
+    } else if (timeRemaining === 0 && !testCompleted) {
+      handleSubmitTest();
+    }
+  }, [timeRemaining, testCompleted]);
+  
+  const handleAnswerSelect = (option: string) => {
+    setSelectedAnswer(option);
   };
   
-  const handleNextQuestion = () => {
-    const currentQ = questions[currentQuestion];
-    const isAnswerCorrect = selectedAnswer === currentQ.correct_answer;
-    
-    if (isAnswerCorrect) {
-      setScore(prev => prev + 1);
+  const goToNextQuestion = () => {
+    if (selectedAnswer) {
+      setUserAnswers(prev => ({
+        ...prev,
+        [questions[currentQuestionIndex].id]: selectedAnswer
+      }));
+      setSelectedAnswer(null);
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+      }
+    } else {
+      toast({
+        title: "Vui lòng chọn một đáp án",
+        description: "Bạn cần chọn một đáp án trước khi tiếp tục.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const goToPreviousQuestion = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+      setSelectedAnswer(userAnswers[questions[currentQuestionIndex - 1].id] || null);
+    }
+  };
+  
+  const formatTime = (timeInSeconds: number): string => {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = timeInSeconds % 60;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+  
+  const handleSubmitTest = async () => {
+    if (!user) {
+      toast({
+        title: "Bạn cần đăng nhập",
+        description: "Vui lòng đăng nhập để nộp bài kiểm tra.",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
     }
     
-    setIsCorrect(isAnswerCorrect);
-    setShowResult(true);
+    // Collect answers for the last question if not already collected
+    if (selectedAnswer) {
+      setUserAnswers(prev => ({
+        ...prev,
+        [questions[currentQuestionIndex].id]: selectedAnswer
+      }));
+    }
     
-    setTimeout(() => {
-      if (currentQuestion < questions.length - 1) {
-        setCurrentQuestion(prev => prev + 1);
-        setSelectedAnswer(null);
-        setShowResult(false);
-      } else {
-        setTestCompleted(true);
-        
-        if (user && testLessonId) {
-          updateTestProgress();
-        }
-        
-        if (onComplete) {
-          onComplete(score + (isAnswerCorrect ? 1 : 0), questions.length);
-        }
+    // Calculate score
+    let correctAnswersCount = 0;
+    questions.forEach(question => {
+      if (userAnswers[question.id] === question.correct_answer) {
+        correctAnswersCount++;
       }
-    }, 1500);
-  };
-  
-  const updateTestProgress = async () => {
+    });
+    const calculatedScore = (correctAnswersCount / questions.length) * 100;
+    setScore(calculatedScore);
+    setTestCompleted(true);
+    
     try {
-      const finalScore = score + (isCorrect ? 1 : 0);
-      
-      if (user && testLessonId) {
-        const result = await saveTestResult(
+      // Save test result to database
+      if (user) {
+        const testResult = await saveTestResult(
           user.id,
           courseId,
-          chapterId,
-          testLessonId,
-          finalScore,
-          questions.length
+          lessonId,
+          calculatedScore,
+          calculatedScore >= 80, // Assuming 80% is the passing score
+          userAnswers,
+          600 - timeRemaining,
+          'Chapter Test'
         );
         
-        if (result.success) {
-          // Refresh progress data
-          const progressData = await getTestProgressChartData(user.id, testLessonId);
-          setProgressData(progressData);
-          setAttempts(progressData.length);
+        if (testResult) {
+          toast({
+            title: "Bài kiểm tra đã hoàn thành!",
+            description: `Bạn đã đạt được ${calculatedScore.toFixed(2)}%.`,
+          });
+          onTestComplete();
+        } else {
+          toast({
+            title: "Lỗi khi lưu kết quả",
+            description: "Có lỗi xảy ra khi lưu kết quả bài kiểm tra của bạn.",
+            variant: "destructive",
+          });
         }
       }
-    } catch (error) {
-      console.error("Error updating test progress:", error);
+    } catch (err) {
+      console.error("Error saving test result:", err);
+      toast({
+        title: "Lỗi khi lưu kết quả",
+        description: "Có lỗi xảy ra khi lưu kết quả bài kiểm tra của bạn.",
+        variant: "destructive",
+      });
     }
   };
   
-  const restartTest = () => {
-    setCurrentQuestion(0);
-    setSelectedAnswer(null);
-    setShowResult(false);
-    setScore(0);
-    setTestCompleted(false);
-  };
-  
-  if (isLoading) {
+  if (loading) {
     return (
-      <Card className="w-full max-w-3xl mx-auto">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-center">Đang tải bài kiểm tra...</CardTitle>
+          <CardTitle>Đang tải bài kiểm tra...</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-md"></div>
-            <div className="space-y-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-md"></div>
-              ))}
-            </div>
-          </div>
+          <Progress value={0} />
         </CardContent>
       </Card>
     );
   }
   
-  if (questions.length === 0) {
+  if (error) {
     return (
-      <Card className="w-full max-w-3xl mx-auto">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-center">Không có bài kiểm tra</CardTitle>
+          <CardTitle>Lỗi</CardTitle>
+          <CardDescription>Không thể tải bài kiểm tra.</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-muted-foreground">
-            Hiện tại chưa có bài kiểm tra nào cho chương này. Vui lòng quay lại sau.
-          </p>
+          <AlertCircle className="h-4 w-4 mr-2" />
+          {error}
         </CardContent>
       </Card>
     );
   }
   
   if (testCompleted) {
-    const finalScore = score;
-    const percentageScore = Math.round((finalScore / questions.length) * 100);
-    const isPassed = percentageScore >= 70;
-    
     return (
-      <Card className="w-full max-w-3xl mx-auto">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-center">Kết quả bài kiểm tra</CardTitle>
+          <CardTitle>Bài kiểm tra đã hoàn thành!</CardTitle>
+          <CardDescription>Bạn đã hoàn thành bài kiểm tra chương này.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="text-center">
-            {isPassed ? (
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-2" />
-            ) : (
-              <XCircle className="h-16 w-16 text-red-500 mx-auto mb-2" />
-            )}
-            <h3 className="text-2xl font-bold">
-              {isPassed ? "Chúc mừng! Bạn đã hoàn thành bài kiểm tra" : "Bạn cần ôn tập lại"}
-            </h3>
-            <p className="text-muted-foreground mt-2">
-              {isPassed 
-                ? "Bạn đã hiểu rõ nội dung của chương này" 
-                : "Hãy xem lại nội dung của chương và thử lại"}
-            </p>
-          </div>
-          
-          <div className="py-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium">Số câu đúng:</span>
-              <span className="font-bold">{finalScore}/{questions.length}</span>
-            </div>
-            <Progress value={percentageScore} className="h-3" />
-            <div className="flex justify-end mt-1">
-              <span className="text-sm font-medium">{percentageScore}%</span>
-            </div>
-          </div>
-          
-          {attempts > 1 && (
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setShowProgressChart(true)}
-            >
-              <TrendingUp className="mr-2 h-4 w-4" />
-              Xem tiến trình làm bài ({attempts} lần thử)
-            </Button>
+        <CardContent className="flex flex-col items-center">
+          {score >= 80 ? (
+            <>
+              <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+              <h2 className="text-2xl font-semibold text-green-600">Chúc mừng! Bạn đã đạt bài kiểm tra.</h2>
+              <p className="text-gray-500">Điểm số của bạn: {score.toFixed(2)}%</p>
+            </>
+          ) : (
+            <>
+              <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+              <h2 className="text-2xl font-semibold text-red-600">Rất tiếc, bạn chưa đạt bài kiểm tra.</h2>
+              <p className="text-gray-500">Điểm số của bạn: {score.toFixed(2)}%</p>
+            </>
           )}
-          
-          <Alert variant={isPassed ? "default" : "destructive"}>
-            {isPassed ? (
-              <CheckCircle className="h-4 w-4" />
-            ) : (
-              <AlertCircle className="h-4 w-4" />
-            )}
-            <AlertDescription>
-              {isPassed 
-                ? "Bạn đã đạt điểm đậu. Bạn có thể tiếp tục với các bài học tiếp theo."
-                : "Bạn chưa đạt điểm đậu. Hãy xem lại bài học và thử lại."}
-            </AlertDescription>
-          </Alert>
         </CardContent>
-        <CardFooter className="flex justify-center gap-4">
-          <Button variant="outline" onClick={restartTest}>Làm lại bài kiểm tra</Button>
-          <Button variant="default" onClick={() => window.location.href = `/course/${courseId}`}>
-            Tiếp tục học
+        <CardFooter className="justify-between">
+          <Button onClick={onTestComplete}>
+            Quay lại khóa học
           </Button>
         </CardFooter>
       </Card>
     );
   }
   
-  const currentQ = questions[currentQuestion];
+  const currentQuestion = questions[currentQuestionIndex];
   
   return (
-    <>
-      <Card className="w-full max-w-3xl mx-auto">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">
-              Câu hỏi {currentQuestion + 1}/{questions.length}
-            </span>
-            <span className="text-sm font-medium">
-              Điểm: {score}/{currentQuestion}
-            </span>
-          </div>
-          <Progress 
-            value={((currentQuestion + 1) / questions.length) * 100} 
-            className="h-1 mb-4" 
-          />
-          <CardTitle className="text-lg">{currentQ.question}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <RadioGroup 
-            value={selectedAnswer !== null ? selectedAnswer.toString() : ""} 
-            onValueChange={handleSelectAnswer}
-            className="space-y-3"
-            disabled={showResult}
-          >
-            {currentQ.options.map((option, index) => (
-              <div 
-                key={index} 
-                className={`flex items-center space-x-2 p-3 rounded-md border ${
-                  showResult 
-                    ? index === currentQ.correct_answer 
-                      ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
-                      : selectedAnswer === index 
-                        ? "border-red-500 bg-red-50 dark:bg-red-900/20"
-                        : "border-gray-200 dark:border-gray-700"
-                    : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/60"
-                }`}
-              >
-                <RadioGroupItem 
-                  value={index.toString()} 
-                  id={`option-${index}`} 
-                  className={
-                    showResult && index === currentQ.correct_answer
-                      ? "text-green-500 border-green-500"
-                      : showResult && selectedAnswer === index && selectedAnswer !== currentQ.correct_answer
-                      ? "text-red-500 border-red-500"
-                      : ""
-                  }
-                />
-                <Label htmlFor={`option-${index}`} className="flex-grow cursor-pointer">
-                  {option}
-                </Label>
-                {showResult && index === currentQ.correct_answer && (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                )}
-                {showResult && selectedAnswer === index && selectedAnswer !== currentQ.correct_answer && (
-                  <XCircle className="h-4 w-4 text-red-500" />
-                )}
+    <Card>
+      <CardHeader>
+        <CardTitle>Bài kiểm tra chương</CardTitle>
+        <CardDescription>
+          Trả lời các câu hỏi dưới đây. Thời gian còn lại: {formatTime(timeRemaining)}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-4">
+          <p className="text-lg font-semibold">
+            Câu {currentQuestionIndex + 1}/{questions.length}: {currentQuestion.question}
+          </p>
+        </div>
+        <RadioGroup defaultValue={userAnswers[currentQuestion.id] || ''} onValueChange={handleAnswerSelect}>
+          <div className="grid gap-2">
+            {currentQuestion.options.map((option, index) => (
+              <div className="flex items-center space-x-2" key={index}>
+                <RadioGroupItem value={option} id={`q${currentQuestionIndex}-${index}`} />
+                <Label htmlFor={`q${currentQuestionIndex}-${index}`}>{option}</Label>
               </div>
             ))}
-          </RadioGroup>
-          
-          {showResult && (
-            <div className={`mt-4 p-3 rounded-md ${
-              isCorrect ? "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300" : 
-              "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300"
-            }`}>
-              <p className="font-medium">
-                {isCorrect ? "Chính xác!" : "Chưa chính xác!"}
-              </p>
-              <p className="text-sm mt-1">
-                {isCorrect 
-                  ? "Bạn đã trả lời đúng. Chuyển sang câu tiếp theo..." 
-                  : `Đáp án đúng là: ${currentQ.options[currentQ.correct_answer]}`}
-              </p>
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="justify-between">
-          <div className="text-sm text-muted-foreground">
-            {!showResult ? "Chọn một đáp án để tiếp tục" : isCorrect ? "+1 điểm" : "Không được điểm"}
           </div>
-          <Button 
-            onClick={handleNextQuestion} 
-            disabled={selectedAnswer === null || showResult}
-          >
-            {currentQuestion < questions.length - 1 ? "Câu tiếp theo" : "Kết thúc bài kiểm tra"}
+        </RadioGroup>
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <Button variant="secondary" onClick={goToPreviousQuestion} disabled={currentQuestionIndex === 0}>
+          <ChevronLeft className="w-4 h-4 mr-2" />
+          Trước
+        </Button>
+        {currentQuestionIndex === questions.length - 1 ? (
+          <Button onClick={handleSubmitTest}>
+            Nộp bài
+            <CheckCircle className="w-4 h-4 ml-2" />
           </Button>
-        </CardFooter>
-      </Card>
-      
-      {/* Progress Chart Dialog */}
-      <Dialog open={showProgressChart} onOpenChange={setShowProgressChart}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Tiến trình làm bài kiểm tra</DialogTitle>
-          </DialogHeader>
-          <TestProgressChart data={progressData} />
-        </DialogContent>
-      </Dialog>
-    </>
+        ) : (
+          <Button onClick={goToNextQuestion} disabled={!selectedAnswer}>
+            Tiếp theo
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
   );
 };
 

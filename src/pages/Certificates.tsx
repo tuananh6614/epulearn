@@ -1,16 +1,20 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
-import { Badge } from "@/components/ui/badge";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Award, Calendar, Download, FileCheck, AlertCircle } from 'lucide-react';
+import { Award, Download, ExternalLink, Share2, CheckCircle } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { getUserCertificates, getCertificate } from '@/integrations/supabase';
+import Footer from '@/components/Footer';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { getUserCertificates, getCertificate } from '@/integrations/supabase/client';
-import Certificate from '@/components/Certificate';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Certificates = () => {
@@ -18,141 +22,152 @@ const Certificates = () => {
   const [certificates, setCertificates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCertificate, setSelectedCertificate] = useState<any>(null);
-  
+  const { certificateId } = useParams<{ certificateId: string }>();
+
   useEffect(() => {
     const fetchCertificates = async () => {
       if (!user) {
         setLoading(false);
         return;
       }
-      
+
       try {
         setLoading(true);
-        const certsData = await getUserCertificates(user.id);
-        setCertificates(certsData);
+        const userCertificates = await getUserCertificates(user.id);
+        setCertificates(userCertificates);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching certificates:', error);
         setLoading(false);
       }
     };
-    
+
     fetchCertificates();
   }, [user]);
-  
-  const handleViewCertificate = (certificate: any) => {
-    setSelectedCertificate(certificate);
+
+  useEffect(() => {
+    const fetchCertificateDetails = async () => {
+      if (certificateId) {
+        try {
+          const certificateDetails = await getCertificate(certificateId);
+          setSelectedCertificate(certificateDetails);
+        } catch (error) {
+          console.error('Error fetching certificate details:', error);
+        }
+      }
+    };
+
+    fetchCertificateDetails();
+  }, [certificateId]);
+
+  const handleDownloadCertificate = () => {
+    // Placeholder for download functionality
+    alert('Download functionality will be implemented soon.');
   };
-  
-  const closeCertificateDialog = () => {
-    setSelectedCertificate(null);
+
+  const handleShareCertificate = () => {
+    // Placeholder for share functionality
+    alert('Share functionality will be implemented soon.');
   };
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container max-w-screen-xl mx-auto px-4 pt-24 pb-10">
-          <div className="animate-pulse space-y-8">
-            <div className="h-8 bg-muted rounded w-48"></div>
-            <div className="h-4 bg-muted rounded w-64"></div>
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <main className="flex-grow pt-24 pb-16">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Chứng chỉ của bạn</h1>
+          <p className="text-muted-foreground mb-8">
+            Các chứng chỉ bạn đã đạt được sau khi hoàn thành khóa học
+          </p>
+
+          {!user ? (
+            <Alert>
+              <AlertDescription>
+                Vui lòng đăng nhập để xem chứng chỉ của bạn
+              </AlertDescription>
+            </Alert>
+          ) : loading ? (
+            <div>Đang tải chứng chỉ...</div>
+          ) : certificates.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-8">
+                <Award className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Bạn chưa có chứng chỉ nào</h3>
+                <p className="text-muted-foreground mb-4">
+                  Hoàn thành các khóa học để nhận chứng chỉ
+                </p>
+                <Button asChild>
+                  <Link to="/courses">Khám phá khóa học</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-52 bg-muted rounded"></div>
+              {certificates.map((certificate) => (
+                <Card key={certificate.id}>
+                  <CardHeader>
+                    <CardTitle>{certificate.courseName}</CardTitle>
+                    <CardDescription>
+                      Hoàn thành vào {new Date(certificate.issueDate).toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p>Chứng chỉ cho khóa học: {certificate.courseName}</p>
+                  </CardContent>
+                  <CardFooter className="flex justify-between items-center">
+                    <Button asChild variant="link">
+                      <Link to={`/certificate/${certificate.certificateId}`}>
+                        Xem chi tiết <ExternalLink className="h-4 w-4 ml-2" />
+                      </Link>
+                    </Button>
+                    <CheckCircle className="h-6 w-6 text-green-500" />
+                  </CardFooter>
+                </Card>
               ))}
             </div>
-          </div>
+          )}
         </div>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container max-w-screen-xl mx-auto px-4 pt-24 pb-10">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Chứng chỉ của bạn</h1>
-        <p className="text-muted-foreground mb-8">Các chứng chỉ bạn đã đạt được khi hoàn thành khóa học</p>
-        
-        {!user ? (
-          <Alert className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Vui lòng đăng nhập để xem chứng chỉ của bạn
-            </AlertDescription>
-          </Alert>
-        ) : certificates.length === 0 ? (
-          <Card className="mt-8">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Award className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Chưa có chứng chỉ nào</h3>
-              <p className="text-muted-foreground mb-6 text-center max-w-md">
-                Hoàn thành các khóa học để nhận chứng chỉ của bạn. Chứng chỉ sẽ được cấp sau khi bạn hoàn thành ít nhất 85% nội dung khóa học.
-              </p>
-              <Button onClick={() => window.location.href = '/courses'}>
-                Khám phá khóa học
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {certificates.map((certificate) => (
-              <Card key={certificate.id} className="overflow-hidden">
-                <div className="relative h-32 bg-gradient-to-r from-blue-600 to-blue-400 flex items-center justify-center">
-                  <Award className="h-16 w-16 text-white" />
-                </div>
+      </main>
+      <Footer />
+
+      <Dialog open={!!selectedCertificate} onOpenChange={(open) => !open && setSelectedCertificate(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Chi tiết chứng chỉ</DialogTitle>
+          </DialogHeader>
+          {selectedCertificate ? (
+            <div className="space-y-4">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="line-clamp-1">{certificate.courses?.title || 'Khóa học'}</CardTitle>
+                  <CardTitle>{selectedCertificate.courses?.title}</CardTitle>
                   <CardDescription>
-                    Cấp ngày: {format(new Date(certificate.issue_date), 'dd MMMM yyyy', { locale: vi })}
+                    Chứng nhận hoàn thành khóa học
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center">
-                      <FileCheck className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="text-sm">Mã chứng chỉ: {certificate.certificate_id}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span className="text-sm">
-                        Cấp ngày: {format(new Date(certificate.issue_date), 'dd/MM/yyyy')}
-                      </span>
-                    </div>
-                  </div>
+                  <p>Học viên: {selectedCertificate.profiles?.first_name} {selectedCertificate.profiles?.last_name}</p>
+                  <p>Email: {selectedCertificate.profiles?.email}</p>
+                  <p>Khóa học: {selectedCertificate.courses?.title}</p>
+                  <p>Giảng viên: {selectedCertificate.courses?.instructor}</p>
+                  <p>Ngày hoàn thành: {new Date(selectedCertificate.issue_date).toLocaleDateString()}</p>
                 </CardContent>
-                <CardFooter>
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={() => handleViewCertificate(certificate)}
-                  >
-                    <Award className="mr-2 h-4 w-4" />
-                    Xem chứng chỉ
-                  </Button>
-                </CardFooter>
               </Card>
-            ))}
-          </div>
-        )}
-        
-        {selectedCertificate && (
-          <Dialog open={!!selectedCertificate} onOpenChange={closeCertificateDialog}>
-            <DialogContent className="max-w-5xl">
-              <DialogHeader>
-                <DialogTitle>Chứng chỉ khóa học</DialogTitle>
-              </DialogHeader>
-              
-              <Certificate
-                userName={`${user?.user_metadata?.first_name || ''} ${user?.user_metadata?.last_name || ''}`}
-                courseName={selectedCertificate.courses?.title || 'Khóa học'}
-                certificateId={selectedCertificate.certificate_id}
-                issueDate={selectedCertificate.issue_date}
-              />
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={handleDownloadCertificate}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Tải xuống
+                </Button>
+                <Button onClick={handleShareCertificate}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Chia sẻ
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div>Đang tải chi tiết chứng chỉ...</div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

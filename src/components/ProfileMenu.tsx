@@ -15,16 +15,16 @@ import { Award, FileText, User, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 const ProfileMenu = () => {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
 
   if (!user) return null;
 
-  const userInitials = user.user_metadata?.first_name && user.user_metadata?.last_name 
-    ? `${user.user_metadata.first_name[0]}${user.user_metadata.last_name[0]}`
-    : user.email?.substring(0, 2).toUpperCase() || 'U';
+  const userInitials = user.email 
+    ? user.email.substring(0, 2).toUpperCase() 
+    : 'U';
 
   const handleSignOut = async () => {
-    await signOut();
+    await logout();
   };
 
   return (
@@ -33,8 +33,8 @@ const ProfileMenu = () => {
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar>
             <AvatarImage
-              src={user.user_metadata?.avatar_url}
-              alt={user.user_metadata?.name || user.email}
+              src={user.avatarUrl || ""}
+              alt={user.email || "User"}
             />
             <AvatarFallback>{userInitials}</AvatarFallback>
           </Avatar>
@@ -44,8 +44,8 @@ const ProfileMenu = () => {
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {user.user_metadata?.first_name
-                ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`
+              {user.firstName
+                ? `${user.firstName} ${user.lastName || ''}`
                 : user.email}
             </p>
             <p className="text-xs leading-none text-muted-foreground">{user.email}</p>

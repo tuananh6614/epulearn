@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
@@ -30,7 +29,7 @@ import {
   TrendingUp,
   XCircle
 } from 'lucide-react';
-import { getUserTestResults, getTestProgressChartData } from '@/integrations/supabase/client';
+import { getUserTestResults, getTestProgressChartData } from '@/integrations/supabase';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import TestProgressChart from '@/components/TestProgressChart';
@@ -75,7 +74,6 @@ const TestResults = () => {
     }
   };
   
-  // Group test results by course
   const groupedResults = React.useMemo(() => {
     const grouped: Record<string, any[]> = {};
     

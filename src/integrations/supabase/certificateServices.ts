@@ -1,50 +1,38 @@
 
 import { supabase } from './client';
 
-/**
- * Generate a certificate for course completion
- * @param userId User ID
- * @param courseId Course ID
- * @returns Object containing success flag and certificate ID or error
- */
-export const generateCertificate = async (userId: string, courseId: string) => {
+// Function to generate a certificate for a user completing a course
+export const generateCertificate = async (userId: string, courseId: string, courseName: string) => {
   try {
-    // Check if user has already been certified for this course
-    const { data: existingCert } = await supabase
+    // Check if certificate already exists
+    const { data: existingCert, error: checkError } = await supabase
       .from('certificates')
-      .select('*')
+      .select('id, certificate_id')
       .eq('user_id', userId)
       .eq('course_id', courseId)
       .maybeSingle();
     
+    if (checkError) {
+      console.error('Error checking existing certificate:', checkError);
+      throw checkError;
+    }
+    
+    // If certificate already exists, return it
     if (existingCert) {
-      return { success: true, certificateId: existingCert.certificate_id, alreadyExists: true };
+      console.log('Certificate already exists:', existingCert);
+      return existingCert;
     }
     
-    // Check if the user has completed the course (progress is at least 85%)
-    const { data: courseProgress } = await supabase
-      .from('user_courses')
-      .select('progress_percentage')
-      .eq('user_id', userId)
-      .eq('course_id', courseId)
-      .maybeSingle();
-    
-    if (!courseProgress || courseProgress.progress_percentage < 85) {
-      return { 
-        success: false, 
-        error: "Bạn cần hoàn thành ít nhất 85% khóa học để nhận chứng chỉ" 
-      };
-    }
-    
-    // Generate a certificate ID using the Supabase function
-    const { data: certificateIdData, error: certIdError } = await supabase.rpc('generate_certificate_id');
-    
+    // Generate a certificate ID using the function we created in the database
+    const { data: certIdResult, error: certIdError } = await supabase
+      .rpc('generate_certificate_id');
+      
     if (certIdError) {
       console.error('Error generating certificate ID:', certIdError);
       throw certIdError;
     }
     
-    const certificateId = certificateIdData || `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+    const certificateId = certIdResult || `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
     
     // Insert certificate record
     const { data, error } = await supabase
@@ -52,55 +40,25 @@ export const generateCertificate = async (userId: string, courseId: string) => {
       .insert({
         user_id: userId,
         course_id: courseId,
-        certificate_id: certificateId,
+        certificate_id: certificateId
       })
       .select()
       .single();
-      
+    
     if (error) {
       console.error('Error generating certificate:', error);
       throw error;
     }
     
-    return { success: true, certificateId: data.certificate_id };
-  } catch (error) {
-    console.error('Error in generateCertificate:', error);
-    return { success: false, error };
-  }
-};
-
-/**
- * Get a user's certificate for a specific course
- * @param userId User ID
- * @param courseId Course ID
- * @returns Certificate data or null
- */
-export const getCertificate = async (userId: string, courseId: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('certificates')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('course_id', courseId)
-      .maybeSingle();
-      
-    if (error) {
-      console.error('Error getting certificate:', error);
-      throw error;
-    }
-    
+    console.log('Certificate generated successfully:', data);
     return data;
   } catch (error) {
-    console.error('Error in getCertificate:', error);
-    return null;
+    console.error('Error in generateCertificate:', error);
+    throw error;
   }
 };
 
-/**
- * Get all certificates for a user
- * @param userId User ID
- * @returns Array of certificates
- */
+// Function to get user certificates
 export const getUserCertificates = async (userId: string) => {
   try {
     const { data, error } = await supabase
@@ -108,23 +66,65 @@ export const getUserCertificates = async (userId: string) => {
       .select(`
         *,
         courses (
-          id,
           title,
-          thumbnail_url,
-          category
+          description,
+          category,
+          level
         )
       `)
       .eq('user_id', userId)
       .order('issue_date', { ascending: false });
-      
+    
     if (error) {
-      console.error('Error getting user certificates:', error);
+      console.error('Error fetching user certificates:', error);
       throw error;
     }
     
-    return data || [];
+    return data?.map(cert => ({
+      id: cert.id,
+      userId: cert.user_id,
+      courseId: cert.course_id,
+      certificateId: cert.certificate_id,
+      issueDate: cert.issue_date,
+      courseName: cert.courses?.title || 'Unknown Course'
+    })) || [];
   } catch (error) {
     console.error('Error in getUserCertificates:', error);
     return [];
+  }
+};
+
+// Function to get a single certificate
+export const getCertificate = async (certificateId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('certificates')
+      .select(`
+        *,
+        courses (
+          title,
+          description,
+          category,
+          level,
+          instructor
+        ),
+        profiles:user_id (
+          first_name,
+          last_name,
+          email
+        )
+      `)
+      .eq('certificate_id', certificateId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching certificate:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error in getCertificate:', error);
+    return null;
   }
 };

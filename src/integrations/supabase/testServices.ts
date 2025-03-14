@@ -33,7 +33,7 @@ export const saveTestResult = async (
   courseTestId: string,
   score: number,
   passed: boolean,
-  answers: Record<string, unknown>, // Using unknown to prevent deep recursion
+  answers: Record<string, unknown>, // Using unknown type to prevent infinite recursion
   timeTaken: number,
   testName: string = 'Course Test'
 ) => {
@@ -55,10 +55,12 @@ export const saveTestResult = async (
       ? previousAttempts.length + 1 
       : 1;
     
-    // Convert answers to a simple JSON string and parse it back
-    // This breaks the deep type reference chain
-    const serialized = JSON.stringify(answers);
-    const answersJson = JSON.parse(serialized) as Json;
+    // Break the deep type reference chain with JSON serialization
+    const serializedAnswers = JSON.stringify(answers);
+    const parsedAnswers = JSON.parse(serializedAnswers);
+    
+    // Now it's safe to cast to Json type
+    const answersJson = parsedAnswers as Json;
     
     // Save the test result
     const { data, error } = await supabase

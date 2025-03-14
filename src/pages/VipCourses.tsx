@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCourses } from '@/services/apiUtils';
 import { SupabaseCourseResponse } from '@/models/lesson';
-import { Crown, AlertTriangle, Lock, FileText, BookOpen, ChevronDown, ChevronUp, CheckCircle, ArrowRight } from 'lucide-react';
+import { Crown, AlertTriangle, Lock, FileText, BookOpen, ChevronDown, ChevronUp, CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VipPurchaseForm from '@/components/VipPurchaseForm';
 import { useAuth } from '@/context/AuthContext';
 import { checkVipAccess, VipStatus } from '@/integrations/supabase/client';
+import { useCourseMockData } from '@/hooks/useCourseMockData';
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from 'sonner';
 
 const VipCourses = () => {
   const { currentUser } = useAuth();
@@ -23,24 +26,47 @@ const VipCourses = () => {
   const [expandedChapter, setExpandedChapter] = useState<number | null>(1);
   const [vipStatus, setVipStatus] = useState<VipStatus>({ isVip: false, daysRemaining: null });
   
+  const { 
+    isGenerating, 
+    generateMockContent 
+  } = useCourseMockData();
+  
   useEffect(() => {
     const checkUserVipStatus = async () => {
       if (currentUser?.id) {
-        const status = await checkVipAccess(currentUser.id);
-        setVipStatus(status);
+        try {
+          const status = await checkVipAccess(currentUser.id);
+          setVipStatus(status);
+        } catch (error) {
+          console.error('Error checking VIP status:', error);
+          toast.error('Không thể kiểm tra trạng thái VIP');
+        }
       }
     };
     
     checkUserVipStatus();
   }, [currentUser]);
   
-  const { data: coursesData, isLoading, error } = useQuery({
+  const { data: coursesData, isLoading, error, refetch } = useQuery({
     queryKey: ['vipCourses'],
     queryFn: async () => {
-      const courses = await fetchCourses();
-      return courses.filter((course) => course.is_premium);
+      try {
+        const courses = await fetchCourses();
+        return courses.filter((course) => course.is_premium);
+      } catch (error) {
+        console.error('Error fetching VIP courses:', error);
+        return [];
+      }
     },
   });
+
+  // Handle content generation
+  const handleGenerateContent = async () => {
+    const success = await generateMockContent();
+    if (success) {
+      refetch();
+    }
+  };
 
   if (isLoading) {
     return (
@@ -48,9 +74,14 @@ const VipCourses = () => {
         <Navbar />
         <main className="flex-grow pt-24 pb-16">
           <div className="container mx-auto px-4">
+            <div className="flex items-center gap-3 mb-6">
+              <Crown className="h-8 w-8 text-yellow-500" />
+              <h1 className="text-3xl font-bold">Khóa Học VIP</h1>
+            </div>
+            
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {[1, 2, 3, 4].map((_, index) => (
-                <div key={index} className="bg-gray-200 dark:bg-gray-700 animate-pulse h-80 rounded-lg"></div>
+                <Skeleton key={index} className="h-80 w-full rounded-lg" />
               ))}
             </div>
           </div>
@@ -70,9 +101,12 @@ const VipCourses = () => {
               <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Không thể tải danh sách khóa học VIP
               </h3>
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-gray-500 dark:text-gray-400 mb-6">
                 Vui lòng thử lại sau
               </p>
+              <Button onClick={() => refetch()}>
+                Thử lại
+              </Button>
             </div>
           </div>
         </main>
@@ -163,6 +197,19 @@ const VipCourses = () => {
               {coursesData && coursesData.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2">
+                    {currentUser?.isAdmin && (
+                      <div className="mb-6">
+                        <Button 
+                          onClick={handleGenerateContent} 
+                          disabled={isGenerating}
+                          className="bg-purple-600 hover:bg-purple-700"
+                        >
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          {isGenerating ? 'Đang tạo nội dung...' : 'Tạo nội dung mẫu cho khóa học'}
+                        </Button>
+                      </div>
+                    )}
+                  
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       {coursesData.map((course: SupabaseCourseResponse) => (
                         <CourseCard

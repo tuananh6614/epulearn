@@ -1,11 +1,14 @@
 
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Crown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import VipManager from './VipManager';
 import VipActivationPending from './VipActivationPending';
 import { formatDate } from '@/lib/utils';
+import { useCourseData } from '@/hooks/useCourseData';
+import { checkVipAccess } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const VipStatusDisplay = memo(({ isVip, expirationDate }: { isVip: boolean, expirationDate: Date | null }) => {
   return (
@@ -42,6 +45,26 @@ const VipTab = memo(() => {
   const { currentUser } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
   const [showActivationPending, setShowActivationPending] = useState(false);
+  const [vipStatus, setVipStatus] = useState({ isVip: false, daysRemaining: null });
+  
+  // Fetch VIP courses to check if they load correctly
+  const { courseData: vipCourseExample } = useCourseData('some-vip-course-id');
+  
+  useEffect(() => {
+    const checkUserVipStatus = async () => {
+      if (currentUser?.id) {
+        try {
+          const status = await checkVipAccess(currentUser.id);
+          setVipStatus(status);
+        } catch (error) {
+          console.error('Error checking VIP status:', error);
+          toast.error('Không thể kiểm tra trạng thái VIP');
+        }
+      }
+    };
+    
+    checkUserVipStatus();
+  }, [currentUser, refreshKey]);
   
   const handleVipStatusChanged = useCallback(() => {
     setRefreshKey(prev => prev + 1);

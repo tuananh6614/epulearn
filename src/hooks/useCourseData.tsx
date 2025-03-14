@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -11,7 +12,7 @@ export const useCourseData = (courseId: string | undefined) => {
   const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
-  const { user } = useAuth();
+  const { user, currentUser } = useAuth();
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -29,7 +30,10 @@ export const useCourseData = (courseId: string | undefined) => {
           .eq('id', courseId)
           .single();
 
-        if (courseError) throw courseError;
+        if (courseError) {
+          console.error('Error fetching course:', courseError);
+          throw courseError;
+        }
 
         // Fetch chapters
         const { data: chapters, error: chaptersError } = await supabase
@@ -38,7 +42,10 @@ export const useCourseData = (courseId: string | undefined) => {
           .eq('course_id', courseId)
           .order('order_index', { ascending: true });
 
-        if (chaptersError) throw chaptersError;
+        if (chaptersError) {
+          console.error('Error fetching chapters:', chaptersError);
+          throw chaptersError;
+        }
 
         // Fetch lessons
         const { data: lessons, error: lessonsError } = await supabase
@@ -47,7 +54,10 @@ export const useCourseData = (courseId: string | undefined) => {
           .eq('course_id', courseId)
           .order('order_index', { ascending: true });
 
-        if (lessonsError) throw lessonsError;
+        if (lessonsError) {
+          console.error('Error fetching lessons:', lessonsError);
+          throw lessonsError;
+        }
 
         // Check enrollment status if user is logged in
         if (user) {
@@ -59,11 +69,18 @@ export const useCourseData = (courseId: string | undefined) => {
             .maybeSingle();
 
           if (enrollmentError && enrollmentError.code !== 'PGRST116') {
+            console.error('Error checking enrollment:', enrollmentError);
             throw enrollmentError;
           }
 
           setIsEnrolled(!!enrollment);
           setUserProgress(enrollment?.progress_percentage || 0);
+        }
+
+        // Check VIP access for premium courses
+        let userCanAccess = true;
+        if (course.is_premium && user) {
+          userCanAccess = currentUser?.isVip || false;
         }
 
         // Structure the data
@@ -72,7 +89,8 @@ export const useCourseData = (courseId: string | undefined) => {
           chapters: chapters.map((chapter) => ({
             ...chapter,
             lessons: lessons.filter((lesson) => lesson.chapter_id === chapter.id)
-          }))
+          })),
+          userCanAccess
         };
 
         setCourseData(structuredData);
@@ -86,7 +104,7 @@ export const useCourseData = (courseId: string | undefined) => {
     };
 
     fetchCourseData();
-  }, [courseId, user]);
+  }, [courseId, user, currentUser]);
 
   // Enrollment function
   const enrollInCourse = async () => {
@@ -97,6 +115,12 @@ export const useCourseData = (courseId: string | undefined) => {
 
     if (!courseId) {
       return { success: false };
+    }
+
+    // Check if course is premium and user is not VIP
+    if (courseData?.is_premium && !currentUser?.isVip) {
+      toast.error("Bạn cần đăng ký gói VIP để truy cập khóa học này");
+      return { success: false, requiresVip: true };
     }
 
     try {

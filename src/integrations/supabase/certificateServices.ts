@@ -28,8 +28,8 @@ export const generateCertificate = async (userId: string, courseId: string, cour
     let certificateId: string;
     
     try {
-      // Call RPC with explicit type annotation to resolve the "never" type error
-      const { data, error } = await supabase.rpc<string>('generate_certificate_id');
+      // Call RPC with proper type parameters - first is the return type, second is the input type
+      const { data, error } = await supabase.rpc<string, {}>('generate_certificate_id', {});
       
       if (error) {
         throw error;

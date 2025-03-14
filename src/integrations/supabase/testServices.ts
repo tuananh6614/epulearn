@@ -58,8 +58,17 @@ export const saveTestResult = async (
       ? previousAttempts.length + 1 
       : 1;
     
-    // Serialize and deserialize to break type reference chains
-    const safeAnswers = JSON.parse(JSON.stringify(answers)) as Json;
+    // Create safe copy of answers to break type reference chains
+    // Use a primitive approach that doesn't trigger infinite type instantiation
+    let safeAnswers: Json = null;
+    try {
+      // Create a string representation first, then parse it back
+      const stringified = JSON.stringify(answers);
+      safeAnswers = JSON.parse(stringified);
+    } catch (e) {
+      console.error('Error processing answers:', e);
+      safeAnswers = {}; // Fallback to empty object if serialization fails
+    }
     
     // Create the test result
     const { data, error } = await supabase

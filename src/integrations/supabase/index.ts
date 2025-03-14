@@ -10,5 +10,17 @@ export type { VipStatus } from './client';
 export * from './apiUtils';
 export * from './courseServices';
 export * from './certificateServices';
-export * from './testServices';
+
+// Handle testServices export to avoid conflict with courseServices
+export {
+  fetchTestQuestions,
+  saveTestResult,
+  getChapterTestProgress,
+  getUserTestResults,
+  getTestProgressChartData
+} from './testServices';
+
+// Re-export the second fetchCourseTests under a different name to resolve ambiguity
+export { fetchCourseTests as fetchCourseTestsDetails } from './testServices';
+
 export * from './userProgressServices';

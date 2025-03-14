@@ -26,6 +26,9 @@ export const fetchTestQuestions = async (lessonId: string, chapterId: string) =>
   }
 };
 
+// Type for test answers to prevent deep recursion
+type TestAnswers = Record<string, unknown>;
+
 // Function to save test result
 export const saveTestResult = async (
   userId: string,
@@ -33,7 +36,7 @@ export const saveTestResult = async (
   courseTestId: string,
   score: number,
   passed: boolean,
-  answers: any, // Using any type to bypass type recursion issues
+  answers: TestAnswers, // Using Record<string, unknown> to prevent type recursion
   timeTaken: number,
   testName: string = 'Course Test'
 ) => {
@@ -55,8 +58,8 @@ export const saveTestResult = async (
       ? previousAttempts.length + 1 
       : 1;
     
-    // Perform a deep clone to break type reference chains
-    const clonedAnswers = JSON.parse(JSON.stringify(answers));
+    // Serialize and deserialize to break type reference chains
+    const safeAnswers = JSON.parse(JSON.stringify(answers)) as Json;
     
     // Create the test result
     const { data, error } = await supabase
@@ -67,7 +70,7 @@ export const saveTestResult = async (
         course_test_id: courseTestId,
         score,
         passed,
-        answers: clonedAnswers,
+        answers: safeAnswers,
         time_taken: timeTaken
       })
       .select();

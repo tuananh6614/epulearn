@@ -28,15 +28,15 @@ export const generateCertificate = async (userId: string, courseId: string, cour
     let certificateId: string;
     
     try {
-      // Call RPC without parameters and use type assertion
-      const response = await supabase.rpc('generate_certificate_id');
+      // Call RPC with explicit type annotation to resolve the "never" type error
+      const { data, error } = await supabase.rpc<string>('generate_certificate_id');
       
-      if (response.error) {
-        throw response.error;
+      if (error) {
+        throw error;
       }
       
       // Explicitly convert to string
-      certificateId = String(response.data);
+      certificateId = String(data);
     } catch (error) {
       console.error('Error generating certificate ID via RPC, using fallback:', error);
       certificateId = `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;

@@ -2,6 +2,35 @@
 import { supabase } from './client';
 import { updateCourseProgress } from './userProgressServices';
 
+// Define clear types for test data
+export interface CourseTestQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correct_answer: number;
+  points?: number;
+}
+
+export interface CourseTest {
+  id: string;
+  title: string;
+  description?: string;
+  time_limit: number;
+  passing_score: number;
+  questions: CourseTestQuestion[];
+}
+
+export interface TestResult {
+  id: string;
+  user_id: string;
+  course_id: string;
+  course_test_id: string;
+  score: number;
+  passed: boolean;
+  time_taken?: number;
+  created_at?: string;
+}
+
 // Optimized helper function for fetching test questions
 export const fetchTestQuestions = async (chapterId: string) => {
   try {
@@ -26,50 +55,71 @@ export const fetchTestQuestions = async (chapterId: string) => {
 };
 
 // Get test questions for a full course
-export const fetchCourseTests = async (courseId: string) => {
+export const fetchCourseTests = async (courseId: string): Promise<CourseTest[]> => {
   try {
     console.log(`Fetching tests for course: ${courseId}`);
     
-    // First, get the course test
-    const { data: courseTest, error: courseTestError } = await supabase
+    // Get all course tests
+    const { data: courseTests, error: courseTestsError } = await supabase
       .from('course_tests')
       .select('*')
-      .eq('course_id', courseId)
-      .maybeSingle();
+      .eq('course_id', courseId);
       
-    if (courseTestError) {
-      console.error('Error fetching course test:', courseTestError);
-      throw courseTestError;
+    if (courseTestsError) {
+      console.error('Error fetching course tests:', courseTestsError);
+      throw courseTestsError;
     }
     
-    if (!courseTest) {
-      console.log(`No course test found for course ${courseId}`);
-      return null;
+    if (!courseTests || courseTests.length === 0) {
+      console.log(`No course tests found for course ${courseId}`);
+      return [];
     }
     
-    // Then, get all questions for this test
-    const { data: questions, error: questionsError } = await supabase
-      .from('course_test_questions')
-      .select('*')
-      .eq('course_test_id', courseTest.id)
-      .order('created_at', { ascending: true });
-      
-    if (questionsError) {
-      console.error('Error fetching course test questions:', questionsError);
-      throw questionsError;
-    }
+    // For each test, get its questions
+    const testsWithQuestions = await Promise.all(
+      courseTests.map(async (test) => {
+        const { data: questions, error: questionsError } = await supabase
+          .from('course_test_questions')
+          .select('*')
+          .eq('course_test_id', test.id)
+          .order('created_at', { ascending: true });
+          
+        if (questionsError) {
+          console.error(`Error fetching questions for test ${test.id}:`, questionsError);
+          return {
+            ...test,
+            questions: []
+          };
+        }
+        
+        // Transform the questions to match the CourseTestQuestion interface
+        const formattedQuestions: CourseTestQuestion[] = questions?.map(q => ({
+          id: q.id,
+          question: q.question,
+          options: Array.isArray(q.options) ? q.options : [],
+          correct_answer: q.correct_answer,
+          points: q.points || 1
+        })) || [];
+        
+        return {
+          id: test.id,
+          title: test.title,
+          description: test.description,
+          time_limit: test.time_limit || 30,
+          passing_score: test.passing_score || 70,
+          questions: formattedQuestions
+        };
+      })
+    );
     
-    return {
-      test: courseTest,
-      questions: questions || []
-    };
+    return testsWithQuestions;
   } catch (error) {
     console.error('Error in fetchCourseTests:', error);
-    return null;
+    return [];
   }
 };
 
-// Simplified type for test answers - avoiding recursive type issues
+// Simple type for test answers
 type TestAnswer = {
   questionId: string;
   selectedAnswer: number;
@@ -79,18 +129,14 @@ type TestAnswer = {
 export const saveTestResult = async (
   userId: string, 
   courseId: string,
-  chapterId: string,
-  lessonId: string,
+  courseTestId: string,
   score: number, 
-  totalQuestions: number,
+  passed: boolean,
+  timeTaken: number,
   answers: Record<string, number> = {} // Simple key-value for question ID -> answer
-) => {
+): Promise<{ success: boolean, resultId?: string }> => {
   try {
-    console.log(`Saving test result for user ${userId}, course ${courseId}, score: ${score}/${totalQuestions}`);
-    
-    // Calculate percentage
-    const percentage = Math.round((score / totalQuestions) * 100);
-    const passed = percentage >= 70;
+    console.log(`Saving test result for user ${userId}, course ${courseId}, score: ${score}`);
     
     // Format answers as a simple array to avoid deep typing issues
     const formattedAnswers: TestAnswer[] = Object.keys(answers).map(questionId => ({
@@ -98,64 +144,65 @@ export const saveTestResult = async (
       selectedAnswer: answers[questionId]
     }));
     
-    // First update the lesson progress
-    const { error: progressError } = await supabase
-      .from('user_lesson_progress')
-      .upsert({
+    // Save to user_test_results for analytics
+    const { data, error: testResultError } = await supabase
+      .from('user_test_results')
+      .insert({
         user_id: userId,
-        lesson_id: lessonId,
         course_id: courseId,
-        completed: passed,
-        last_position: JSON.stringify({
-          score,
-          total: totalQuestions,
-          percentage
-        }),
-        completed_at: passed ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString()
-      });
+        course_test_id: courseTestId,
+        score,
+        passed,
+        time_taken: timeTaken,
+        answers: formattedAnswers as unknown as any, // Use type assertion to avoid deep typing issues
+        created_at: new Date().toISOString()
+      })
+      .select('id')
+      .single();
       
-    if (progressError) {
-      console.error('Error updating lesson progress:', progressError);
-      throw progressError;
+    if (testResultError) {
+      console.error('Error saving test result:', testResultError);
+      return { success: false };
     }
     
     // Then update the course progress
     await updateCourseProgress(userId, courseId);
     
-    // Also save to user_test_results for analytics - using simple JSON
-    const { error: testResultError } = await supabase
-      .from('user_test_results')
-      .insert({
-        user_id: userId,
-        course_id: courseId,
-        score: percentage,
-        passed,
-        answers: formattedAnswers as any, // Use type assertion to avoid deep typing issues
-        time_taken: 0, // We'll assume 0 for now
-        created_at: new Date().toISOString()
-      });
-      
-    if (testResultError) {
-      console.error('Error saving test result:', testResultError);
-      // We don't throw here because we want to proceed even if this fails
-    }
-    
     return {
       success: true,
-      score: percentage,
-      passed
+      resultId: data?.id
     };
   } catch (error) {
     console.error('Error in saveTestResult:', error);
     return {
-      success: false,
-      error
+      success: false
     };
   }
 };
 
-// Get user's chapter tests progress
+// Get user's test results for a course
+export const getUserTestResults = async (userId: string, courseId: string): Promise<TestResult[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_test_results')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('course_id', courseId)
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching user test results:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in getUserTestResults:', error);
+    return [];
+  }
+};
+
+// Get chapter's test progress
 export const getChapterTestProgress = async (userId: string, courseId: string) => {
   try {
     console.log(`Getting chapter test progress for user ${userId}, course ${courseId}`);

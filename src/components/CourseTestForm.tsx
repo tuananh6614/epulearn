@@ -1,11 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,28 +12,12 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Award, Clock, RotateCcw, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-interface CourseTestQuestion {
-  id: string;
-  question: string;
-  options: string[];
-  correct_answer: number;
-  points?: number;
-}
-
-interface CourseTest {
-  id: string;
-  title: string;
-  description?: string;
-  time_limit: number;
-  passing_score: number;
-  questions: CourseTestQuestion[];
-}
+import { CourseTest } from "@/integrations/supabase/testServices";
 
 interface CourseTestFormProps {
   test: CourseTest;
   courseId: string;
-  onComplete: (score: number, passed: boolean) => void;
+  onComplete: (score: number, passed: boolean, timeTaken: number, answers: Record<string, number>) => void;
 }
 
 const CourseTestForm = ({ test, courseId, onComplete }: CourseTestFormProps) => {
@@ -44,7 +27,7 @@ const CourseTestForm = ({ test, courseId, onComplete }: CourseTestFormProps) => 
   const [score, setScore] = useState(0);
   const [cheatAttempts, setCheatAttempts] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
+  const [timeTaken, setTimeTaken] = useState(0);
 
   // Create a form schema for the test
   const formSchema = z.object({
@@ -93,10 +76,18 @@ const CourseTestForm = ({ test, courseId, onComplete }: CourseTestFormProps) => 
       let correctAnswers = 0;
       let totalPoints = 0;
       let earnedPoints = 0;
+      
+      // Convert answers to record format for API
+      const answersRecord: Record<string, number> = {};
 
       test.questions.forEach((question, index) => {
         const points = question.points || 1;
         totalPoints += points;
+        
+        // Add to answers record
+        if (data.answers[index] !== undefined) {
+          answersRecord[question.id] = data.answers[index] as number;
+        }
         
         if (data.answers[index] === question.correct_answer) {
           correctAnswers++;
@@ -106,12 +97,14 @@ const CourseTestForm = ({ test, courseId, onComplete }: CourseTestFormProps) => 
 
       const percentage = Math.round((earnedPoints / totalPoints) * 100);
       const passed = percentage >= test.passing_score;
+      const finalTimeTaken = test.time_limit * 60 - timeLeft;
 
       setScore(percentage);
       setShowResults(true);
+      setTimeTaken(finalTimeTaken);
       
       // Call the onComplete callback to save results
-      await onComplete(percentage, passed);
+      await onComplete(percentage, passed, finalTimeTaken, answersRecord);
       
       setIsSubmitting(false);
     } catch (error) {
@@ -201,7 +194,7 @@ const CourseTestForm = ({ test, courseId, onComplete }: CourseTestFormProps) => 
             </div>
             <div className="bg-muted/50 p-3 rounded-lg">
               <p className="font-medium mb-1">Thời gian làm bài</p>
-              <p>{Math.floor((test.time_limit * 60 - timeLeft) / 60)} phút {(test.time_limit * 60 - timeLeft) % 60} giây</p>
+              <p>{Math.floor(timeTaken / 60)} phút {timeTaken % 60} giây</p>
             </div>
           </div>
           
@@ -215,7 +208,7 @@ const CourseTestForm = ({ test, courseId, onComplete }: CourseTestFormProps) => 
           )}
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={() => navigate(`/course/${courseId}`)}>
+          <Button variant="outline" onClick={() => window.location.href = `/course/${courseId}`}>
             Quay lại khóa học
           </Button>
           

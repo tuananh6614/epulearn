@@ -19,3 +19,4 @@ export {
 } from './testServices';
 
 export * from './userProgressServices';
+export * from './testServices';

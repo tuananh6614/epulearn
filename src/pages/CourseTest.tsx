@@ -1,8 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from "@/components/ui/button";
-import { fetchCourseTests, supabase } from '@/integrations/supabase/client';
+import { 
+  fetchCourseTests, 
+  saveTestResult, 
+  getUserTestResults,
+  CourseTest as CourseTestType,
+  TestResult
+} from '@/integrations/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import CourseTestForm from '@/components/CourseTestForm';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
@@ -14,36 +22,12 @@ import {
   CardTitle,
   CardFooter
 } from '@/components/ui/card';
-import { Clock, FileText, Book, AlertCircle } from 'lucide-react';
+import { Clock, FileText, Book, AlertCircle, TrendingUp } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-
-// ========================
-// KHAI BÁO KIỂU DỮ LIỆU
-// ========================
-interface CourseTestType {
-  id: string;
-  title: string;
-  description?: string;
-  questions?: {
-    id: string;
-    text: string;
-    // Thêm các trường khác nếu cần
-  }[];
-  time_limit: number;
-  passing_score: number;
-}
-
-interface UserTestResultType {
-  id: string;
-  course_test_id: string;
-  user_id: string;
-  score: number;
-  passed: boolean;
-  time_taken?: number;
-  answers?: string;     // Dùng để lưu JSON.stringify(...)
-  created_at?: string;  // Phụ thuộc vào cột 'created_at' trong DB
-}
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDistanceToNow } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 // ========================
 // COMPONENT CHÍNH
@@ -52,11 +36,12 @@ const CourseTest: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
 
-  // State sử dụng kiểu dữ liệu rõ ràng thay vì any
+  // State variables with proper typing
   const [tests, setTests] = useState<CourseTestType[]>([]);
   const [selectedTest, setSelectedTest] = useState<CourseTestType | null>(null);
   const [loading, setLoading] = useState(true);
-  const [previousResults, setPreviousResults] = useState<UserTestResultType[]>([]);
+  const [previousResults, setPreviousResults] = useState<TestResult[]>([]);
+  const [activeTab, setActiveTab] = useState("tests");
 
   const { user } = useAuth();
 
@@ -67,24 +52,14 @@ const CourseTest: React.FC = () => {
       try {
         setLoading(true);
 
-        // fetchCourseTests nên trả về Promise<CourseTestType[]>
+        // Fetch course tests with the expected return type
         const testsData = await fetchCourseTests(courseId);
-        console.log('Tests data:', testsData);
         setTests(testsData);
 
-        // Nếu người dùng đã đăng nhập, tải kết quả cũ
+        // Load user's previous test results if logged in
         if (user) {
-          const { data: resultsData, error: resultsError } = await supabase
-            .from('user_test_results')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('course_id', courseId);
-
-          if (resultsError) {
-            console.error('Error fetching test results:', resultsError);
-          } else {
-            setPreviousResults(resultsData as UserTestResultType[] || []);
-          }
+          const resultsData = await getUserTestResults(user.id, courseId);
+          setPreviousResults(resultsData);
         }
       } catch (error) {
         console.error('Failed to load tests:', error);
@@ -103,70 +78,33 @@ const CourseTest: React.FC = () => {
   };
 
   // Xử lý khi người dùng hoàn thành bài kiểm tra
-  const handleTestComplete = async (score: number, passed: boolean) => {
+  const handleTestComplete = async (score: number, passed: boolean, timeTaken: number, answers: Record<string, number>) => {
     if (!user || !courseId || !selectedTest) return;
 
     try {
-      // Ghi nhận hành vi "cheat" (VD: đổi tab) - chỉ minh họa
-      const cheatAttempts = document.visibilityState === 'hidden' ? 1 : 0;
-      console.log('Cheat attempts:', cheatAttempts);
-
-      // Lưu kết quả bài kiểm tra vào DB
-      const { error } = await supabase
-        .from('user_test_results')
-        .insert({
-          user_id: user.id,
-          course_id: courseId,
-          course_test_id: selectedTest.id,
-          score,
-          passed,
-          time_taken: Math.floor(selectedTest.time_limit * 60),
-          answers: JSON.stringify({}), // Tùy chỉnh để lưu đáp án chi tiết
-        });
-
-      if (error) throw error;
-
-      // Nếu qua bài, cập nhật tiến độ trong bảng user_courses
-      if (passed) {
-        const { data: enrollment } = await supabase
-          .from('user_courses')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('course_id', courseId)
-          .single();
-
-        if (enrollment) {
-          // Tăng tiến độ thêm 10% (có thể thay đổi logic này)
-          const newProgress = Math.min(
-            100,
-            (enrollment.progress_percentage || 0) + 10
-          );
-
-          await supabase
-            .from('user_courses')
-            .update({
-              progress_percentage: newProgress,
-              last_accessed: new Date().toISOString(),
-            })
-            .eq('user_id', user.id)
-            .eq('course_id', courseId);
-        }
-      }
-
-      toast.success(
-        passed
-          ? 'Chúc mừng! Bạn đã hoàn thành bài kiểm tra'
-          : 'Bạn chưa đạt điểm yêu cầu cho bài kiểm tra này'
+      const result = await saveTestResult(
+        user.id,
+        courseId,
+        selectedTest.id,
+        score,
+        passed,
+        timeTaken,
+        answers
       );
 
-      // Tải lại kết quả cũ
-      const { data: resultsData } = await supabase
-        .from('user_test_results')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('course_id', courseId);
+      if (result.success) {
+        toast.success(
+          passed
+            ? 'Chúc mừng! Bạn đã hoàn thành bài kiểm tra'
+            : 'Bạn chưa đạt điểm yêu cầu cho bài kiểm tra này'
+        );
 
-      setPreviousResults(resultsData as UserTestResultType[] || []);
+        // Reload test results
+        const resultsData = await getUserTestResults(user.id, courseId);
+        setPreviousResults(resultsData);
+      } else {
+        toast.error('Không thể lưu kết quả bài kiểm tra');
+      }
     } catch (error) {
       console.error('Failed to save test result:', error);
       toast.error('Không thể lưu kết quả bài kiểm tra');
@@ -193,6 +131,20 @@ const CourseTest: React.FC = () => {
     } catch (error) {
       console.error('Failed to check enrollment:', error);
       return false;
+    }
+  };
+
+  // Format date for display
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    
+    try {
+      return formatDistanceToNow(new Date(dateString), { 
+        addSuffix: true,
+        locale: vi 
+      });
+    } catch (e) {
+      return dateString;
     }
   };
 
@@ -256,150 +208,192 @@ const CourseTest: React.FC = () => {
               </Alert>
             )}
 
-            {/* Kết quả bài kiểm tra trước đây */}
-            {user && previousResults.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">
-                  Kết quả bài kiểm tra trước đây
-                </h2>
-                <div className="bg-muted/30 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {previousResults.slice(0, 3).map((result) => (
-                      <div
-                        key={result.id}
-                        className="bg-background p-4 rounded-md border"
+            <Tabs defaultValue="tests" className="mb-8" onValueChange={setActiveTab}>
+              <TabsList className="mb-6">
+                <TabsTrigger value="tests">Danh sách bài kiểm tra</TabsTrigger>
+                <TabsTrigger value="results" disabled={!user || previousResults.length === 0}>
+                  Kết quả của bạn {previousResults.length > 0 && `(${previousResults.length})`}
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="tests">
+                {tests.length === 0 ? (
+                  <Card>
+                    <CardContent className="pt-6 text-center">
+                      <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                      <p className="text-lg font-medium">Chưa có bài kiểm tra nào</p>
+                      <p className="text-muted-foreground mt-1">
+                        Khóa học này chưa có bài kiểm tra tổng quát.
+                      </p>
+                      <Button
+                        className="mt-4"
+                        onClick={() => navigate(`/course/${courseId}`)}
                       >
-                        <p className="font-medium">
-                          {tests.find((t) => t.id === result.course_test_id)
-                            ?.title || 'Bài kiểm tra'}
-                        </p>
-                        <div className="flex justify-between mt-2 text-sm">
-                          <span>Điểm số:</span>
-                          <span
-                            className={
-                              result.score >= 70
-                                ? 'text-green-500'
-                                : 'text-red-500'
-                            }
-                          >
-                            {result.score}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between mt-1 text-sm">
-                          <span>Trạng thái:</span>
-                          <span
-                            className={
-                              result.passed
-                                ? 'text-green-500'
-                                : 'text-red-500'
-                            }
-                          >
-                            {result.passed ? 'Đạt' : 'Chưa đạt'}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-2">
-                          {result.created_at
-                            ? new Date(result.created_at).toLocaleDateString(
-                                'vi-VN'
-                              )
-                            : ''}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+                        Quay lại khóa học
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {tests.map((test) => {
+                      // Tìm kết quả tốt nhất (nếu có)
+                      const testResults = previousResults.filter(
+                        (r) => r.course_test_id === test.id
+                      );
+                      const bestResult =
+                        testResults.length > 0
+                          ? testResults.reduce((prev, current) =>
+                              prev.score > current.score ? prev : current
+                            )
+                          : null;
 
-            {/* Danh sách bài kiểm tra */}
-            {tests.length === 0 ? (
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-lg font-medium">Chưa có bài kiểm tra nào</p>
-                  <p className="text-muted-foreground mt-1">
-                    Khóa học này chưa có bài kiểm tra tổng quát.
-                  </p>
-                  <Button
-                    className="mt-4"
-                    onClick={() => navigate(`/course/${courseId}`)}
-                  >
-                    Quay lại khóa học
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tests.map((test) => {
-                  // Tìm kết quả tốt nhất (nếu có)
-                  const testResults = previousResults.filter(
-                    (r) => r.course_test_id === test.id
-                  );
-                  const bestResult =
-                    testResults.length > 0
-                      ? testResults.reduce((prev, current) =>
-                          prev.score > current.score ? prev : current
-                        )
-                      : null;
-
-                  return (
-                    <Card
-                      key={test.id}
-                      className="hover:shadow-md transition-shadow"
-                    >
-                      <CardHeader>
-                        <CardTitle>{test.title}</CardTitle>
-                        <CardDescription className="line-clamp-2">
-                          {test.description ||
-                            'Đánh giá kiến thức của bạn về chủ đề này'}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center">
-                            <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span>{test.questions?.length || 0} câu hỏi</span>
-                          </div>
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span>{test.time_limit} phút</span>
-                          </div>
-                          <div className="flex items-center">
-                            <Book className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span>Điểm đạt: {test.passing_score}%</span>
-                          </div>
-
-                          {bestResult && (
-                            <div
-                              className={`px-3 py-1 mt-2 text-xs rounded-full ${
-                                bestResult.passed
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                              }`}
-                            >
-                              {bestResult.passed
-                                ? `Đã hoàn thành với ${bestResult.score}%`
-                                : `Chưa đạt - ${bestResult.score}%`}
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                      <Separator />
-                      <CardFooter className="pt-4">
-                        <Button
-                          className="w-full"
-                          onClick={() => handleTestSelect(test)}
+                      return (
+                        <Card
+                          key={test.id}
+                          className="hover:shadow-md transition-shadow"
                         >
-                          {bestResult?.passed
-                            ? 'Làm lại bài kiểm tra'
-                            : 'Bắt đầu làm bài'}
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
+                          <CardHeader>
+                            <CardTitle>{test.title}</CardTitle>
+                            <CardDescription className="line-clamp-2">
+                              {test.description ||
+                                'Đánh giá kiến thức của bạn về chủ đề này'}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center">
+                                <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                                <span>{test.questions?.length || 0} câu hỏi</span>
+                              </div>
+                              <div className="flex items-center">
+                                <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                                <span>{test.time_limit} phút</span>
+                              </div>
+                              <div className="flex items-center">
+                                <Book className="h-4 w-4 mr-2 text-muted-foreground" />
+                                <span>Điểm đạt: {test.passing_score}%</span>
+                              </div>
+
+                              {bestResult && (
+                                <div
+                                  className={`px-3 py-1 mt-2 text-xs rounded-full ${
+                                    bestResult.passed
+                                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                      : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                  }`}
+                                >
+                                  {bestResult.passed
+                                    ? `Đã hoàn thành với ${bestResult.score}%`
+                                    : `Chưa đạt - ${bestResult.score}%`}
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                          <Separator />
+                          <CardFooter className="pt-4">
+                            <Button
+                              className="w-full"
+                              onClick={() => handleTestSelect(test)}
+                            >
+                              {bestResult?.passed
+                                ? 'Làm lại bài kiểm tra'
+                                : 'Bắt đầu làm bài'}
+                            </Button>
+                          </CardFooter>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="results">
+                {previousResults.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-xl font-semibold">Lịch sử làm bài kiểm tra</h2>
+                      <p className="text-sm text-muted-foreground">
+                        Tổng số: {previousResults.length} lần kiểm tra
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {previousResults.map((result) => {
+                        const test = tests.find(t => t.id === result.course_test_id);
+                        return (
+                          <Card key={result.id} className="border-l-4 border-l-primary">
+                            <CardHeader className="pb-2">
+                              <div className="flex justify-between items-start">
+                                <CardTitle className="text-lg">
+                                  {test?.title || "Bài kiểm tra"}
+                                </CardTitle>
+                                <div className={`px-2 py-1 text-xs rounded-full ${
+                                  result.passed
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                }`}>
+                                  {result.passed ? "Đạt" : "Chưa đạt"}
+                                </div>
+                              </div>
+                              <CardDescription className="text-sm">
+                                {formatDate(result.created_at)}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="flex items-center">
+                                  <TrendingUp className="h-4 w-4 mr-2 text-muted-foreground" />
+                                  <span>Điểm số: <span className="font-medium">{result.score}%</span></span>
+                                </div>
+                                <div className="flex items-center">
+                                  <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                                  <span>Thời gian: <span className="font-medium">
+                                    {result.time_taken ? `${Math.floor(result.time_taken / 60)}:${(result.time_taken % 60).toString().padStart(2, '0')}` : "N/A"}
+                                  </span></span>
+                                </div>
+                              </div>
+                            </CardContent>
+                            <CardFooter className="pt-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="w-full"
+                                onClick={() => {
+                                  const matchingTest = tests.find(t => t.id === result.course_test_id);
+                                  if (matchingTest) {
+                                    handleTestSelect(matchingTest);
+                                  } else {
+                                    toast.error("Không tìm thấy bài kiểm tra");
+                                  }
+                                }}
+                              >
+                                Làm lại bài kiểm tra
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="pt-6 text-center">
+                      <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                      <p className="text-lg font-medium">Chưa có kết quả kiểm tra</p>
+                      <p className="text-muted-foreground mt-1">
+                        Bạn chưa hoàn thành bài kiểm tra nào trong khóa học này.
+                      </p>
+                      <Button
+                        className="mt-4"
+                        onClick={() => setActiveTab("tests")}
+                      >
+                        Xem danh sách bài kiểm tra
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+            </Tabs>
 
             <div className="mt-10">
               <Button variant="outline" onClick={() => navigate(`/course/${courseId}`)}>

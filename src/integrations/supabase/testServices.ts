@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import type { Json } from './types';
 
@@ -33,7 +32,7 @@ export const saveTestResult = async (
   courseTestId: string,
   score: number,
   passed: boolean,
-  answers: Record<string, string>, // Use Record instead of generic object type
+  answers: Record<string, any>, // Changed to any to avoid deep recursion
   timeTaken: number,
   testName: string = 'Course Test'
 ) => {
@@ -55,9 +54,8 @@ export const saveTestResult = async (
       ? previousAttempts.length + 1 
       : 1;
     
-    // Force cast answers to Json type with a clear type assertion
-    // This breaks the recursive type inference that causes "excessively deep" errors
-    const answersJson = answers as unknown as Json;
+    // Use a specific type assertion approach to avoid infinite recursion
+    const answersJson = JSON.parse(JSON.stringify(answers)) as Json;
     
     // Save the test result
     const { data, error } = await supabase

@@ -1,313 +1,329 @@
-
 import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { toast } from 'sonner';
+import { AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
-import { 
-  ChevronRight, 
-  ChevronLeft, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle 
-} from 'lucide-react';
-import { fetchTestQuestions, saveTestResult } from '@/integrations/supabase';
+import { Separator } from "@/components/ui/separator";
+import { supabase, fetchTestQuestions, saveTestResult } from "@/integrations/supabase/client";
 import { useAuth } from '@/context/AuthContext';
-import type { Json } from '@/integrations/supabase/types';
 
-interface ChapterTestProps {
-  lessonId: string;
-  chapterId: string;
-  courseId: string;
-  courseName: string;
-  onTestComplete: () => void;
-}
-
-interface Question {
+interface TestQuestion {
   id: string;
   question: string;
   options: string[];
   correct_answer: number;
-  chapter_id: string;
-  created_at: string;
-  updated_at: string;
 }
 
-const ChapterTest: React.FC<ChapterTestProps> = ({ lessonId, chapterId, courseId, courseName, onTestComplete }) => {
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [userAnswers, setUserAnswers] = useState<{ [questionId: string]: string }>({});
-  const [testCompleted, setTestCompleted] = useState(false);
+interface ChapterTestProps {
+  chapterId: string;
+  courseId: string;
+  onComplete?: (score: number, total: number) => void;
+}
+
+const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComplete }) => {
+  const [questions, setQuestions] = useState<TestQuestion[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [showResult, setShowResult] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [score, setScore] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes in seconds
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [testCompleted, setTestCompleted] = useState(false);
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  useEffect(() => {
-    const loadQuestions = async () => {
+
+  React.useEffect(() => {
+    const fetchQuestions = async () => {
       try {
-        setLoading(true);
-        const questionsData = await fetchTestQuestions(lessonId, chapterId);
+        setIsLoading(true);
         
-        // Convert the Json type from Supabase to the Question type we need
-        const formattedQuestions = questionsData.map(q => ({
-          ...q,
-          options: Array.isArray(q.options) ? q.options : []
-        })) as Question[];
+        console.log('Fetching test questions for chapter:', chapterId);
+        const data = await fetchTestQuestions(chapterId);
+        console.log('Received test questions:', data);
         
-        setQuestions(formattedQuestions);
-        setError(null);
-      } catch (err: any) {
-        console.error("Error fetching questions:", err);
-        setError(err.message || "Failed to load questions.");
+        if (data && data.length > 0) {
+          const transformedQuestions: TestQuestion[] = data.map(q => ({
+            id: q.id,
+            question: q.question,
+            options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
+            correct_answer: q.correct_answer
+          }));
+          
+          console.log('Transformed questions:', transformedQuestions);
+          setQuestions(transformedQuestions);
+        } else {
+          console.warn('No test questions found for chapter:', chapterId);
+          toast.error("Không tìm thấy bài kiểm tra cho chương này");
+        }
+      } catch (error) {
+        console.error("Error fetching test questions:", error);
+        toast.error("Không thể tải bài kiểm tra. Vui lòng thử lại sau.");
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
     
-    loadQuestions();
-  }, [lessonId, chapterId]);
+    fetchQuestions();
+  }, [chapterId]);
   
-  useEffect(() => {
-    if (timeRemaining > 0 && !testCompleted) {
-      const timerId = setInterval(() => {
-        setTimeRemaining(timeRemaining - 1);
-      }, 1000);
-      return () => clearInterval(timerId);
-    } else if (timeRemaining === 0 && !testCompleted) {
-      handleSubmitTest();
-    }
-  }, [timeRemaining, testCompleted]);
-  
-  const handleAnswerSelect = (option: string) => {
-    setSelectedAnswer(option);
+  const handleSelectAnswer = (value: string) => {
+    setSelectedAnswer(parseInt(value));
   };
   
-  const goToNextQuestion = () => {
-    if (selectedAnswer) {
-      setUserAnswers(prev => ({
-        ...prev,
-        [questions[currentQuestionIndex].id]: selectedAnswer
-      }));
-      setSelectedAnswer(null);
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-      }
-    } else {
-      toast({
-        title: "Vui lòng chọn một đáp án",
-        description: "Bạn cần chọn một đáp án trước khi tiếp tục.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const goToPreviousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-      setSelectedAnswer(userAnswers[questions[currentQuestionIndex - 1].id] || null);
-    }
-  };
-  
-  const formatTime = (timeInSeconds: number): string => {
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = timeInSeconds % 60;
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-  };
-  
-  const handleSubmitTest = async () => {
-    if (!user) {
-      toast({
-        title: "Bạn cần đăng nhập",
-        description: "Vui lòng đăng nhập để nộp bài kiểm tra.",
-        variant: "destructive",
-      });
-      navigate('/login');
-      return;
+  const handleNextQuestion = () => {
+    const currentQ = questions[currentQuestion];
+    const isAnswerCorrect = selectedAnswer === currentQ.correct_answer;
+    
+    if (isAnswerCorrect) {
+      setScore(prev => prev + 1);
     }
     
-    // Collect answers for the last question if not already collected
-    if (selectedAnswer) {
-      setUserAnswers(prev => ({
-        ...prev,
-        [questions[currentQuestionIndex].id]: selectedAnswer
-      }));
-    }
+    setIsCorrect(isAnswerCorrect);
+    setShowResult(true);
     
-    // Calculate score
-    let correctAnswersCount = 0;
-    questions.forEach(question => {
-      const correctAnswer = question.options[question.correct_answer];
-      if (userAnswers[question.id] === correctAnswer) {
-        correctAnswersCount++;
-      }
-    });
-    const calculatedScore = (correctAnswersCount / questions.length) * 100;
-    setScore(calculatedScore);
-    setTestCompleted(true);
-    
-    try {
-      // Save test result to database
-      if (user) {
-        const testResult = await saveTestResult(
-          user.id,
-          courseId,
-          lessonId,
-          calculatedScore,
-          calculatedScore >= 80, // Assuming 80% is the passing score
-          userAnswers,
-          600 - timeRemaining,
-          'Chapter Test'
-        );
+    setTimeout(() => {
+      if (currentQuestion < questions.length - 1) {
+        setCurrentQuestion(prev => prev + 1);
+        setSelectedAnswer(null);
+        setShowResult(false);
+      } else {
+        setTestCompleted(true);
         
-        if (testResult) {
-          toast({
-            title: "Bài kiểm tra đã hoàn thành!",
-            description: `Bạn đã đạt được ${calculatedScore.toFixed(2)}%.`,
-          });
-          onTestComplete();
-        } else {
-          toast({
-            title: "Lỗi khi lưu kết quả",
-            description: "Có lỗi xảy ra khi lưu kết quả bài kiểm tra của bạn.",
-            variant: "destructive",
-          });
+        if (user) {
+          updateTestProgress();
+        }
+        
+        if (onComplete) {
+          onComplete(score + (isAnswerCorrect ? 1 : 0), questions.length);
         }
       }
-    } catch (err) {
-      console.error("Error saving test result:", err);
-      toast({
-        title: "Lỗi khi lưu kết quả",
-        description: "Có lỗi xảy ra khi lưu kết quả bài kiểm tra của bạn.",
-        variant: "destructive",
-      });
+    }, 1500);
+  };
+  
+  const updateTestProgress = async () => {
+    try {
+      const finalScore = score + (isCorrect ? 1 : 0);
+      
+      if (user) {
+        const { data: lessonData } = await supabase
+          .from('lessons')
+          .select('id')
+          .eq('chapter_id', chapterId)
+          .eq('type', 'test')
+          .limit(1);
+          
+        if (lessonData && lessonData.length > 0) {
+          const testLessonId = lessonData[0].id;
+          
+          await saveTestResult(
+            user.id,
+            courseId,
+            chapterId,
+            testLessonId,
+            finalScore,
+            questions.length
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error updating test progress:", error);
     }
   };
   
-  if (loading) {
+  const restartTest = () => {
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setScore(0);
+    setTestCompleted(false);
+  };
+  
+  if (isLoading) {
     return (
-      <Card>
+      <Card className="w-full max-w-3xl mx-auto">
         <CardHeader>
-          <CardTitle>Đang tải bài kiểm tra...</CardTitle>
+          <CardTitle className="text-center">Đang tải bài kiểm tra...</CardTitle>
         </CardHeader>
         <CardContent>
-          <Progress value={0} />
+          <div className="space-y-4">
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-md"></div>
+            <div className="space-y-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-md"></div>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
   }
   
-  if (error) {
+  if (questions.length === 0) {
     return (
-      <Card>
+      <Card className="w-full max-w-3xl mx-auto">
         <CardHeader>
-          <CardTitle>Lỗi</CardTitle>
-          <CardDescription>Không thể tải bài kiểm tra.</CardDescription>
+          <CardTitle className="text-center">Không có bài kiểm tra</CardTitle>
         </CardHeader>
         <CardContent>
-          <AlertCircle className="h-4 w-4 mr-2" />
-          {error}
+          <p className="text-center text-muted-foreground">
+            Hiện tại chưa có bài kiểm tra nào cho chương này. Vui lòng quay lại sau.
+          </p>
         </CardContent>
       </Card>
     );
   }
   
   if (testCompleted) {
+    const finalScore = score;
+    const percentageScore = Math.round((finalScore / questions.length) * 100);
+    const isPassed = percentageScore >= 70;
+    
     return (
-      <Card>
+      <Card className="w-full max-w-3xl mx-auto">
         <CardHeader>
-          <CardTitle>Bài kiểm tra đã hoàn thành!</CardTitle>
-          <CardDescription>Bạn đã hoàn thành bài kiểm tra chương này.</CardDescription>
+          <CardTitle className="text-center">Kết quả bài kiểm tra</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center">
-          {score >= 80 ? (
-            <>
-              <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
-              <h2 className="text-2xl font-semibold text-green-600">Chúc mừng! Bạn đã đạt bài kiểm tra.</h2>
-              <p className="text-gray-500">Điểm số của bạn: {score.toFixed(2)}%</p>
-            </>
-          ) : (
-            <>
-              <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-              <h2 className="text-2xl font-semibold text-red-600">Rất tiếc, bạn chưa đạt bài kiểm tra.</h2>
-              <p className="text-gray-500">Điểm số của bạn: {score.toFixed(2)}%</p>
-            </>
-          )}
+        <CardContent className="space-y-6">
+          <div className="text-center">
+            {isPassed ? (
+              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-2" />
+            ) : (
+              <XCircle className="h-16 w-16 text-red-500 mx-auto mb-2" />
+            )}
+            <h3 className="text-2xl font-bold">
+              {isPassed ? "Chúc mừng! Bạn đã hoàn thành bài kiểm tra" : "Bạn cần ôn tập lại"}
+            </h3>
+            <p className="text-muted-foreground mt-2">
+              {isPassed 
+                ? "Bạn đã hiểu rõ nội dung của chương này" 
+                : "Hãy xem lại nội dung của chương và thử lại"}
+            </p>
+          </div>
+          
+          <div className="py-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-medium">Số câu đúng:</span>
+              <span className="font-bold">{finalScore}/{questions.length}</span>
+            </div>
+            <Progress value={percentageScore} className="h-3" />
+            <div className="flex justify-end mt-1">
+              <span className="text-sm font-medium">{percentageScore}%</span>
+            </div>
+          </div>
+          
+          <Alert variant={isPassed ? "default" : "destructive"}>
+            {isPassed ? (
+              <CheckCircle className="h-4 w-4" />
+            ) : (
+              <AlertCircle className="h-4 w-4" />
+            )}
+            <AlertDescription>
+              {isPassed 
+                ? "Bạn đã đạt điểm đậu. Bạn có thể tiếp tục với các bài học tiếp theo."
+                : "Bạn chưa đạt điểm đậu. Hãy xem lại bài học và thử lại."}
+            </AlertDescription>
+          </Alert>
         </CardContent>
-        <CardFooter className="justify-between">
-          <Button onClick={onTestComplete}>
-            Quay lại khóa học
-          </Button>
+        <CardFooter className="flex justify-center gap-4">
+          <Button variant="outline" onClick={restartTest}>Làm lại bài kiểm tra</Button>
+          <Button variant="default">Tiếp tục học</Button>
         </CardFooter>
       </Card>
     );
   }
   
-  const currentQuestion = questions[currentQuestionIndex];
-  if (!currentQuestion) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Không có câu hỏi</CardTitle>
-          <CardDescription>Không tìm thấy câu hỏi kiểm tra cho chương này.</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-  
-  // Ensure options is treated as an array
-  const options = Array.isArray(currentQuestion.options) 
-    ? currentQuestion.options 
-    : [];
+  const currentQ = questions[currentQuestion];
   
   return (
-    <Card>
+    <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>
-        <CardTitle>Bài kiểm tra chương</CardTitle>
-        <CardDescription>
-          Trả lời các câu hỏi dưới đây. Thời gian còn lại: {formatTime(timeRemaining)}
-        </CardDescription>
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-muted-foreground">
+            Câu hỏi {currentQuestion + 1}/{questions.length}
+          </span>
+          <span className="text-sm font-medium">
+            Điểm: {score}/{currentQuestion}
+          </span>
+        </div>
+        <Progress 
+          value={((currentQuestion + 1) / questions.length) * 100} 
+          className="h-1 mb-4" 
+        />
+        <CardTitle className="text-lg">{currentQ.question}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="mb-4">
-          <p className="text-lg font-semibold">
-            Câu {currentQuestionIndex + 1}/{questions.length}: {currentQuestion.question}
-          </p>
-        </div>
-        <RadioGroup defaultValue={userAnswers[currentQuestion.id] || ''} onValueChange={handleAnswerSelect}>
-          <div className="grid gap-2">
-            {options.map((option, index) => (
-              <div className="flex items-center space-x-2" key={index}>
-                <RadioGroupItem value={option} id={`q${currentQuestionIndex}-${index}`} />
-                <Label htmlFor={`q${currentQuestionIndex}-${index}`}>{option}</Label>
-              </div>
-            ))}
-          </div>
+        <RadioGroup 
+          value={selectedAnswer !== null ? selectedAnswer.toString() : ""} 
+          onValueChange={handleSelectAnswer}
+          className="space-y-3"
+          disabled={showResult}
+        >
+          {currentQ.options.map((option, index) => (
+            <div 
+              key={index} 
+              className={`flex items-center space-x-2 p-3 rounded-md border ${
+                showResult 
+                  ? index === currentQ.correct_answer 
+                    ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
+                    : selectedAnswer === index 
+                      ? "border-red-500 bg-red-50 dark:bg-red-900/20"
+                      : "border-gray-200 dark:border-gray-700"
+                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/60"
+              }`}
+            >
+              <RadioGroupItem 
+                value={index.toString()} 
+                id={`option-${index}`} 
+                className={
+                  showResult && index === currentQ.correct_answer
+                    ? "text-green-500 border-green-500"
+                    : showResult && selectedAnswer === index && selectedAnswer !== currentQ.correct_answer
+                    ? "text-red-500 border-red-500"
+                    : ""
+                }
+              />
+              <Label htmlFor={`option-${index}`} className="flex-grow cursor-pointer">
+                {option}
+              </Label>
+              {showResult && index === currentQ.correct_answer && (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              )}
+              {showResult && selectedAnswer === index && selectedAnswer !== currentQ.correct_answer && (
+                <XCircle className="h-4 w-4 text-red-500" />
+              )}
+            </div>
+          ))}
         </RadioGroup>
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="secondary" onClick={goToPreviousQuestion} disabled={currentQuestionIndex === 0}>
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          Trước
-        </Button>
-        {currentQuestionIndex === questions.length - 1 ? (
-          <Button onClick={handleSubmitTest}>
-            Nộp bài
-            <CheckCircle className="w-4 h-4 ml-2" />
-          </Button>
-        ) : (
-          <Button onClick={goToNextQuestion} disabled={!selectedAnswer}>
-            Tiếp theo
-            <ChevronRight className="w-4 h-4 ml-2" />
-          </Button>
+        
+        {showResult && (
+          <div className={`mt-4 p-3 rounded-md ${
+            isCorrect ? "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300" : 
+            "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300"
+          }`}>
+            <p className="font-medium">
+              {isCorrect ? "Chính xác!" : "Chưa chính xác!"}
+            </p>
+            <p className="text-sm mt-1">
+              {isCorrect 
+                ? "Bạn đã trả lời đúng. Chuyển sang câu tiếp theo..." 
+                : `Đáp án đúng là: ${currentQ.options[currentQ.correct_answer]}`}
+            </p>
+          </div>
         )}
+      </CardContent>
+      <CardFooter className="justify-between">
+        <div className="text-sm text-muted-foreground">
+          {!showResult ? "Chọn một đáp án để tiếp tục" : isCorrect ? "+1 điểm" : "Không được điểm"}
+        </div>
+        <Button 
+          onClick={handleNextQuestion} 
+          disabled={selectedAnswer === null || showResult}
+        >
+          {currentQuestion < questions.length - 1 ? "Câu tiếp theo" : "Kết thúc bài kiểm tra"}
+        </Button>
       </CardFooter>
     </Card>
   );

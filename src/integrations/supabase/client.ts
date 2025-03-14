@@ -45,22 +45,14 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 // Re-export functions from other files for backwards compatibility
 export * from './courseServices';
-// Export all functions from testServices and avoid duplication
+// Remove the duplicate export of 'fetchCourseTests' from testServices
+// and explicitly export the other functions from testServices
 export { 
   fetchTestQuestions, 
   saveTestResult, 
-  getChapterTestProgress,
-  fetchCourseTests,
-  getUserTestResults,
-  getTestProgressChartData
+  getChapterTestProgress 
 } from './testServices';
 export * from './userProgressServices';
-// Export functions from certificateServices
-export {
-  generateCertificate,
-  getUserCertificates,
-  getCertificate
-} from './certificateServices';
 
 // Define a return type for the VIP status
 export interface VipStatus {

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -12,12 +11,15 @@ import { toast } from 'sonner';
 const ChapterTestPage = () => {
   const { chapterId, courseId } = useParams<{ chapterId: string; courseId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
   
-  const handleTestComplete = () => {
-    toast.success("Bài kiểm tra đã hoàn thành!");
-    if (courseId) {
-      navigate(`/course/${courseId}`);
+  const handleTestComplete = (score: number, total: number) => {
+    const percentageScore = Math.round((score / total) * 100);
+    
+    if (percentageScore >= 70) {
+      toast.success("Chúc mừng! Bạn đã hoàn thành bài kiểm tra");
+    } else {
+      toast.error("Bạn cần ôn tập lại và làm lại bài kiểm tra");
     }
   };
   
@@ -29,7 +31,7 @@ const ChapterTestPage = () => {
     }
   };
   
-  if (!user) {
+  if (!currentUser) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -99,9 +101,7 @@ const ChapterTestPage = () => {
           <ChapterTest 
             chapterId={chapterId} 
             courseId={courseId}
-            lessonId={chapterId} // Using chapterId as lessonId if not available
-            courseName="Course" // Providing a default course name
-            onTestComplete={handleTestComplete}
+            onComplete={handleTestComplete}
           />
         </div>
       </main>

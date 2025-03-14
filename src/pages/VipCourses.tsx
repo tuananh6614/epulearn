@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCourses } from '@/services/apiUtils';
 import { SupabaseCourseResponse } from '@/models/lesson';
-import { Crown, AlertTriangle, Lock, FileText, BookOpen, ChevronDown, ChevronUp, CheckCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { Crown, AlertTriangle, Lock, FileText, BookOpen, ChevronDown, ChevronUp, CheckCircle, ArrowRight } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +25,7 @@ const VipCourses = () => {
   const [expandedChapter, setExpandedChapter] = useState<number | null>(1);
   const [vipStatus, setVipStatus] = useState<VipStatus>({ isVip: false, daysRemaining: null });
   
+  // Fetch VIP status when component mounts or currentUser changes
   useEffect(() => {
     const checkUserVipStatus = async () => {
       if (currentUser?.id) {
@@ -41,6 +42,7 @@ const VipCourses = () => {
     checkUserVipStatus();
   }, [currentUser]);
   
+  // Fetch VIP courses data
   const { data: coursesData, isLoading, error, refetch } = useQuery({
     queryKey: ['vipCourses'],
     queryFn: async () => {

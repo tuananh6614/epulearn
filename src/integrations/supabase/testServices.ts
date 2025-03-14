@@ -69,8 +69,8 @@ export const fetchCourseTests = async (courseId: string) => {
   }
 };
 
-// Simplified type for test answers
-type TestAnswerEntry = {
+// Simplified type for test answers - avoiding recursive type issues
+type TestAnswer = {
   questionId: string;
   selectedAnswer: number;
 };
@@ -83,7 +83,7 @@ export const saveTestResult = async (
   lessonId: string,
   score: number, 
   totalQuestions: number,
-  answers: Record<string, number> = {} // Simplified to just question ID -> answer number
+  answers: Record<string, number> = {} // Simple key-value for question ID -> answer
 ) => {
   try {
     console.log(`Saving test result for user ${userId}, course ${courseId}, score: ${score}/${totalQuestions}`);
@@ -92,8 +92,8 @@ export const saveTestResult = async (
     const percentage = Math.round((score / totalQuestions) * 100);
     const passed = percentage >= 70;
     
-    // Convert answers to a simpler structure for storage
-    const formattedAnswers: TestAnswerEntry[] = Object.keys(answers).map(questionId => ({
+    // Format answers as a simple array to avoid deep typing issues
+    const formattedAnswers: TestAnswer[] = Object.keys(answers).map(questionId => ({
       questionId,
       selectedAnswer: answers[questionId]
     }));
@@ -123,7 +123,7 @@ export const saveTestResult = async (
     // Then update the course progress
     await updateCourseProgress(userId, courseId);
     
-    // Also save to user_test_results for analytics
+    // Also save to user_test_results for analytics - using simple JSON
     const { error: testResultError } = await supabase
       .from('user_test_results')
       .insert({
@@ -131,7 +131,7 @@ export const saveTestResult = async (
         course_id: courseId,
         score: percentage,
         passed,
-        answers: formattedAnswers,
+        answers: formattedAnswers as any, // Use type assertion to avoid deep typing issues
         time_taken: 0, // We'll assume 0 for now
         created_at: new Date().toISOString()
       });

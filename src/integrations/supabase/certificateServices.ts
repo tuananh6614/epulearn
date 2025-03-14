@@ -23,16 +23,22 @@ export const generateCertificate = async (userId: string, courseId: string, cour
       return existingCert;
     }
     
-    // Generate a certificate ID using the function we created in the database
-    const { data: certIdResult, error: certIdError } = await supabase
-      .rpc('generate_certificate_id');
-      
-    if (certIdError) {
-      console.error('Error generating certificate ID:', certIdError);
-      throw certIdError;
-    }
+    // Generate a certificate ID using a function or fallback to random ID
+    let certificateId: string;
     
-    const certificateId = certIdResult || `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+    try {
+      const { data: certIdResult, error: certIdError } = await supabase
+        .rpc('generate_certificate_id');
+        
+      if (certIdError) {
+        throw certIdError;
+      }
+      
+      certificateId = certIdResult as string;
+    } catch (error) {
+      console.error('Error generating certificate ID via RPC, using fallback:', error);
+      certificateId = `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+    }
     
     // Insert certificate record
     const { data, error } = await supabase

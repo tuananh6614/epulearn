@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,8 +14,9 @@ import {
   CheckCircle, 
   AlertCircle 
 } from 'lucide-react';
-import { fetchTestQuestions, saveTestResult, getTestProgressChartData } from '@/integrations/supabase';
+import { fetchTestQuestions, saveTestResult } from '@/integrations/supabase';
 import { useAuth } from '@/context/AuthContext';
+import type { Json } from '@/integrations/supabase/types';
 
 interface ChapterTestProps {
   lessonId: string;
@@ -27,8 +29,11 @@ interface ChapterTestProps {
 interface Question {
   id: string;
   question: string;
-  options: string[];
-  correct_answer: string;
+  options: string[] | Json;
+  correct_answer: number;
+  chapter_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const ChapterTest: React.FC<ChapterTestProps> = ({ lessonId, chapterId, courseId, courseName, onTestComplete }) => {
@@ -132,7 +137,8 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ lessonId, chapterId, courseId
     // Calculate score
     let correctAnswersCount = 0;
     questions.forEach(question => {
-      if (userAnswers[question.id] === question.correct_answer) {
+      const correctAnswer = question.options[question.correct_answer as number];
+      if (userAnswers[question.id] === correctAnswer) {
         correctAnswersCount++;
       }
     });
@@ -238,6 +244,21 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ lessonId, chapterId, courseId
   }
   
   const currentQuestion = questions[currentQuestionIndex];
+  if (!currentQuestion) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Không có câu hỏi</CardTitle>
+          <CardDescription>Không tìm thấy câu hỏi kiểm tra cho chương này.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+  
+  // Ensure options is treated as an array
+  const options = Array.isArray(currentQuestion.options) 
+    ? currentQuestion.options 
+    : [];
   
   return (
     <Card>
@@ -255,7 +276,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ lessonId, chapterId, courseId
         </div>
         <RadioGroup defaultValue={userAnswers[currentQuestion.id] || ''} onValueChange={handleAnswerSelect}>
           <div className="grid gap-2">
-            {currentQuestion.options.map((option, index) => (
+            {options.map((option, index) => (
               <div className="flex items-center space-x-2" key={index}>
                 <RadioGroupItem value={option} id={`q${currentQuestionIndex}-${index}`} />
                 <Label htmlFor={`q${currentQuestionIndex}-${index}`}>{option}</Label>

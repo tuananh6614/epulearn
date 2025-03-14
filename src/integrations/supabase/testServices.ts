@@ -32,7 +32,7 @@ export const saveTestResult = async (
   courseTestId: string,
   score: number,
   passed: boolean,
-  answers: any,
+  answers: Record<string, string>,
   timeTaken: number,
   testName: string = 'Course Test'
 ) => {
@@ -65,7 +65,6 @@ export const saveTestResult = async (
         passed,
         answers,
         time_taken: timeTaken,
-        test_name: testName,
         attempt_number: attemptNumber
       })
       .select();

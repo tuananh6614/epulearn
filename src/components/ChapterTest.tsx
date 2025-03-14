@@ -29,7 +29,7 @@ interface ChapterTestProps {
 interface Question {
   id: string;
   question: string;
-  options: string[] | Json;
+  options: string[];
   correct_answer: number;
   chapter_id: string;
   created_at: string;
@@ -55,7 +55,14 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ lessonId, chapterId, courseId
       try {
         setLoading(true);
         const questionsData = await fetchTestQuestions(lessonId, chapterId);
-        setQuestions(questionsData as Question[]);
+        
+        // Convert the Json type from Supabase to the Question type we need
+        const formattedQuestions = questionsData.map(q => ({
+          ...q,
+          options: Array.isArray(q.options) ? q.options : []
+        })) as Question[];
+        
+        setQuestions(formattedQuestions);
         setError(null);
       } catch (err: any) {
         console.error("Error fetching questions:", err);
@@ -137,7 +144,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ lessonId, chapterId, courseId
     // Calculate score
     let correctAnswersCount = 0;
     questions.forEach(question => {
-      const correctAnswer = question.options[question.correct_answer as number];
+      const correctAnswer = question.options[question.correct_answer];
       if (userAnswers[question.id] === correctAnswer) {
         correctAnswersCount++;
       }

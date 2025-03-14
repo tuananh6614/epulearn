@@ -34,6 +34,7 @@ export const generateCertificate = async (userId: string, courseId: string, cour
         throw certIdError;
       }
       
+      // Cast certIdResult to string explicitly
       certificateId = certIdResult as string;
     } catch (error) {
       console.error('Error generating certificate ID via RPC, using fallback:', error);

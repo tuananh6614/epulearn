@@ -1,5 +1,6 @@
 
 import { supabase } from './client';
+import type { Json } from './types';
 
 // Function to fetch test questions for a chapter
 export const fetchTestQuestions = async (lessonId: string, chapterId: string) => {
@@ -63,9 +64,8 @@ export const saveTestResult = async (
         course_test_id: courseTestId,
         score,
         passed,
-        answers,
-        time_taken: timeTaken,
-        attempt_number: attemptNumber
+        answers: answers as Json,
+        time_taken: timeTaken
       })
       .select();
     

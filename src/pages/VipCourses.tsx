@@ -16,7 +16,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import VipPurchaseForm from '@/components/VipPurchaseForm';
 import { useAuth } from '@/context/AuthContext';
 import { checkVipAccess, VipStatus } from '@/integrations/supabase/client';
-import { useCourseMockData } from '@/hooks/useCourseMockData';
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from 'sonner';
 
@@ -25,11 +24,6 @@ const VipCourses = () => {
   const [activeTab, setActiveTab] = useState<string>("courses");
   const [expandedChapter, setExpandedChapter] = useState<number | null>(1);
   const [vipStatus, setVipStatus] = useState<VipStatus>({ isVip: false, daysRemaining: null });
-  
-  const { 
-    isGenerating, 
-    generateMockContent 
-  } = useCourseMockData();
   
   useEffect(() => {
     const checkUserVipStatus = async () => {
@@ -59,14 +53,6 @@ const VipCourses = () => {
       }
     },
   });
-
-  // Handle content generation
-  const handleGenerateContent = async () => {
-    const success = await generateMockContent();
-    if (success) {
-      refetch();
-    }
-  };
 
   if (isLoading) {
     return (
@@ -197,19 +183,6 @@ const VipCourses = () => {
               {coursesData && coursesData.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2">
-                    {currentUser?.isAdmin && (
-                      <div className="mb-6">
-                        <Button 
-                          onClick={handleGenerateContent} 
-                          disabled={isGenerating}
-                          className="bg-purple-600 hover:bg-purple-700"
-                        >
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          {isGenerating ? 'Đang tạo nội dung...' : 'Tạo nội dung mẫu cho khóa học'}
-                        </Button>
-                      </div>
-                    )}
-                  
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       {coursesData.map((course: SupabaseCourseResponse) => (
                         <CourseCard

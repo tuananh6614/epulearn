@@ -1,9 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { createSampleCourseContent } from '@/integrations/supabase/courseServices';
 
+// This hook is simplified to only maintain the data fetching functionality
+// without exposing the content generation features in the UI
 export const useCourseMockData = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFetchingCourses, setIsFetchingCourses] = useState(false);
@@ -32,7 +34,8 @@ export const useCourseMockData = () => {
     }
   };
   
-  // Generate mock content for all premium courses
+  // The content generation function is kept but not exposed in the UI
+  // This can be used via direct Supabase access as per user's preference
   const generateMockContent = async () => {
     try {
       setIsGenerating(true);
@@ -94,11 +97,13 @@ export const useCourseMockData = () => {
     }
   };
   
+  // We only return the fetch function as the generate function will be used via Supabase
   return {
-    isGenerating,
     isFetchingCourses,
     premiumCourses,
     fetchPremiumCourses,
+    // Still return these properties for backward compatibility, but they won't be used in the UI
+    isGenerating,
     generateMockContent
   };
 };

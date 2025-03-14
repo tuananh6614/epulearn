@@ -10,7 +10,6 @@ export interface User {
   email_confirmed_at?: string | null;
   isVip?: boolean;
   vipExpirationDate?: string | null;
-  isAdmin?: boolean;
 }
 
 export interface FixedAccount extends User {

@@ -52,7 +52,9 @@ const VipTab = memo(() => {
       if (currentUser?.id) {
         setIsLoading(true);
         try {
+          console.log('Checking VIP status for user:', currentUser.id);
           const status = await checkVipAccess(currentUser.id);
+          console.log('VIP status result:', status);
           setVipStatus(status);
         } catch (error) {
           console.error('Error checking VIP status:', error);
@@ -104,19 +106,24 @@ const VipTab = memo(() => {
     return <VipActivationPending userEmail={currentUser.email || ''} />;
   }
   
+  const isUserVip = currentUser.isVip || vipStatus.isVip;
+  const vipExpiration = currentUser.vipExpirationDate 
+    ? new Date(currentUser.vipExpirationDate) 
+    : null;
+  
   return (
     <div className="space-y-6" key={refreshKey}>
       {/* Show VIP status at the top */}
       <VipStatusDisplay 
-        isVip={!!currentUser.isVip} 
-        expirationDate={currentUser.vipExpirationDate ? new Date(currentUser.vipExpirationDate) : null} 
+        isVip={isUserVip} 
+        expirationDate={vipExpiration}
       />
       
       <VipManager 
         userId={currentUser.id}
         userEmail={currentUser.email || ''}
-        isCurrentUserVip={!!currentUser.isVip}
-        vipExpirationDate={currentUser.vipExpirationDate ? new Date(currentUser.vipExpirationDate) : null}
+        isCurrentUserVip={isUserVip}
+        vipExpirationDate={vipExpiration}
         onVipStatusChanged={handleVipStatusChanged}
         onActivationPending={handleActivationPending}
       />

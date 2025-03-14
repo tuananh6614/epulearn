@@ -272,7 +272,7 @@ export const fetchVipCourses = async (): Promise<SupabaseCourseResponse[]> => {
 
       console.log('Supabase returned VIP data:', data ? data.length : 0, 'VIP courses');
       
-      if (!data || data.length === 0) {
+      if (!data) {
         console.warn('No VIP courses found in database');
         return [];
       }
@@ -289,7 +289,7 @@ export const fetchVipCourses = async (): Promise<SupabaseCourseResponse[]> => {
         is_premium: true,
         is_featured: course.is_featured || false, 
         created_at: course.created_at,
-        updated_at: course.updated_at || course.created_at, 
+        updated_at: course.updated_at || course.created_at,
         status: 'published',
         instructor: course.instructor || 'EPU Learning',
         price: '299.000₫', 
@@ -305,6 +305,7 @@ export const fetchVipCourses = async (): Promise<SupabaseCourseResponse[]> => {
         timestamp: Date.now()
       };
       
+      console.log('Processed VIP courses:', formattedCourses.length);
       return formattedCourses;
     });
   } catch (error) {

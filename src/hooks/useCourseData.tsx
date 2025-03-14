@@ -44,6 +44,8 @@ export const useCourseData = (courseId: string | undefined) => {
           return;
         }
         
+        console.log('Fetching course details for', courseId);
+        
         // Fetch course details
         const { data: course, error: courseError } = await supabase
           .from('courses')
@@ -55,6 +57,8 @@ export const useCourseData = (courseId: string | undefined) => {
           console.error('Error fetching course:', courseError);
           throw courseError;
         }
+
+        console.log('Course data received:', course ? course.title : 'No course found');
 
         // Fetch chapters
         const { data: chapters, error: chaptersError } = await supabase
@@ -84,6 +88,7 @@ export const useCourseData = (courseId: string | undefined) => {
         let userCanAccess = true;
         if (course.is_premium && user) {
           userCanAccess = currentUser?.isVip || false;
+          console.log('Course is premium, user VIP status:', userCanAccess);
         }
 
         // Structure the data
@@ -102,6 +107,7 @@ export const useCourseData = (courseId: string | undefined) => {
           timestamp: now
         });
 
+        console.log('Course data structured with chapters:', chapters?.length || 0);
         setCourseData(structuredData);
         
         // Check enrollment status if user is logged in
@@ -120,6 +126,7 @@ export const useCourseData = (courseId: string | undefined) => {
     
     const fetchUserProgress = async (courseId: string, userId: string) => {
       try {
+        console.log('Checking enrollment for user:', userId, 'course:', courseId);
         const { data: enrollment, error: enrollmentError } = await supabase
           .from('user_courses')
           .select('*')
@@ -134,6 +141,7 @@ export const useCourseData = (courseId: string | undefined) => {
 
         setIsEnrolled(!!enrollment);
         setUserProgress(enrollment?.progress_percentage || 0);
+        console.log('User progress:', enrollment?.progress_percentage || 0, 'Enrolled:', !!enrollment);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching user progress:', error);
@@ -162,12 +170,14 @@ export const useCourseData = (courseId: string | undefined) => {
     }
 
     try {
+      console.log('Enrolling user in course:', courseId);
       const result = await enrollUserInCourse(user.id, courseId);
       
       if (result.success) {
         setIsEnrolled(true);
         setUserProgress(0);
         toast.success("Đăng ký khóa học thành công");
+        console.log('Enrollment successful');
       } else {
         console.error('Error enrolling in course:', result.error);
         toast.error("Không thể đăng ký khóa học: " + (result.error?.message || ""));
@@ -184,6 +194,7 @@ export const useCourseData = (courseId: string | undefined) => {
   // Clear course cache
   const clearCourseCache = () => {
     courseCache.delete(courseId || '');
+    console.log('Course cache cleared for:', courseId);
   };
 
   return {

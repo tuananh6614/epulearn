@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 interface UseCourseProgressProps {
   courseId: string | undefined;
@@ -46,6 +47,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
 
     try {
       setLoading(true);
+      console.log('Fetching progress data for courseId:', courseId, 'userId:', user.id);
       
       // Check cache first if not explicitly skipping it
       if (!skipCache) {
@@ -54,6 +56,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         const now = Date.now();
         
         if (cached && now - cached.timestamp < CACHE_DURATION) {
+          console.log('Using cached progress data');
           setEnrolled(cached.data.enrolled);
           setProgress(cached.data.progress);
           setLastAccessed(cached.data.lastAccessed);
@@ -76,6 +79,8 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         setError(enrollmentError);
       }
 
+      console.log('Progress data received:', data ? 'found' : 'not found');
+      
       if (data) {
         setEnrolled(true);
         setProgress(data.progress_percentage || 0);
@@ -100,6 +105,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
     } catch (err) {
       console.error('Error in progress hook:', err);
       setError(err instanceof Error ? err : new Error('Unknown error'));
+      toast.error('Không thể kiểm tra tiến độ khóa học. Vui lòng thử lại sau.');
       setLoading(false);
     }
   }, [user, courseId, getCacheKey]);
@@ -116,10 +122,12 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
 
   const enrollInCourse = async (): Promise<boolean> => {
     if (!user || !courseId) {
+      toast.error('Vui lòng đăng nhập để đăng ký khóa học');
       return false;
     }
 
     try {
+      console.log('Enrolling in course:', courseId);
       // Add user to course
       const { error: enrollError } = await supabase
         .from('user_courses')
@@ -133,6 +141,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
 
       if (enrollError) {
         console.error('Error enrolling in course:', enrollError);
+        toast.error('Không thể đăng ký khóa học. Vui lòng thử lại sau.');
         throw enrollError;
       }
 
@@ -150,6 +159,8 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         timestamp: Date.now()
       });
       
+      toast.success('Đăng ký khóa học thành công!');
+      console.log('Successfully enrolled in course');
       return true;
     } catch (err) {
       console.error('Error enrolling in course:', err);

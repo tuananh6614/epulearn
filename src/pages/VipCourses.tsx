@@ -5,7 +5,7 @@ import Footer from '@/components/Footer';
 import CourseCard from '@/components/CourseCard';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery } from "@tanstack/react-query";
-import { fetchCourses } from '@/services/apiUtils';
+import { fetchVipCourses } from '@/services/apiUtils';
 import { SupabaseCourseResponse } from '@/models/lesson';
 import { Crown, AlertTriangle, Lock, FileText, BookOpen, ChevronDown, ChevronUp, CheckCircle, ArrowRight } from 'lucide-react';
 import { Separator } from "@/components/ui/separator";
@@ -25,6 +25,25 @@ const VipCourses = () => {
   const [expandedChapter, setExpandedChapter] = useState<number | null>(1);
   const [vipStatus, setVipStatus] = useState<VipStatus>({ isVip: false, daysRemaining: null });
   
+  // Fetch VIP courses data with improved error handling
+  const { data: coursesData, isLoading, error, refetch } = useQuery({
+    queryKey: ['vipCourses'],
+    queryFn: async () => {
+      try {
+        console.log('Fetching VIP courses...');
+        const courses = await fetchVipCourses();
+        console.log('VIP courses fetched:', courses.length);
+        return courses;
+      } catch (error) {
+        console.error('Error fetching VIP courses:', error);
+        toast.error('Không thể tải danh sách khóa học VIP. Vui lòng thử lại sau.');
+        return [];
+      }
+    },
+    retry: 2,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
   // Fetch VIP status when component mounts or currentUser changes
   useEffect(() => {
     const checkUserVipStatus = async () => {
@@ -42,19 +61,51 @@ const VipCourses = () => {
     checkUserVipStatus();
   }, [currentUser]);
   
-  // Fetch VIP courses data
-  const { data: coursesData, isLoading, error, refetch } = useQuery({
-    queryKey: ['vipCourses'],
-    queryFn: async () => {
-      try {
-        const courses = await fetchCourses();
-        return courses.filter((course) => course.is_premium);
-      } catch (error) {
-        console.error('Error fetching VIP courses:', error);
-        return [];
-      }
+  // Parse tab from URL if present
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab === 'purchase') {
+      setActiveTab('purchase');
+    }
+  }, []);
+  
+  const toggleChapter = (chapterId: number) => {
+    if (expandedChapter === chapterId) {
+      setExpandedChapter(null);
+    } else {
+      setExpandedChapter(chapterId);
+    }
+  };
+
+  // Sample chapters for preview
+  const sampleChapters = [
+    {
+      id: 1,
+      title: "Giới thiệu khóa học",
+      lessons: [
+        { id: "l1", title: "Tổng quan về khóa học", duration: "10 phút", isLocked: false },
+        { id: "l2", title: "Các công cụ cần thiết", duration: "15 phút", isLocked: true },
+      ]
     },
-  });
+    {
+      id: 2,
+      title: "Kiến thức nền tảng",
+      lessons: [
+        { id: "l3", title: "Cơ bản về HTML", duration: "20 phút", isLocked: true },
+        { id: "l4", title: "Cơ bản về CSS", duration: "25 phút", isLocked: true },
+        { id: "l5", title: "Bài kiểm tra kiến thức", duration: "15 phút", isLocked: true },
+      ]
+    },
+    {
+      id: 3,
+      title: "Nâng cao",
+      lessons: [
+        { id: "l6", title: "Responsive Design", duration: "30 phút", isLocked: true },
+        { id: "l7", title: "Dự án thực hành", duration: "60 phút", isLocked: true },
+      ]
+    }
+  ];
 
   if (isLoading) {
     return (
@@ -102,51 +153,6 @@ const VipCourses = () => {
       </div>
     );
   }
-
-  const sampleChapters = [
-    {
-      id: 1,
-      title: "Giới thiệu khóa học",
-      lessons: [
-        { id: "l1", title: "Tổng quan về khóa học", duration: "10 phút", isLocked: false },
-        { id: "l2", title: "Các công cụ cần thiết", duration: "15 phút", isLocked: true },
-      ]
-    },
-    {
-      id: 2,
-      title: "Kiến thức nền tảng",
-      lessons: [
-        { id: "l3", title: "Cơ bản về HTML", duration: "20 phút", isLocked: true },
-        { id: "l4", title: "Cơ bản về CSS", duration: "25 phút", isLocked: true },
-        { id: "l5", title: "Bài kiểm tra kiến thức", duration: "15 phút", isLocked: true },
-      ]
-    },
-    {
-      id: 3,
-      title: "Nâng cao",
-      lessons: [
-        { id: "l6", title: "Responsive Design", duration: "30 phút", isLocked: true },
-        { id: "l7", title: "Dự án thực hành", duration: "60 phút", isLocked: true },
-      ]
-    }
-  ];
-  
-  const toggleChapter = (chapterId: number) => {
-    if (expandedChapter === chapterId) {
-      setExpandedChapter(null);
-    } else {
-      setExpandedChapter(chapterId);
-    }
-  };
-  
-  // Parse tab from URL if present
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get('tab');
-    if (tab === 'purchase') {
-      setActiveTab('purchase');
-    }
-  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -205,6 +211,7 @@ const VipCourses = () => {
                       ))}
                     </div>
                     
+                    {/* Content preview section - kept as is */}
                     <div className="mt-12">
                       <h2 className="text-2xl font-bold mb-6">Xem trước nội dung khóa học</h2>
                       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
@@ -266,6 +273,7 @@ const VipCourses = () => {
                       </div>
                     </div>
                     
+                    {/* Knowledge test section - kept as is */}
                     <div className="mt-12">
                       <h2 className="text-2xl font-bold mb-6">Bài kiểm tra kiến thức</h2>
                       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
@@ -318,6 +326,7 @@ const VipCourses = () => {
                     </div>
                   </div>
                   
+                  {/* Sidebar - kept as is */}
                   <div className="lg:col-span-1">
                     <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6 sticky top-24">
                       {vipStatus.isVip ? (
@@ -438,11 +447,18 @@ const VipCourses = () => {
               ) : (
                 <div className="text-center py-20">
                   <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Chưa có khóa học VIP nào
+                    {!coursesData || coursesData.length === 0 ? 
+                      "Không tìm thấy khóa học VIP nào. Vui lòng thử lại sau." : 
+                      "Đang tải khóa học VIP..."}
                   </h3>
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Vui lòng quay lại sau
+                  <p className="text-gray-500 dark:text-gray-400 mb-6">
+                    {!coursesData || coursesData.length === 0 ? 
+                      "Có thể chưa có khóa học VIP nào được thêm vào hệ thống." : 
+                      "Vui lòng đợi trong giây lát..."}
                   </p>
+                  <Button onClick={() => refetch()}>
+                    Tải lại danh sách
+                  </Button>
                 </div>
               )}
             </TabsContent>

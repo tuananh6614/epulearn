@@ -25,7 +25,7 @@ export const fetchTestQuestions = async (chapterId: string) => {
   }
 };
 
-// Optimized function to save test results
+// Optimized function to save test result
 export const saveTestResult = async (
   userId: string, 
   courseId: string,
@@ -188,5 +188,60 @@ export const createCourseTest = async (
   } catch (error) {
     console.error('Error in createCourseTest:', error);
     return { success: false, error };
+  }
+};
+
+// New: Function to check if user has active VIP access
+export const checkVipAccess = async (userId: string) => {
+  try {
+    if (!userId) return { isVip: false };
+    
+    console.log('Checking VIP access for user:', userId);
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('is_vip, vip_expiration_date')
+      .eq('id', userId)
+      .single();
+      
+    if (error) {
+      console.error('Error checking VIP status:', error);
+      return { isVip: false, error };
+    }
+    
+    if (!data) {
+      return { isVip: false };
+    }
+    
+    // Check if VIP and not expired
+    const isVip = !!data.is_vip;
+    const expirationDate = data.vip_expiration_date ? new Date(data.vip_expiration_date) : null;
+    const isExpired = expirationDate ? expirationDate < new Date() : false;
+    
+    if (isVip && isExpired) {
+      console.log('VIP subscription expired, revoking access');
+      // Auto revoke VIP status if expired
+      await supabase
+        .from('profiles')
+        .update({ 
+          is_vip: false,
+          vip_expiration_date: null
+        })
+        .eq('id', userId);
+        
+      return { isVip: false, isExpired: true };
+    }
+    
+    console.log(`User ${userId} VIP status: ${isVip}, Expires: ${expirationDate?.toISOString() || 'N/A'}`);
+    return { 
+      isVip, 
+      expirationDate,
+      daysRemaining: expirationDate ? 
+        Math.ceil((expirationDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24)) : 
+        null 
+    };
+  } catch (error) {
+    console.error('Error in checkVipAccess:', error);
+    return { isVip: false, error };
   }
 };

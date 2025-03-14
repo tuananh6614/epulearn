@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -12,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Clock, FileText, Info, Loader2, Lock, Zap, BookOpen, Video, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
-import { fetchCourseContent, supabase } from '@/integrations/supabase/client';
+import { fetchCourseContent, supabase, checkVipAccess } from '@/integrations/supabase/client';
 import { enrollUserInCourse } from '@/integrations/supabase/apiUtils';
 import { toast } from 'sonner';
 
@@ -59,6 +58,9 @@ const CourseDetail = () => {
   const [enrolled, setEnrolled] = useState(false);
   const [progress, setProgress] = useState(0);
   const [enrolling, setEnrolling] = useState(false);
+  const [isVipRequired, setIsVipRequired] = useState(false);
+  const [vipStatus, setVipStatus] = useState({ isVip: false, daysRemaining: null });
+  const [showVipModal, setShowVipModal] = useState(false);
   
   useEffect(() => {
     const loadCourse = async () => {
@@ -78,7 +80,11 @@ const CourseDetail = () => {
           return;
         }
         
+        // Check if course is premium and requires VIP
+        setIsVipRequired(courseData.is_premium);
+        
         if (user) {
+          // Check enrollment
           const { data: enrollment, error } = await supabase
             .from('user_courses')
             .select('*')
@@ -92,6 +98,10 @@ const CourseDetail = () => {
             setEnrolled(!!enrollment);
             setProgress(enrollment?.progress_percentage || 0);
           }
+          
+          // Check VIP status
+          const { isVip, daysRemaining } = await checkVipAccess(user.id);
+          setVipStatus({ isVip, daysRemaining });
         }
         
         const displayCourse: DisplayCourse = {
@@ -149,6 +159,13 @@ const CourseDetail = () => {
     
     if (!courseId) return;
     
+    // Check if course requires VIP
+    if (isVipRequired && !vipStatus.isVip) {
+      toast.error("Bạn cần đăng ký gói VIP để truy cập khóa học này");
+      setShowVipModal(true);
+      return;
+    }
+    
     try {
       setEnrolling(true);
       console.log("Starting course enrollment process");
@@ -205,6 +222,11 @@ const CourseDetail = () => {
     return colors[hash % colors.length];
   };
   
+  // Handle VIP subscription redirection
+  const handleVipSubscription = () => {
+    navigate('/vip-courses?tab=purchase');
+  };
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -256,6 +278,22 @@ const CourseDetail = () => {
       <Navbar />
       
       <div className="container mx-auto px-4 pt-24 pb-10">
+        {isVipRequired && !vipStatus.isVip && (
+          <Alert variant="warning" className="mb-8">
+            <Crown className="h-4 w-4" />
+            <AlertDescription>
+              Đây là khóa học VIP. Bạn cần đăng ký gói VIP để truy cập nội dung này.
+              <Button 
+                variant="outline" 
+                className="ml-4 bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100"
+                onClick={handleVipSubscription}
+              >
+                Đăng ký VIP
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <div className="mb-8">
@@ -279,6 +317,12 @@ const CourseDetail = () => {
                   <Zap className="h-3 w-3" />
                   {course.level}
                 </Badge>
+                {isVipRequired && (
+                  <Badge className="bg-yellow-500 text-white flex items-center gap-1">
+                    <Crown className="h-3 w-3" />
+                    VIP
+                  </Badge>
+                )}
               </div>
             </div>
             
@@ -402,7 +446,7 @@ const CourseDetail = () => {
           
           <div className="lg:col-span-1">
             <div className="sticky top-24">
-              <Card className="overflow-hidden shadow-md">
+              <Card className={`overflow-hidden shadow-md ${isVipRequired ? 'border-2 border-yellow-400' : ''}`}>
                 <div 
                   className="aspect-video w-full" 
                   style={{ backgroundColor: course.color }} 
@@ -419,18 +463,29 @@ const CourseDetail = () => {
                 
                 <CardContent className="p-6">
                   <div className="mb-6">
-                    <CardTitle className="text-2xl mb-2">
-                      Miễn phí
+                    <CardTitle className="text-2xl mb-2 flex items-center gap-2">
+                      {isVipRequired ? (
+                        <>
+                          <Crown className="h-5 w-5 text-yellow-500" />
+                          <span className="bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-transparent">
+                            Khóa Học VIP
+                          </span>
+                        </>
+                      ) : (
+                        "Miễn phí"
+                      )}
                     </CardTitle>
                     <CardDescription>
-                      Truy cập toàn bộ nội dung khóa học
+                      {isVipRequired 
+                        ? "Truy cập đặc quyền với gói VIP" 
+                        : "Truy cập toàn bộ nội dung khóa học"}
                     </CardDescription>
                   </div>
                   
                   {enrolled ? (
                     <>
                       <Button 
-                        className="w-full mb-3" 
+                        className={`w-full mb-3 ${isVipRequired ? 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600' : ''}`}
                         onClick={continueCourse}
                       >
                         {progress > 0 ? 'Tiếp tục học' : 'Bắt đầu học'}
@@ -447,20 +502,37 @@ const CourseDetail = () => {
                       </Link>
                     </>
                   ) : (
-                    <Button 
-                      className="w-full" 
-                      onClick={handleEnroll}
-                      disabled={enrolling}
-                    >
-                      {enrolling ? (
+                    <>
+                      {isVipRequired && !vipStatus.isVip ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Đang đăng ký...
+                          <Button 
+                            className="w-full mb-3 bg-yellow-600 hover:bg-yellow-700" 
+                            onClick={handleVipSubscription}
+                          >
+                            <Crown className="h-4 w-4 mr-2" />
+                            Đăng ký VIP
+                          </Button>
+                          <p className="text-sm text-muted-foreground text-center">
+                            Bạn cần đăng ký gói VIP để truy cập khóa học này
+                          </p>
                         </>
                       ) : (
-                        'Đăng ký khóa học'
+                        <Button 
+                          className={`w-full ${isVipRequired ? 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600' : ''}`}
+                          onClick={handleEnroll}
+                          disabled={enrolling}
+                        >
+                          {enrolling ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Đang đăng ký...
+                            </>
+                          ) : (
+                            'Đăng ký khóa học'
+                          )}
+                        </Button>
                       )}
-                    </Button>
+                    </>
                   )}
                 </CardContent>
                 
@@ -478,14 +550,33 @@ const CourseDetail = () => {
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
                         <span>{course.totalTests} bài kiểm tra</span>
                       </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                        <span>Truy cập vĩnh viễn</span>
-                      </li>
-                      <li className="flex items-center">
-                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                        <span>Chứng chỉ hoàn thành</span>
-                      </li>
+                      {isVipRequired ? (
+                        <>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            <span>Nội dung chuyên sâu cao cấp</span>
+                          </li>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            <span>Hỗ trợ trực tiếp từ giảng viên</span>
+                          </li>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            <span>Chứng chỉ hoàn thành có giá trị</span>
+                          </li>
+                        </>
+                      ) : (
+                        <>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            <span>Truy cập vĩnh viễn</span>
+                          </li>
+                          <li className="flex items-center">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            <span>Chứng chỉ hoàn thành</span>
+                          </li>
+                        </>
+                      )}
                     </ul>
                   </div>
                 </CardFooter>

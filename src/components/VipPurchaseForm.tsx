@@ -11,10 +11,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
 const QR_CODE_IMAGES = {
-  "1-month": "/lovable-uploads/716a4a4d-2cfb-496e-8984-404260ce774e.png",
-  "3-months": "/lovable-uploads/7c546418-cf60-465d-86f4-90c78bb79179.png",
-  "6-months": "/lovable-uploads/716a4a4d-2cfb-496e-8984-404260ce774e.png",
-  "1-year": "/lovable-uploads/7c546418-cf60-465d-86f4-90c78bb79179.png"
+  "1-month": "/lovable-uploads/image.png",
+  "3-months": "/lovable-uploads/image.png",
+  "6-months": "/lovable-uploads/image.png",
+  "1-year": "/lovable-uploads/image.png"
 };
 
 interface VipPlanProps {

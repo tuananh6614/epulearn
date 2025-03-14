@@ -168,11 +168,11 @@ const Courses = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-grow bg-gray-50 dark:bg-gray-900">
+      <main className="flex-grow bg-gray-50 dark:bg-gray-900 pt-16">
         <div className="bg-epu-dark text-white py-12">
           <div className="container mx-auto px-4">
-            <h1 className="text-3xl font-bold mb-4">Khám Phá Các Khóa Học</h1>
-            <p className="text-gray-300 max-w-3xl">
+            <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Khám Phá Các Khóa Học</h1>
+            <p className="text-gray-700 dark:text-gray-300 max-w-3xl">
               Khám phá nhiều khóa học lập trình được thiết kế để đưa bạn từ người mới đến chuyên gia. Mỗi khóa học bao gồm các bài học tương tác và bài kiểm tra sau mỗi chương.
             </p>
           </div>

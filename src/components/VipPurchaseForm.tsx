@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +28,23 @@ interface VipPlanProps {
   isTrial?: boolean;
   isUpgrade?: boolean;
   onSelect: () => void;
+}
+
+// Define the interface for our plan objects
+interface VipPlanType {
+  title: string;
+  months: number;
+  price: number;
+  discount: number;
+  features: string[];
+  isPopular?: boolean;
+  isTrial?: boolean;
+  isUpgrade?: boolean;
+  isActive?: boolean;
+}
+
+interface VipPlansType {
+  [key: string]: VipPlanType;
 }
 
 const VipPlan: React.FC<VipPlanProps> = ({ 
@@ -153,7 +169,7 @@ const VipPurchaseForm = () => {
   }, [currentUser]);
   
   // Base plans - these will be adjusted based on user's VIP status
-  const basePlans = {
+  const basePlans: VipPlansType = {
     "1-month": {
       title: "1 Tháng (Dùng thử)",
       months: 1,
@@ -210,12 +226,12 @@ const VipPurchaseForm = () => {
   };
   
   // Calculate adjusted plans based on current VIP status
-  const getAdjustedPlans = () => {
+  const getAdjustedPlans = (): VipPlansType => {
     if (!vipStatus.isVip) {
       return basePlans;
     }
     
-    const adjustedPlans = {...basePlans};
+    const adjustedPlans: VipPlansType = {...basePlans};
     
     // Determine which plan the user currently has based on currentVipPlan
     const currentMonths = 
@@ -226,7 +242,7 @@ const VipPurchaseForm = () => {
     
     // Apply discounts for upgrades
     Object.keys(adjustedPlans).forEach(planKey => {
-      const plan = adjustedPlans[planKey as keyof typeof adjustedPlans];
+      const plan = adjustedPlans[planKey];
       
       // Only create upgrade options for plans longer than the current one
       if (plan.months > currentMonths) {
@@ -469,7 +485,7 @@ const VipPurchaseForm = () => {
   
   const handleSelectPlan = (plan: string) => {
     // Don't allow selecting a plan that's shorter or equal to current one if user is already VIP
-    const selectedPlanObj = plans[plan as keyof typeof plans];
+    const selectedPlanObj = plans[plan];
     if (selectedPlanObj.isActive) {
       toast.info("Bạn đã có gói VIP này hoặc gói cao hơn.");
       return;
@@ -566,7 +582,7 @@ const VipPurchaseForm = () => {
               </div>
               
               {/* Payment section - same as before */}
-              {selectedPlan && !plans[selectedPlan as keyof typeof plans]?.isActive && (
+              {selectedPlan && !plans[selectedPlan]?.isActive && (
                 <>
                   {paymentError && (
                     <Alert variant="destructive" className="mb-6">
@@ -601,7 +617,7 @@ const VipPurchaseForm = () => {
                               className="w-56 h-56 object-contain" 
                             />
                             <p className="text-center text-sm mt-2 text-gray-500">
-                              Mã QR cho gói {plans[selectedPlan as keyof typeof plans].title}
+                              Mã QR cho gói {plans[selectedPlan].title}
                             </p>
                           </div>
                           
@@ -611,7 +627,7 @@ const VipPurchaseForm = () => {
                               Tải mã QR
                             </Button>
                             <Button variant="outline" size="sm" onClick={() => {
-                              const selectedPlanDetails = plans[selectedPlan as keyof typeof plans];
+                              const selectedPlanDetails = plans[selectedPlan];
                               const finalPrice = selectedPlanDetails.discount > 0 
                                 ? selectedPlanDetails.price - (selectedPlanDetails.price * selectedPlanDetails.discount / 100) 
                                 : selectedPlanDetails.price;
@@ -647,7 +663,7 @@ const VipPurchaseForm = () => {
                                 <p className="text-sm font-medium">Số tiền</p>
                                 <p className="text-sm bg-muted p-2 rounded font-medium">
                                   {(() => {
-                                    const selectedPlanDetails = plans[selectedPlan as keyof typeof plans];
+                                    const selectedPlanDetails = plans[selectedPlan];
                                     const finalPrice = selectedPlanDetails.discount > 0 
                                       ? selectedPlanDetails.price - (selectedPlanDetails.price * selectedPlanDetails.discount / 100) 
                                       : selectedPlanDetails.price;
@@ -764,143 +780,3 @@ const VipPurchaseForm = () => {
                 onSelect={() => handleSelectPlan(key)}
                 isPopular={plan.isPopular}
                 isTrial={plan.isTrial}
-                isUpgrade={plan.isUpgrade}
-              />
-            )
-          )}
-        </div>
-        
-        {paymentError && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{paymentError}</AlertDescription>
-          </Alert>
-        )}
-        
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <QrCode className="h-5 w-5 text-blue-500" />
-              Thanh toán qua mã QR
-            </CardTitle>
-            <CardDescription>
-              Quét mã QR hoặc chuyển khoản đến tài khoản ngân hàng bên dưới
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent>
-            <Tabs defaultValue="qr" className="w-full">
-              <TabsList className="w-full mb-4">
-                <TabsTrigger value="qr" className="flex-1">Mã QR</TabsTrigger>
-                <TabsTrigger value="bank" className="flex-1">Thông tin chuyển khoản</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="qr" className="flex flex-col items-center">
-                <div className="bg-white p-4 rounded-md mb-4">
-                  <img src={currentQRCode} alt="QR Code" className="w-56 h-56 object-contain" />
-                  <p className="text-center text-sm mt-2 text-gray-500">
-                    Mã QR cho gói {plans[selectedPlan as keyof typeof plans].title}
-                  </p>
-                </div>
-                
-                <div className="flex flex-wrap justify-center gap-2">
-                  <Button variant="outline" size="sm" onClick={handleDownloadQR}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Tải mã QR
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => {
-                    const selectedPlanDetails = plans[selectedPlan as keyof typeof plans];
-                    const finalPrice = selectedPlanDetails.discount > 0 
-                      ? selectedPlanDetails.price - (selectedPlanDetails.price * selectedPlanDetails.discount / 100) 
-                      : selectedPlanDetails.price;
-                    
-                    navigator.clipboard.writeText(`VIB - 339435005 - NGUYEN TUAN ANH - ${finalPrice.toLocaleString('vi-VN')}đ`);
-                    toast("Đã sao chép thông tin chuyển khoản");
-                  }}>
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Sao chép thông tin
-                  </Button>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="bank">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Ngân hàng</p>
-                      <p className="text-sm bg-muted p-2 rounded">VIB (Vietnam International Bank)</p>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Số tài khoản</p>
-                      <p className="text-sm bg-muted p-2 rounded">339435005</p>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Chủ tài khoản</p>
-                      <p className="text-sm bg-muted p-2 rounded">NGUYEN TUAN ANH</p>
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Số tiền</p>
-                      <p className="text-sm bg-muted p-2 rounded font-medium">
-                        {(() => {
-                          const selectedPlanDetails = plans[selectedPlan as keyof typeof plans];
-                          const finalPrice = selectedPlanDetails.discount > 0 
-                            ? selectedPlanDetails.price - (selectedPlanDetails.price * selectedPlanDetails.discount / 100) 
-                            : selectedPlanDetails.price;
-                          return `${finalPrice.toLocaleString('vi-VN')}đ`;
-                        })()}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Nội dung chuyển khoản</p>
-                    <p className="text-sm bg-muted p-2 rounded">
-                      {currentUser ? `VIP_${selectedPlan}_${currentUser.email.split('@')[0]}` : "VIP_[your-email]"}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-3 text-sm text-yellow-800 dark:text-yellow-200">
-                    <p className="font-medium mb-1">Lưu ý quan trọng:</p>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>Vui lòng ghi đúng nội dung chuyển khoản để chúng tôi có thể xác nhận thanh toán của bạn.</li>
-                      <li>Sau khi chuyển khoản, hãy nhấn "Xác nhận đã thanh toán" bên dưới.</li>
-                      <li>Tài khoản VIP của bạn sẽ được kích hoạt ngay sau khi xác nhận thanh toán thành công.</li>
-                    </ul>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-        
-        <div className="text-center">
-          <Button 
-            size="lg" 
-            onClick={handleSubmitPurchase}
-            disabled={isLoading}
-            className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800"
-          >
-            {isLoading ? (
-              <>
-                <Clock className="h-4 w-4 mr-2 animate-spin" />
-                Đang xử lý...
-              </>
-            ) : (
-              "Xác nhận đã thanh toán"
-            )}
-          </Button>
-          
-          <p className="text-xs text-muted-foreground mt-4">
-            Bằng cách nhấn nút xác nhận, bạn đồng ý với 
-            <a href="#" className="underline ml-1">Điều khoản sử dụng</a> của chúng tôi.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default VipPurchaseForm;

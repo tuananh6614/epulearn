@@ -26,21 +26,14 @@ export const fetchTestQuestions = async (lessonId: string, chapterId: string) =>
   }
 };
 
-// Define a simpler type for test answers to prevent recursion issues
-type SimpleTestAnswer = {
-  questionId: string;
-  selectedOption: string;
-  isCorrect?: boolean;
-};
-
-// Function to save test result
+// Function to save test result - completely refactored to avoid type recursion
 export const saveTestResult = async (
   userId: string,
   courseId: string,
   courseTestId: string,
   score: number,
   passed: boolean,
-  answers: Record<string, string>, // Simplified to just store question ID -> selected answer
+  answers: Record<string, string>, // Simple key-value structure for answers
   timeTaken: number,
   testName: string = 'Course Test'
 ) => {
@@ -62,14 +55,17 @@ export const saveTestResult = async (
       ? previousAttempts.length + 1 
       : 1;
     
-    // Simplify the answers to avoid type issues
-    // Convert the answers object to a simple array of answers
-    const simplifiedAnswers: SimpleTestAnswer[] = Object.entries(answers).map(([questionId, selectedOption]) => ({
-      questionId,
-      selectedOption
-    }));
+    // Convert answers to a safe structure for storage
+    // This prevents TypeScript recursion issues
+    const serializedAnswers = {
+      attempt: attemptNumber,
+      answers: Object.entries(answers).map(([questionId, selectedOption]) => ({
+        questionId,
+        selectedOption
+      }))
+    };
     
-    // Create the test result with the simplified answers
+    // Create the test result
     const { data, error } = await supabase
       .from('user_test_results')
       .insert({
@@ -78,7 +74,7 @@ export const saveTestResult = async (
         course_test_id: courseTestId,
         score,
         passed,
-        answers: simplifiedAnswers as unknown as Json,
+        answers: serializedAnswers as unknown as Json,
         time_taken: timeTaken
       })
       .select();

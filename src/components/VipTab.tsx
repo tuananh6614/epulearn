@@ -9,7 +9,11 @@ import { formatDate } from '@/lib/utils';
 import { checkVipAccess } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const VipStatusDisplay = memo(({ isVip, expirationDate }: { isVip: boolean, expirationDate: Date | null }) => {
+const VipStatusDisplay = memo(({ isVip, expirationDate, daysRemaining }: { 
+  isVip: boolean, 
+  expirationDate: Date | null,
+  daysRemaining: number | null
+}) => {
   return (
     <Card className="mb-6 overflow-hidden">
       <CardContent className="p-6">
@@ -24,6 +28,7 @@ const VipStatusDisplay = memo(({ isVip, expirationDate }: { isVip: boolean, expi
             {isVip && expirationDate && (
               <p className="text-sm text-gray-500">
                 Thời hạn VIP: đến {formatDate(expirationDate)}
+                {daysRemaining !== null && ` (còn ${daysRemaining} ngày)`}
               </p>
             )}
             {!isVip && (
@@ -113,10 +118,11 @@ const VipTab = memo(() => {
   
   return (
     <div className="space-y-6" key={refreshKey}>
-      {/* Show VIP status at the top */}
+      {/* Show VIP status at the top with days remaining */}
       <VipStatusDisplay 
         isVip={isUserVip} 
         expirationDate={vipExpiration}
+        daysRemaining={vipStatus.daysRemaining}
       />
       
       <VipManager 

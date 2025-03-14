@@ -326,7 +326,7 @@ const VipCourses = () => {
                     </div>
                   </div>
                   
-                  {/* Sidebar - kept as is */}
+                  {/* Sidebar - update to conditionally show content */}
                   <div className="lg:col-span-1">
                     <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6 sticky top-24">
                       {vipStatus.isVip ? (

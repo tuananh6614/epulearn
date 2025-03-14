@@ -25,14 +25,59 @@ export const fetchTestQuestions = async (chapterId: string) => {
   }
 };
 
-// Optimized function to save test result
+// Get test questions for a full course
+export const fetchCourseTests = async (courseId: string) => {
+  try {
+    console.log(`Fetching tests for course: ${courseId}`);
+    
+    // First, get the course test
+    const { data: courseTest, error: courseTestError } = await supabase
+      .from('course_tests')
+      .select('*')
+      .eq('course_id', courseId)
+      .maybeSingle();
+      
+    if (courseTestError) {
+      console.error('Error fetching course test:', courseTestError);
+      throw courseTestError;
+    }
+    
+    if (!courseTest) {
+      console.log(`No course test found for course ${courseId}`);
+      return null;
+    }
+    
+    // Then, get all questions for this test
+    const { data: questions, error: questionsError } = await supabase
+      .from('course_test_questions')
+      .select('*')
+      .eq('course_test_id', courseTest.id)
+      .order('created_at', { ascending: true });
+      
+    if (questionsError) {
+      console.error('Error fetching course test questions:', questionsError);
+      throw questionsError;
+    }
+    
+    return {
+      test: courseTest,
+      questions: questions || []
+    };
+  } catch (error) {
+    console.error('Error in fetchCourseTests:', error);
+    return null;
+  }
+};
+
+// Function to save test result
 export const saveTestResult = async (
   userId: string, 
   courseId: string,
   chapterId: string,
   lessonId: string,
   score: number, 
-  totalQuestions: number
+  totalQuestions: number,
+  answers: Record<string, any> = {} // Save user's answers
 ) => {
   try {
     console.log(`Saving test result for user ${userId}, course ${courseId}, score: ${score}/${totalQuestions}`);
@@ -74,174 +119,88 @@ export const saveTestResult = async (
         course_id: courseId,
         score: percentage,
         passed,
-        time_taken: 0, // This could be enhanced to track time
-        answers: {}
+        answers,
+        time_taken: 0, // We'll assume 0 for now
+        created_at: new Date().toISOString()
       });
       
     if (testResultError) {
       console.error('Error saving test result:', testResultError);
-      // We don't throw here as it's optional analytics data
+      // We don't throw here because we want to proceed even if this fails
     }
     
-    console.log(`Test result saved successfully. Passed: ${passed}, Score: ${percentage}%`);
-    return { success: true, passed, percentage };
+    return {
+      success: true,
+      score: percentage,
+      passed
+    };
   } catch (error) {
     console.error('Error in saveTestResult:', error);
-    return { success: false, error };
+    return {
+      success: false,
+      error
+    };
   }
 };
 
-// New function to fetch course tests with optimized loading
-export const fetchCourseTestsOptimized = async (courseId: string) => {
+// Get user's chapter tests progress
+export const getChapterTestProgress = async (userId: string, courseId: string) => {
   try {
-    console.log('Fetching course tests for course:', courseId);
+    console.log(`Getting chapter test progress for user ${userId}, course ${courseId}`);
     
-    // Use a single query with join to reduce API calls
-    const { data, error } = await supabase
-      .from('course_tests')
-      .select(`
-        *,
-        questions:course_test_questions(*)
-      `)
+    // Get all lessons of type 'test' for the course
+    const { data: testLessons, error: testLessonsError } = await supabase
+      .from('lessons')
+      .select('id, chapter_id')
       .eq('course_id', courseId)
-      .order('created_at', { ascending: true });
+      .eq('type', 'test');
       
-    if (error) {
-      console.error('Error fetching course tests:', error);
-      throw error;
+    if (testLessonsError) {
+      console.error('Error fetching test lessons:', testLessonsError);
+      throw testLessonsError;
     }
     
-    if (!data || data.length === 0) {
-      console.log('No tests found for course:', courseId);
+    if (!testLessons || testLessons.length === 0) {
       return [];
     }
     
-    // Process the data for better client-side consumption
-    const processedTests = data.map(test => ({
-      ...test,
-      questionCount: test.questions?.length || 0,
-      // Sort questions by id to ensure consistent order
-      questions: (test.questions || []).sort((a, b) => 
-        a.id < b.id ? -1 : a.id > b.id ? 1 : 0
-      )
-    }));
+    // Get user progress for these test lessons
+    const testLessonIds = testLessons.map(lesson => lesson.id);
     
-    console.log(`Successfully fetched ${processedTests.length} tests for course ${courseId}`);
-    return processedTests;
+    const { data: progress, error: progressError } = await supabase
+      .from('user_lesson_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .in('lesson_id', testLessonIds);
+      
+    if (progressError) {
+      console.error('Error fetching test progress:', progressError);
+      throw progressError;
+    }
+    
+    // Map the progress to each test lesson
+    return testLessons.map(lesson => {
+      const lessonProgress = progress?.find(p => p.lesson_id === lesson.id);
+      let result = null;
+      
+      if (lessonProgress?.last_position) {
+        try {
+          result = JSON.parse(lessonProgress.last_position);
+        } catch (e) {
+          console.error('Error parsing last_position:', e);
+        }
+      }
+      
+      return {
+        lessonId: lesson.id,
+        chapterId: lesson.chapter_id,
+        completed: lessonProgress?.completed || false,
+        completedAt: lessonProgress?.completed_at || null,
+        result
+      };
+    });
   } catch (error) {
-    console.error('Error in fetchCourseTestsOptimized:', error);
+    console.error('Error in getChapterTestProgress:', error);
     return [];
-  }
-};
-
-// New: Function to create a test for a course
-export const createCourseTest = async (
-  courseId: string,
-  title: string,
-  description: string,
-  timeLimit: number,
-  passingScore: number,
-  questions: any[]
-) => {
-  try {
-    console.log(`Creating new test for course ${courseId} with ${questions.length} questions`);
-    
-    // First insert the test
-    const { data: testData, error: testError } = await supabase
-      .from('course_tests')
-      .insert({
-        course_id: courseId,
-        title,
-        description,
-        time_limit: timeLimit,
-        passing_score: passingScore
-      })
-      .select()
-      .single();
-      
-    if (testError) {
-      console.error('Error creating test:', testError);
-      throw testError;
-    }
-    
-    if (!testData) {
-      throw new Error('Failed to create test, no data returned');
-    }
-    
-    // Then insert all questions
-    const questionsWithTestId = questions.map(q => ({
-      ...q,
-      course_test_id: testData.id
-    }));
-    
-    const { error: questionsError } = await supabase
-      .from('course_test_questions')
-      .insert(questionsWithTestId);
-      
-    if (questionsError) {
-      console.error('Error creating test questions:', questionsError);
-      throw questionsError;
-    }
-    
-    console.log(`Test created successfully with ID ${testData.id}`);
-    return { success: true, testId: testData.id };
-  } catch (error) {
-    console.error('Error in createCourseTest:', error);
-    return { success: false, error };
-  }
-};
-
-// New: Function to check if user has active VIP access
-export const checkVipAccess = async (userId: string) => {
-  try {
-    if (!userId) return { isVip: false };
-    
-    console.log('Checking VIP access for user:', userId);
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('is_vip, vip_expiration_date')
-      .eq('id', userId)
-      .single();
-      
-    if (error) {
-      console.error('Error checking VIP status:', error);
-      return { isVip: false, error };
-    }
-    
-    if (!data) {
-      return { isVip: false };
-    }
-    
-    // Check if VIP and not expired
-    const isVip = !!data.is_vip;
-    const expirationDate = data.vip_expiration_date ? new Date(data.vip_expiration_date) : null;
-    const isExpired = expirationDate ? expirationDate < new Date() : false;
-    
-    if (isVip && isExpired) {
-      console.log('VIP subscription expired, revoking access');
-      // Auto revoke VIP status if expired
-      await supabase
-        .from('profiles')
-        .update({ 
-          is_vip: false,
-          vip_expiration_date: null
-        })
-        .eq('id', userId);
-        
-      return { isVip: false, isExpired: true };
-    }
-    
-    console.log(`User ${userId} VIP status: ${isVip}, Expires: ${expirationDate?.toISOString() || 'N/A'}`);
-    return { 
-      isVip, 
-      expirationDate,
-      daysRemaining: expirationDate ? 
-        Math.ceil((expirationDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24)) : 
-        null 
-    };
-  } catch (error) {
-    console.error('Error in checkVipAccess:', error);
-    return { isVip: false, error };
   }
 };

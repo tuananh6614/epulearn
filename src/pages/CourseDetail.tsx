@@ -277,6 +277,7 @@ const CourseDetail = () => {
       <Navbar />
       
       <div className="container mx-auto px-4 pt-24 pb-10">
+        {/* Only show VIP alert for non-VIP users */}
         {isVipRequired && !vipStatus.isVip && (
           <Alert variant="warning" className="mb-8">
             <Crown className="h-4 w-4" />

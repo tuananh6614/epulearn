@@ -72,7 +72,7 @@ export const useCourseData = (courseId: string | undefined) => {
           throw chaptersError;
         }
 
-        // Fetch lessons
+        // Fetch lessons with full content from Supabase
         const { data: lessons, error: lessonsError } = await supabase
           .from('lessons')
           .select('*')

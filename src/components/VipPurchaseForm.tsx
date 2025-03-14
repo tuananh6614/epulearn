@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +10,6 @@ import VipActivationPending from './VipActivationPending';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 
-// QR codes for different plans - now with unique QR code for each plan
 const QR_CODE_IMAGES = {
   "1-month": "/lovable-uploads/716a4a4d-2cfb-496e-8984-404260ce774e.png",
   "3-months": "/lovable-uploads/7c546418-cf60-465d-86f4-90c78bb79179.png",
@@ -31,7 +29,6 @@ interface VipPlanProps {
   onSelect: () => void;
 }
 
-// Define the interface for our plan objects
 interface VipPlanType {
   title: string;
   months: number;
@@ -142,14 +139,12 @@ const VipPurchaseForm = () => {
   const [vipStatus, setVipStatus] = useState<VipStatus>({ isVip: false, daysRemaining: null });
   const [currentVipPlan, setCurrentVipPlan] = useState<string | null>(null);
   
-  // Load user's VIP status when component mounts
   useEffect(() => {
     const loadVipStatus = async () => {
       if (currentUser?.id) {
         const status = await checkVipAccess(currentUser.id);
         setVipStatus(status);
         
-        // Get the current VIP plan if the user is a VIP
         if (status.isVip) {
           const { data } = await supabase
             .from('vip_purchases')
@@ -169,7 +164,6 @@ const VipPurchaseForm = () => {
     loadVipStatus();
   }, [currentUser]);
   
-  // Base plans - these will be adjusted based on user's VIP status
   const basePlans: VipPlansType = {
     "1-month": {
       title: "1 Tháng (Dùng thử)",
@@ -226,48 +220,40 @@ const VipPurchaseForm = () => {
     }
   };
   
-  // Calculate adjusted plans based on current VIP status
-  const getAdjustedPlans = (): VipPlansType => {
+  const getAdjustedPlans = () => {
     if (!vipStatus.isVip) {
       return basePlans;
     }
     
-    const adjustedPlans: VipPlansType = {...basePlans};
+    const adjustedPlans = {...basePlans};
     
-    // Determine which plan the user currently has based on currentVipPlan
     const currentMonths = 
       currentVipPlan === "vip1" || currentVipPlan === "1-month" ? 1 :
       currentVipPlan === "vip3" || currentVipPlan === "3-months" ? 3 :
       currentVipPlan === "vip6" || currentVipPlan === "6-months" ? 6 :
       currentVipPlan === "vip1year" || currentVipPlan === "1-year" ? 12 : 0;
     
-    // Apply discounts for upgrades
     Object.keys(adjustedPlans).forEach(planKey => {
       const plan = adjustedPlans[planKey];
       
-      // Only create upgrade options for plans longer than the current one
       if (plan.months > currentMonths) {
-        // For upgrade, we apply an additional 5-15% discount
         const additionalDiscount = 
           plan.months <= 3 ? 5 : 
           plan.months <= 6 ? 10 : 15;
         
-        // Calculate prorated price based on remaining days
         if (vipStatus.daysRemaining && vipStatus.daysRemaining > 0) {
           const remainingValue = (vipStatus.daysRemaining / 30) * (basePlans["1-month"].price / 1);
           const adjustedBasePrice = Math.max(0, plan.price - remainingValue);
-          plan.price = Math.round(adjustedBasePrice / 1000) * 1000; // Round to nearest 1000
+          plan.price = Math.round(adjustedBasePrice / 1000) * 1000;
         }
         
-        plan.discount = Math.min(50, (plan.discount || 0) + additionalDiscount); // Cap at 50% max discount
+        plan.discount = Math.min(50, (plan.discount || 0) + additionalDiscount);
         plan.isUpgrade = true;
-        // Add upgrade-specific feature
         plan.features = [
           `Kéo dài thời hạn VIP thêm ${plan.months} tháng`,
           ...plan.features
         ];
       } else if (plan.months <= currentMonths) {
-        // For plans shorter or equal to current, mark as already active
         plan.isActive = true;
       }
     });
@@ -277,30 +263,24 @@ const VipPurchaseForm = () => {
   
   const plans = getAdjustedPlans();
   
-  // Simulate payment verification (in real app, this would check with payment API)
   const verifyPayment = async () => {
     setIsLoading(true);
     
     try {
-      // Simulating API call to payment gateway
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // 90% chance of success for demonstration
       const isSuccessful = Math.random() < 0.9;
       
       if (isSuccessful) {
         setPaymentVerified(true);
         setPaymentError(null);
         
-        // Show success toast
         toast.success("Thanh toán đã được xác nhận!", {
           description: "Cảm ơn bạn đã đăng ký gói VIP."
         });
         
-        // Record payment in database
         await recordSuccessfulPayment();
         
-        // Show activation message
         setShowActivationPending(true);
       } else {
         setPaymentVerified(false);
@@ -327,15 +307,13 @@ const VipPurchaseForm = () => {
     if (!currentUser) return;
     
     try {
-      const plan = plans[selectedPlan as keyof typeof plans];
+      const plan = plans[selectedPlan];
       const finalPrice = plan.discount > 0 
         ? plan.price - (plan.price * plan.discount / 100) 
         : plan.price;
       
-      // Determine if this is a new VIP subscription or an upgrade
       const isUpgrade = vipStatus.isVip;
       
-      // If it's an upgrade, update the existing VIP entry to 'upgraded'
       if (isUpgrade) {
         const { error: upgradeError } = await supabase
           .from('vip_purchases')
@@ -348,7 +326,6 @@ const VipPurchaseForm = () => {
         if (upgradeError) throw upgradeError;
       }
       
-      // Record the purchase
       const { error: purchaseError } = await supabase
         .from('vip_purchases')
         .insert({
@@ -362,7 +339,6 @@ const VipPurchaseForm = () => {
       
       if (purchaseError) throw purchaseError;
       
-      // Create a user_courses entry for VIP subscription tracking
       const { error: courseError } = await supabase
         .from('user_courses')
         .insert({
@@ -377,7 +353,6 @@ const VipPurchaseForm = () => {
       
       if (courseError) throw courseError;
       
-      // Activate VIP status immediately
       activateVip(plan.months, isUpgrade);
       
     } catch (error) {
@@ -394,15 +369,13 @@ const VipPurchaseForm = () => {
     setIsLoading(true);
     
     try {
-      const plan = plans[selectedPlan as keyof typeof plans];
+      const plan = plans[selectedPlan];
       const finalPrice = plan.discount > 0 
         ? plan.price - (plan.price * plan.discount / 100) 
         : plan.price;
       
-      // Determine if this is an upgrade
       const isUpgrade = vipStatus.isVip;
       
-      // Record the pending purchase
       const { error: purchaseError } = await supabase
         .from('vip_purchases')
         .insert({
@@ -415,7 +388,6 @@ const VipPurchaseForm = () => {
       
       if (purchaseError) throw purchaseError;
       
-      // Record in user_courses for tracking
       const { error: courseError } = await supabase
         .from('user_courses')
         .insert({
@@ -429,8 +401,6 @@ const VipPurchaseForm = () => {
       
       if (courseError) throw courseError;
       
-      // Verify payment (this will be called immediately for demo purposes)
-      // In a real app this might be replaced with a webhook or manual verification
       await verifyPayment();
       
     } catch (error) {
@@ -440,20 +410,18 @@ const VipPurchaseForm = () => {
     }
   };
   
-  const activateVip = async (months: number, isUpgrade: boolean = false) => {
+  const activateVip = async (months, isUpgrade = false) => {
     if (!currentUser) return;
     
     try {
-      let expirationDate: Date;
+      let expirationDate;
       
       if (isUpgrade && vipStatus.isVip && vipStatus.daysRemaining) {
-        // If upgrading, add the new months to the current expiration date
         const currentDate = new Date();
         expirationDate = new Date(currentDate);
         expirationDate.setDate(expirationDate.getDate() + vipStatus.daysRemaining);
         expirationDate.setMonth(expirationDate.getMonth() + months);
       } else {
-        // New subscription
         expirationDate = new Date();
         expirationDate.setMonth(expirationDate.getMonth() + months);
       }
@@ -484,20 +452,18 @@ const VipPurchaseForm = () => {
     }
   };
   
-  const handleSelectPlan = (plan: string) => {
-    // Don't allow selecting a plan that's shorter or equal to current one if user is already VIP
-    const selectedPlanObj = plans[plan];
-    if (selectedPlanObj.isActive) {
+  const handleSelectPlan = (plan) => {
+    if (plans[plan].isActive) {
       toast.info("Bạn đã có gói VIP này hoặc gói cao hơn.");
       return;
     }
     
     setSelectedPlan(plan);
-    setPaymentError(null); // Reset any payment errors when switching plans
+    setPaymentError(null);
   };
   
   const handleDownloadQR = () => {
-    const qrImage = QR_CODE_IMAGES[selectedPlan as keyof typeof QR_CODE_IMAGES] || QR_CODE_IMAGES["6-months"];
+    const qrImage = QR_CODE_IMAGES[selectedPlan] || QR_CODE_IMAGES["6-months"];
     
     const a = document.createElement('a');
     a.href = qrImage;
@@ -509,7 +475,6 @@ const VipPurchaseForm = () => {
     toast("Đã tải xuống mã QR");
   };
   
-  // If the user is VIP, show a message about auto-access to VIP courses
   if (vipStatus.isVip && vipStatus.daysRemaining !== null && vipStatus.daysRemaining > 0) {
     return (
       <div className="container mx-auto py-8">
@@ -561,7 +526,6 @@ const VipPurchaseForm = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {Object.entries(plans).map(([key, plan]) => {
-                  // Only show plans that are upgrades from the current plan
                   if (!plan.isActive) {
                     return (
                       <VipPlan
@@ -582,7 +546,6 @@ const VipPurchaseForm = () => {
                 })}
               </div>
               
-              {/* Payment section - same as before */}
               {selectedPlan && !plans[selectedPlan]?.isActive && (
                 <>
                   {paymentError && (
@@ -613,7 +576,7 @@ const VipPurchaseForm = () => {
                         <TabsContent value="qr" className="flex flex-col items-center">
                           <div className="bg-white p-4 rounded-md mb-4">
                             <img 
-                              src={QR_CODE_IMAGES[selectedPlan as keyof typeof QR_CODE_IMAGES] || QR_CODE_IMAGES["6-months"]} 
+                              src={QR_CODE_IMAGES[selectedPlan]} 
                               alt="QR Code" 
                               className="w-56 h-56 object-contain" 
                             />
@@ -760,8 +723,7 @@ const VipPurchaseForm = () => {
     );
   }
   
-  // Get the current QR code based on selected plan
-  const currentQRCode = QR_CODE_IMAGES[selectedPlan as keyof typeof QR_CODE_IMAGES] || QR_CODE_IMAGES["6-months"];
+  const currentQRCode = QR_CODE_IMAGES[selectedPlan] || QR_CODE_IMAGES["6-months"];
   
   return (
     <div className="container mx-auto py-8">
@@ -787,6 +749,134 @@ const VipPurchaseForm = () => {
           )}
         </div>
       </div>
+      
+      {selectedPlan && (
+        <div className="max-w-3xl mx-auto mt-10">
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <QrCode className="h-5 w-5 text-blue-500" />
+                Thanh toán qua mã QR
+              </CardTitle>
+              <CardDescription>
+                Quét mã QR hoặc chuyển khoản đến tài khoản ngân hàng bên dưới
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent>
+              <Tabs defaultValue="qr" className="w-full">
+                <TabsList className="w-full mb-4">
+                  <TabsTrigger value="qr" className="flex-1">Mã QR</TabsTrigger>
+                  <TabsTrigger value="bank" className="flex-1">Thông tin chuyển khoản</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="qr" className="flex flex-col items-center">
+                  <div className="bg-white p-4 rounded-md mb-4">
+                    <img 
+                      src={QR_CODE_IMAGES[selectedPlan]} 
+                      alt="QR Code" 
+                      className="w-56 h-56 object-contain" 
+                    />
+                    <p className="text-center text-sm mt-2 text-gray-500">
+                      Mã QR cho gói {plans[selectedPlan].title}
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleDownloadQR}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Tải mã QR
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const selectedPlanDetails = plans[selectedPlan];
+                      const finalPrice = selectedPlanDetails.discount > 0 
+                        ? selectedPlanDetails.price - (selectedPlanDetails.price * selectedPlanDetails.discount / 100) 
+                        : selectedPlanDetails.price;
+                      
+                      navigator.clipboard.writeText(`VIB - 339435005 - NGUYEN TUAN ANH - ${finalPrice.toLocaleString('vi-VN')}đ`);
+                      toast("Đã sao chép thông tin chuyển khoản");
+                    }}>
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Sao chép thông tin
+                    </Button>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="bank">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Ngân hàng</p>
+                        <p className="text-sm bg-muted p-2 rounded">VIB (Vietnam International Bank)</p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Số tài khoản</p>
+                        <p className="text-sm bg-muted p-2 rounded">339435005</p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Chủ tài khoản</p>
+                        <p className="text-sm bg-muted p-2 rounded">NGUYEN TUAN ANH</p>
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Số tiền</p>
+                        <p className="text-sm bg-muted p-2 rounded font-medium">
+                          {(() => {
+                            const selectedPlanDetails = plans[selectedPlan];
+                            const finalPrice = selectedPlanDetails.discount > 0 
+                              ? selectedPlanDetails.price - (selectedPlanDetails.price * selectedPlanDetails.discount / 100) 
+                              : selectedPlanDetails.price;
+                            return `${finalPrice.toLocaleString('vi-VN')}đ`;
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Nội dung chuyển khoản</p>
+                      <p className="text-sm bg-muted p-2 rounded">
+                        {currentUser ? `VIP_${vipStatus.isVip ? 'UPGRADE' : 'NEW'}_${selectedPlan}_${currentUser.email.split('@')[0]}` : "VIP_[your-email]"}
+                      </p>
+                    </div>
+                    
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-3 text-sm text-yellow-800 dark:text-yellow-200">
+                      <p className="font-medium mb-1">Lưu ý quan trọng:</p>
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>Vui lòng ghi đúng nội dung chuyển khoản để chúng tôi có thể xác nhận thanh toán của bạn.</li>
+                        <li>Sau khi chuyển khoản, hãy nhấn "Xác nhận đã thanh toán" bên dưới.</li>
+                        <li>Tài khoản VIP của bạn sẽ được kích hoạt ngay sau khi xác nhận thanh toán thành công.</li>
+                      </ul>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+          
+          <div className="text-center">
+            <Button 
+              size="lg" 
+              onClick={handleSubmitPurchase}
+              disabled={isLoading}
+              className="bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-800"
+            >
+              {isLoading ? (
+                <>
+                  <Clock className="h-4 w-4 mr-2 animate-spin" />
+                  Đang xử lý...
+                </>
+              ) : "Xác nhận đã thanh toán"}
+            </Button>
+            
+            <p className="text-xs text-muted-foreground mt-4">
+              Bằng cách nhấn nút xác nhận, bạn đồng ý với 
+              <a href="#" className="underline ml-1">Điều khoản sử dụng</a> của chúng tôi.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

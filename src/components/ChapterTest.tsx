@@ -1,15 +1,23 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
-import { AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { supabase, fetchTestQuestions, saveTestResult } from "@/integrations/supabase/client";
+import { 
+  supabase, 
+  fetchTestQuestions, 
+  saveTestResult, 
+  getTestProgressChartData 
+} from "@/integrations/supabase/client";
 import { useAuth } from '@/context/AuthContext';
+import TestProgressChart from './TestProgressChart';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface TestQuestion {
   id: string;
@@ -33,6 +41,10 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
   const [isLoading, setIsLoading] = useState(true);
   const [score, setScore] = useState(0);
   const [testCompleted, setTestCompleted] = useState(false);
+  const [progressData, setProgressData] = useState<any[]>([]);
+  const [showProgressChart, setShowProgressChart] = useState(false);
+  const [testLessonId, setTestLessonId] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
   const { user } = useAuth();
 
   React.useEffect(() => {
@@ -43,6 +55,25 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
         console.log('Fetching test questions for chapter:', chapterId);
         const data = await fetchTestQuestions(chapterId);
         console.log('Received test questions:', data);
+        
+        // Also fetch the lesson ID for this test
+        const { data: lessonData } = await supabase
+          .from('lessons')
+          .select('id')
+          .eq('chapter_id', chapterId)
+          .eq('type', 'test')
+          .limit(1);
+          
+        if (lessonData && lessonData.length > 0) {
+          setTestLessonId(lessonData[0].id);
+          
+          // Fetch progress data if the user is logged in
+          if (user) {
+            const progressData = await getTestProgressChartData(user.id, lessonData[0].id);
+            setProgressData(progressData);
+            setAttempts(progressData.length);
+          }
+        }
         
         if (data && data.length > 0) {
           const transformedQuestions: TestQuestion[] = data.map(q => ({
@@ -67,7 +98,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
     };
     
     fetchQuestions();
-  }, [chapterId]);
+  }, [chapterId, user]);
   
   const handleSelectAnswer = (value: string) => {
     setSelectedAnswer(parseInt(value));
@@ -92,7 +123,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
       } else {
         setTestCompleted(true);
         
-        if (user) {
+        if (user && testLessonId) {
           updateTestProgress();
         }
         
@@ -107,25 +138,21 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
     try {
       const finalScore = score + (isCorrect ? 1 : 0);
       
-      if (user) {
-        const { data: lessonData } = await supabase
-          .from('lessons')
-          .select('id')
-          .eq('chapter_id', chapterId)
-          .eq('type', 'test')
-          .limit(1);
-          
-        if (lessonData && lessonData.length > 0) {
-          const testLessonId = lessonData[0].id;
-          
-          await saveTestResult(
-            user.id,
-            courseId,
-            chapterId,
-            testLessonId,
-            finalScore,
-            questions.length
-          );
+      if (user && testLessonId) {
+        const result = await saveTestResult(
+          user.id,
+          courseId,
+          chapterId,
+          testLessonId,
+          finalScore,
+          questions.length
+        );
+        
+        if (result.success) {
+          // Refresh progress data
+          const progressData = await getTestProgressChartData(user.id, testLessonId);
+          setProgressData(progressData);
+          setAttempts(progressData.length);
         }
       }
     } catch (error) {
@@ -214,6 +241,17 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
             </div>
           </div>
           
+          {attempts > 1 && (
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => setShowProgressChart(true)}
+            >
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Xem tiến trình làm bài ({attempts} lần thử)
+            </Button>
+          )}
+          
           <Alert variant={isPassed ? "default" : "destructive"}>
             {isPassed ? (
               <CheckCircle className="h-4 w-4" />
@@ -229,7 +267,9 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
         </CardContent>
         <CardFooter className="flex justify-center gap-4">
           <Button variant="outline" onClick={restartTest}>Làm lại bài kiểm tra</Button>
-          <Button variant="default">Tiếp tục học</Button>
+          <Button variant="default" onClick={() => window.location.href = `/course/${courseId}`}>
+            Tiếp tục học
+          </Button>
         </CardFooter>
       </Card>
     );
@@ -238,94 +278,106 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
   const currentQ = questions[currentQuestion];
   
   return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">
-            Câu hỏi {currentQuestion + 1}/{questions.length}
-          </span>
-          <span className="text-sm font-medium">
-            Điểm: {score}/{currentQuestion}
-          </span>
-        </div>
-        <Progress 
-          value={((currentQuestion + 1) / questions.length) * 100} 
-          className="h-1 mb-4" 
-        />
-        <CardTitle className="text-lg">{currentQ.question}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <RadioGroup 
-          value={selectedAnswer !== null ? selectedAnswer.toString() : ""} 
-          onValueChange={handleSelectAnswer}
-          className="space-y-3"
-          disabled={showResult}
-        >
-          {currentQ.options.map((option, index) => (
-            <div 
-              key={index} 
-              className={`flex items-center space-x-2 p-3 rounded-md border ${
-                showResult 
-                  ? index === currentQ.correct_answer 
-                    ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
-                    : selectedAnswer === index 
-                      ? "border-red-500 bg-red-50 dark:bg-red-900/20"
-                      : "border-gray-200 dark:border-gray-700"
-                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/60"
-              }`}
-            >
-              <RadioGroupItem 
-                value={index.toString()} 
-                id={`option-${index}`} 
-                className={
-                  showResult && index === currentQ.correct_answer
-                    ? "text-green-500 border-green-500"
-                    : showResult && selectedAnswer === index && selectedAnswer !== currentQ.correct_answer
-                    ? "text-red-500 border-red-500"
-                    : ""
-                }
-              />
-              <Label htmlFor={`option-${index}`} className="flex-grow cursor-pointer">
-                {option}
-              </Label>
-              {showResult && index === currentQ.correct_answer && (
-                <CheckCircle className="h-4 w-4 text-green-500" />
-              )}
-              {showResult && selectedAnswer === index && selectedAnswer !== currentQ.correct_answer && (
-                <XCircle className="h-4 w-4 text-red-500" />
-              )}
-            </div>
-          ))}
-        </RadioGroup>
-        
-        {showResult && (
-          <div className={`mt-4 p-3 rounded-md ${
-            isCorrect ? "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300" : 
-            "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300"
-          }`}>
-            <p className="font-medium">
-              {isCorrect ? "Chính xác!" : "Chưa chính xác!"}
-            </p>
-            <p className="text-sm mt-1">
-              {isCorrect 
-                ? "Bạn đã trả lời đúng. Chuyển sang câu tiếp theo..." 
-                : `Đáp án đúng là: ${currentQ.options[currentQ.correct_answer]}`}
-            </p>
+    <>
+      <Card className="w-full max-w-3xl mx-auto">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">
+              Câu hỏi {currentQuestion + 1}/{questions.length}
+            </span>
+            <span className="text-sm font-medium">
+              Điểm: {score}/{currentQuestion}
+            </span>
           </div>
-        )}
-      </CardContent>
-      <CardFooter className="justify-between">
-        <div className="text-sm text-muted-foreground">
-          {!showResult ? "Chọn một đáp án để tiếp tục" : isCorrect ? "+1 điểm" : "Không được điểm"}
-        </div>
-        <Button 
-          onClick={handleNextQuestion} 
-          disabled={selectedAnswer === null || showResult}
-        >
-          {currentQuestion < questions.length - 1 ? "Câu tiếp theo" : "Kết thúc bài kiểm tra"}
-        </Button>
-      </CardFooter>
-    </Card>
+          <Progress 
+            value={((currentQuestion + 1) / questions.length) * 100} 
+            className="h-1 mb-4" 
+          />
+          <CardTitle className="text-lg">{currentQ.question}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup 
+            value={selectedAnswer !== null ? selectedAnswer.toString() : ""} 
+            onValueChange={handleSelectAnswer}
+            className="space-y-3"
+            disabled={showResult}
+          >
+            {currentQ.options.map((option, index) => (
+              <div 
+                key={index} 
+                className={`flex items-center space-x-2 p-3 rounded-md border ${
+                  showResult 
+                    ? index === currentQ.correct_answer 
+                      ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
+                      : selectedAnswer === index 
+                        ? "border-red-500 bg-red-50 dark:bg-red-900/20"
+                        : "border-gray-200 dark:border-gray-700"
+                    : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                }`}
+              >
+                <RadioGroupItem 
+                  value={index.toString()} 
+                  id={`option-${index}`} 
+                  className={
+                    showResult && index === currentQ.correct_answer
+                      ? "text-green-500 border-green-500"
+                      : showResult && selectedAnswer === index && selectedAnswer !== currentQ.correct_answer
+                      ? "text-red-500 border-red-500"
+                      : ""
+                  }
+                />
+                <Label htmlFor={`option-${index}`} className="flex-grow cursor-pointer">
+                  {option}
+                </Label>
+                {showResult && index === currentQ.correct_answer && (
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                )}
+                {showResult && selectedAnswer === index && selectedAnswer !== currentQ.correct_answer && (
+                  <XCircle className="h-4 w-4 text-red-500" />
+                )}
+              </div>
+            ))}
+          </RadioGroup>
+          
+          {showResult && (
+            <div className={`mt-4 p-3 rounded-md ${
+              isCorrect ? "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300" : 
+              "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300"
+            }`}>
+              <p className="font-medium">
+                {isCorrect ? "Chính xác!" : "Chưa chính xác!"}
+              </p>
+              <p className="text-sm mt-1">
+                {isCorrect 
+                  ? "Bạn đã trả lời đúng. Chuyển sang câu tiếp theo..." 
+                  : `Đáp án đúng là: ${currentQ.options[currentQ.correct_answer]}`}
+              </p>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="justify-between">
+          <div className="text-sm text-muted-foreground">
+            {!showResult ? "Chọn một đáp án để tiếp tục" : isCorrect ? "+1 điểm" : "Không được điểm"}
+          </div>
+          <Button 
+            onClick={handleNextQuestion} 
+            disabled={selectedAnswer === null || showResult}
+          >
+            {currentQuestion < questions.length - 1 ? "Câu tiếp theo" : "Kết thúc bài kiểm tra"}
+          </Button>
+        </CardFooter>
+      </Card>
+      
+      {/* Progress Chart Dialog */}
+      <Dialog open={showProgressChart} onOpenChange={setShowProgressChart}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Tiến trình làm bài kiểm tra</DialogTitle>
+          </DialogHeader>
+          <TestProgressChart data={progressData} />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

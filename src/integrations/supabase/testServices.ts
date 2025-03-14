@@ -111,16 +111,33 @@ export const saveTestResult = async (
     // Then update the course progress
     await updateCourseProgress(userId, courseId);
     
-    // Also save to user_test_results for analytics
+    // Get current attempt count for this test
+    const { data: attempts, error: attemptsError } = await supabase
+      .from('user_test_results')
+      .select('attempt_number')
+      .eq('user_id', userId)
+      .eq('course_id', courseId)
+      .eq('lesson_id', lessonId)
+      .order('attempt_number', { ascending: false })
+      .limit(1);
+      
+    const attemptNumber = attempts && attempts.length > 0 
+      ? attempts[0].attempt_number + 1 
+      : 1;
+    
+    // Save to user_test_results for analytics and progress tracking
     const { error: testResultError } = await supabase
       .from('user_test_results')
       .insert({
         user_id: userId,
         course_id: courseId,
+        lesson_id: lessonId,
         score: percentage,
         passed,
         answers,
         time_taken: 0, // We'll assume 0 for now
+        attempt_number: attemptNumber,
+        test_name: `Chapter ${chapterId} Test`,
         created_at: new Date().toISOString()
       });
       
@@ -132,7 +149,8 @@ export const saveTestResult = async (
     return {
       success: true,
       score: percentage,
-      passed
+      passed,
+      attemptNumber
     };
   } catch (error) {
     console.error('Error in saveTestResult:', error);
@@ -178,6 +196,19 @@ export const getChapterTestProgress = async (userId: string, courseId: string) =
       throw progressError;
     }
     
+    // Get test result history for these lessons
+    const { data: testResults, error: resultsError } = await supabase
+      .from('user_test_results')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('course_id', courseId)
+      .in('lesson_id', testLessonIds)
+      .order('created_at', { ascending: false });
+      
+    if (resultsError) {
+      console.error('Error fetching test results:', resultsError);
+    }
+    
     // Map the progress to each test lesson
     return testLessons.map(lesson => {
       const lessonProgress = progress?.find(p => p.lesson_id === lesson.id);
@@ -191,16 +222,79 @@ export const getChapterTestProgress = async (userId: string, courseId: string) =
         }
       }
       
+      // Get all attempts for this lesson
+      const lessonResults = testResults?.filter(r => r.lesson_id === lesson.id) || [];
+      
       return {
         lessonId: lesson.id,
         chapterId: lesson.chapter_id,
         completed: lessonProgress?.completed || false,
         completedAt: lessonProgress?.completed_at || null,
-        result
+        result,
+        attempts: lessonResults.length,
+        bestScore: lessonResults.length > 0 
+          ? Math.max(...lessonResults.map(r => r.score)) 
+          : null,
+        recentResults: lessonResults.slice(0, 5)
       };
     });
   } catch (error) {
     console.error('Error in getChapterTestProgress:', error);
+    return [];
+  }
+};
+
+// Get all test results for a user across all courses or a specific course
+export const getUserTestResults = async (userId: string, courseId?: string) => {
+  try {
+    let query = supabase
+      .from('user_test_results')
+      .select(`
+        *,
+        courses (
+          id,
+          title
+        )
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+      
+    if (courseId) {
+      query = query.eq('course_id', courseId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching user test results:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in getUserTestResults:', error);
+    return [];
+  }
+};
+
+// Get progress chart data for a specific test
+export const getTestProgressChartData = async (userId: string, lessonId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_test_results')
+      .select('score, created_at, attempt_number')
+      .eq('user_id', userId)
+      .eq('lesson_id', lessonId)
+      .order('created_at', { ascending: true });
+      
+    if (error) {
+      console.error('Error fetching test progress chart data:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in getTestProgressChartData:', error);
     return [];
   }
 };

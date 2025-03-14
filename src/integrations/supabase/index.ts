@@ -14,6 +14,7 @@ export * from './courseServices';
 export { 
   fetchTestQuestions, 
   saveTestResult, 
-  getChapterTestProgress 
+  getChapterTestProgress,
+  fetchCourseTests
 } from './testServices';
 export * from './userProgressServices';

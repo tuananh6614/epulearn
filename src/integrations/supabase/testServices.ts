@@ -69,6 +69,12 @@ export const fetchCourseTests = async (courseId: string) => {
   }
 };
 
+// Simplified type for test answers
+type TestAnswerEntry = {
+  questionId: string;
+  selectedAnswer: number;
+};
+
 // Function to save test result
 export const saveTestResult = async (
   userId: string, 
@@ -77,7 +83,7 @@ export const saveTestResult = async (
   lessonId: string,
   score: number, 
   totalQuestions: number,
-  answers: Record<string, any> = {} // Save user's answers
+  answers: Record<string, number> = {} // Simplified to just question ID -> answer number
 ) => {
   try {
     console.log(`Saving test result for user ${userId}, course ${courseId}, score: ${score}/${totalQuestions}`);
@@ -85,6 +91,12 @@ export const saveTestResult = async (
     // Calculate percentage
     const percentage = Math.round((score / totalQuestions) * 100);
     const passed = percentage >= 70;
+    
+    // Convert answers to a simpler structure for storage
+    const formattedAnswers: TestAnswerEntry[] = Object.keys(answers).map(questionId => ({
+      questionId,
+      selectedAnswer: answers[questionId]
+    }));
     
     // First update the lesson progress
     const { error: progressError } = await supabase
@@ -119,7 +131,7 @@ export const saveTestResult = async (
         course_id: courseId,
         score: percentage,
         passed,
-        answers,
+        answers: formattedAnswers,
         time_taken: 0, // We'll assume 0 for now
         created_at: new Date().toISOString()
       });

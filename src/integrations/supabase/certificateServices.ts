@@ -1,5 +1,6 @@
 
 import { supabase } from './client';
+import type { Json } from './types';
 
 // Function to generate a certificate for a user completing a course
 export const generateCertificate = async (userId: string, courseId: string, courseName: string) => {
@@ -27,15 +28,16 @@ export const generateCertificate = async (userId: string, courseId: string, cour
     let certificateId: string;
     
     try {
-      const { data: certIdResult, error: certIdError } = await supabase
+      // Explicitly type the result of the RPC call
+      const { data, error: certIdError } = await supabase
         .rpc('generate_certificate_id');
         
       if (certIdError) {
         throw certIdError;
       }
       
-      // Cast certIdResult to string explicitly
-      certificateId = certIdResult as string;
+      // Ensure data is treated as a string
+      certificateId = String(data);
     } catch (error) {
       console.error('Error generating certificate ID via RPC, using fallback:', error);
       certificateId = `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;

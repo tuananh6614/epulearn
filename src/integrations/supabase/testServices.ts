@@ -55,6 +55,9 @@ export const saveTestResult = async (
       ? previousAttempts.length + 1 
       : 1;
     
+    // Convert answers to Json type to avoid deep type instantiation
+    const answersJson = answers as unknown as Json;
+    
     // Save the test result
     const { data, error } = await supabase
       .from('user_test_results')
@@ -64,7 +67,7 @@ export const saveTestResult = async (
         course_test_id: courseTestId,
         score,
         passed,
-        answers: answers as Json,
+        answers: answersJson,
         time_taken: timeTaken
       })
       .select();

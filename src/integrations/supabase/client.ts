@@ -48,9 +48,15 @@ export * from './courseServices';
 export * from './testServices';
 export * from './userProgressServices';
 
+// Define a return type for the VIP status
+export interface VipStatus {
+  isVip: boolean;
+  daysRemaining: number | null;
+}
+
 // Utility function to check if user has VIP access
-export const checkVipAccess = async (userId: string): Promise<boolean> => {
-  if (!userId) return false;
+export const checkVipAccess = async (userId: string): Promise<VipStatus> => {
+  if (!userId) return { isVip: false, daysRemaining: null };
   
   try {
     const { data, error } = await supabase
@@ -61,17 +67,21 @@ export const checkVipAccess = async (userId: string): Promise<boolean> => {
     
     if (error) {
       console.error('Error checking VIP status:', error);
-      return false;
+      return { isVip: false, daysRemaining: null };
     }
     
     if (!data || !data.is_vip) {
-      return false;
+      return { isVip: false, daysRemaining: null };
     }
     
     // Check if VIP has expired
     if (data.vip_expiration_date) {
       const expiryDate = new Date(data.vip_expiration_date);
       const currentDate = new Date();
+      
+      // Calculate days remaining
+      const diffTime = expiryDate.getTime() - currentDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
       // If expired, update the profile
       if (expiryDate < currentDate) {
@@ -80,13 +90,15 @@ export const checkVipAccess = async (userId: string): Promise<boolean> => {
           .update({ is_vip: false })
           .eq('id', userId);
         
-        return false;
+        return { isVip: false, daysRemaining: null };
       }
+      
+      return { isVip: true, daysRemaining: diffDays };
     }
     
-    return data.is_vip;
+    return { isVip: true, daysRemaining: null };
   } catch (error) {
     console.error('Exception checking VIP status:', error);
-    return false;
+    return { isVip: false, daysRemaining: null };
   }
 };

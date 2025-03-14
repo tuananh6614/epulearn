@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -12,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Clock, FileText, Info, Loader2, Lock, Zap, BookOpen, Video, AlertCircle, Crown } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
-import { fetchCourseContent, supabase, checkVipAccess } from '@/integrations/supabase/client';
+import { fetchCourseContent, supabase, checkVipAccess, VipStatus } from '@/integrations/supabase/client';
 import { enrollUserInCourse } from '@/integrations/supabase/apiUtils';
 import { toast } from 'sonner';
 
@@ -60,7 +59,7 @@ const CourseDetail = () => {
   const [progress, setProgress] = useState(0);
   const [enrolling, setEnrolling] = useState(false);
   const [isVipRequired, setIsVipRequired] = useState(false);
-  const [vipStatus, setVipStatus] = useState({ isVip: false, daysRemaining: null });
+  const [vipStatus, setVipStatus] = useState<VipStatus>({ isVip: false, daysRemaining: null });
   const [showVipModal, setShowVipModal] = useState(false);
   
   useEffect(() => {
@@ -100,9 +99,9 @@ const CourseDetail = () => {
             setProgress(enrollment?.progress_percentage || 0);
           }
           
-          // Check VIP status
-          const { isVip, daysRemaining } = await checkVipAccess(user.id);
-          setVipStatus({ isVip, daysRemaining });
+          // Check VIP status with the new function that returns an object
+          const vipStatusResult = await checkVipAccess(user.id);
+          setVipStatus(vipStatusResult);
         }
         
         const displayCourse: DisplayCourse = {
@@ -223,7 +222,6 @@ const CourseDetail = () => {
     return colors[hash % colors.length];
   };
   
-  // Handle VIP subscription redirection
   const handleVipSubscription = () => {
     navigate('/vip-courses?tab=purchase');
   };

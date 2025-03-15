@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
-import { AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, XCircle, Trophy, RotateCcw } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/context/AuthContext';
 
 export interface TestQuestion {
@@ -22,16 +22,60 @@ export interface TestQuestion {
 export interface ChapterTestProps {
   questions: TestQuestion[];
   onComplete: (score: number, total: number) => void;
+  chapterId: string;
 }
 
-const ChapterTest: React.FC<ChapterTestProps> = ({ questions, onComplete }) => {
+const ChapterTest: React.FC<ChapterTestProps> = ({ questions, onComplete, chapterId }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [score, setScore] = useState(0);
   const [testCompleted, setTestCompleted] = useState(false);
+  const [highestScore, setHighestScore] = useState<number | null>(null);
+  const [previousAttempts, setPreviousAttempts] = useState<number>(0);
   const { user } = useAuth();
+
+  // Fetch highest score on component mount
+  useEffect(() => {
+    const fetchTestHistory = async () => {
+      if (!user || !chapterId) return;
+      
+      try {
+        // Get highest score for this test
+        const { data, error } = await supabase
+          .from('user_test_results')
+          .select('score')
+          .eq('user_id', user.id)
+          .eq('chapter_id', chapterId)
+          .order('score', { ascending: false })
+          .limit(1);
+          
+        if (error) {
+          console.error('Error fetching test history:', error);
+        } else if (data && data.length > 0) {
+          setHighestScore(data[0].score);
+        }
+        
+        // Get attempt count
+        const { count, error: countError } = await supabase
+          .from('user_test_results')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('chapter_id', chapterId);
+          
+        if (countError) {
+          console.error('Error fetching test attempts count:', countError);
+        } else if (count !== null) {
+          setPreviousAttempts(count);
+        }
+      } catch (err) {
+        console.error('Error fetching test history:', err);
+      }
+    };
+    
+    fetchTestHistory();
+  }, [user, chapterId]);
 
   const handleSelectAnswer = (value: string) => {
     setSelectedAnswer(parseInt(value));
@@ -93,6 +137,12 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ questions, onComplete }) => {
     const percentageScore = Math.round((finalScore / questions.length) * 100);
     const isPassed = percentageScore >= 70;
     
+    // Determine if this is a new high score
+    const isNewHighScore = highestScore === null || percentageScore > highestScore;
+    if (isNewHighScore) {
+      setHighestScore(percentageScore);
+    }
+    
     return (
       <Card className="w-full max-w-3xl mx-auto">
         <CardHeader>
@@ -126,6 +176,23 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ questions, onComplete }) => {
             </div>
           </div>
           
+          {previousAttempts > 0 && (
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <div className="flex items-center mb-2">
+                <Trophy className="h-5 w-5 text-amber-500 mr-2" />
+                <span className="font-medium">Điểm cao nhất của bạn: {highestScore}%</span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {isNewHighScore 
+                  ? "Chúc mừng! Đây là điểm cao nhất của bạn cho bài kiểm tra này."
+                  : `Điểm lần này của bạn: ${percentageScore}% (Điểm cao nhất: ${highestScore}%)`}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Số lần làm bài: {previousAttempts + 1}
+              </div>
+            </div>
+          )}
+          
           <Alert variant={isPassed ? "default" : "destructive"}>
             {isPassed ? (
               <CheckCircle className="h-4 w-4" />
@@ -140,7 +207,10 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ questions, onComplete }) => {
           </Alert>
         </CardContent>
         <CardFooter className="flex justify-center gap-4">
-          <Button variant="outline" onClick={restartTest}>Làm lại bài kiểm tra</Button>
+          <Button variant="outline" onClick={restartTest}>
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Làm lại bài kiểm tra
+          </Button>
           <Button variant="default">Tiếp tục học</Button>
         </CardFooter>
       </Card>
@@ -156,9 +226,18 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ questions, onComplete }) => {
           <span className="text-sm text-muted-foreground">
             Câu hỏi {currentQuestion + 1}/{questions.length}
           </span>
-          <span className="text-sm font-medium">
-            Điểm: {score}/{currentQuestion}
-          </span>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm font-medium">
+              Điểm: {score}/{currentQuestion}
+            </span>
+            
+            {highestScore !== null && (
+              <div className="flex items-center">
+                <Trophy className="h-4 w-4 text-amber-500 mr-1" />
+                <span className="text-sm font-medium">Cao nhất: {highestScore}%</span>
+              </div>
+            )}
+          </div>
         </div>
         <Progress 
           value={((currentQuestion + 1) / questions.length) * 100} 

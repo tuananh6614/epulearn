@@ -6,6 +6,7 @@ import { fetchTestQuestions, saveTestResult } from '@/integrations/supabase/test
 import ChapterTest, { TestQuestion } from '@/components/ChapterTest'; 
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const ChapterTestPage: React.FC = () => {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ const ChapterTestPage: React.FC = () => {
   
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState<TestQuestion[]>([]);
+  const [highestScore, setHighestScore] = useState<number | null>(null);
   
   useEffect(() => {
     if (!courseId || !chapterId) {
@@ -41,12 +43,34 @@ const ChapterTestPage: React.FC = () => {
           id: q.id,
           question: q.question,
           options: Array.isArray(q.options) 
-            ? q.options.map(option => String(option)) // Convert each option to string
+            ? q.options.map(option => String(option)) 
             : [],
           answer: q.correct_answer
         }));
         
         setQuestions(formattedQuestions);
+        
+        // Fetch highest score for this test if user is logged in
+        if (user && chapterId) {
+          try {
+            const { data, error } = await supabase
+              .from('user_test_results')
+              .select('score')
+              .eq('user_id', user.id)
+              .eq('chapter_id', chapterId)
+              .order('score', { ascending: false })
+              .limit(1);
+              
+            if (error) {
+              console.error('Error fetching highest score:', error);
+            } else if (data && data.length > 0) {
+              setHighestScore(data[0].score);
+            }
+          } catch (err) {
+            console.error('Error fetching highest score:', err);
+          }
+        }
+        
         setLoading(false);
       } catch (error) {
         console.error('Error loading test questions:', error);
@@ -56,7 +80,7 @@ const ChapterTestPage: React.FC = () => {
     };
     
     loadQuestions();
-  }, [courseId, chapterId, navigate]);
+  }, [courseId, chapterId, navigate, user]);
   
   const handleTestComplete = async (score: number, total: number) => {
     if (!user || !courseId || !chapterId) {
@@ -65,8 +89,22 @@ const ChapterTestPage: React.FC = () => {
     }
     
     // Calculate if passed (70% or more)
-    const percentage = (score / total) * 100;
+    const percentage = Math.round((score / total) * 100);
     const passed = percentage >= 70;
+    
+    // Check if it's a new high score
+    const isNewHighScore = highestScore === null || percentage > highestScore;
+    if (isNewHighScore) {
+      setHighestScore(percentage);
+    }
+    
+    // Save user answers (simply dummy data for now)
+    const answers = {
+      score: score,
+      total: total,
+      percentage: percentage,
+      timestamp: new Date().toISOString()
+    };
     
     // Save the test result to Supabase
     try {
@@ -78,11 +116,33 @@ const ChapterTestPage: React.FC = () => {
         chapterId,
         lessonId || '',
         score,
-        total
+        total,
+        answers
       );
+      
+      // Also save to user_test_results for history tracking
+      const { error: historyError } = await supabase
+        .from('user_test_results')
+        .insert({
+          user_id: user.id,
+          course_id: courseId,
+          chapter_id: chapterId,
+          score: percentage,
+          passed: passed,
+          answers: answers,
+          created_at: new Date().toISOString()
+        });
+        
+      if (historyError) {
+        console.error('Error saving test history:', historyError);
+      }
       
       if (result.success) {
         toast.success(`Bạn đã hoàn thành bài kiểm tra với kết quả ${score}/${total}`);
+        
+        if (isNewHighScore && percentage >= 70) {
+          toast.success("Chúc mừng! Đây là điểm cao nhất của bạn cho bài kiểm tra này!");
+        }
         
         // Navigate back to course detail
         setTimeout(() => {
@@ -111,7 +171,8 @@ const ChapterTestPage: React.FC = () => {
         ) : (
           <ChapterTest 
             questions={questions} 
-            onComplete={handleTestComplete} 
+            onComplete={handleTestComplete}
+            chapterId={chapterId || ''}
           />
         )}
       </div>

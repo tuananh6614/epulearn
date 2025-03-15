@@ -117,6 +117,7 @@ export const saveTestResult = async (
       .insert({
         user_id: userId,
         course_id: courseId,
+        chapter_id: chapterId,
         score: percentage,
         passed,
         answers,
@@ -201,6 +202,56 @@ export const getChapterTestProgress = async (userId: string, courseId: string) =
     });
   } catch (error) {
     console.error('Error in getChapterTestProgress:', error);
+    return [];
+  }
+};
+
+// Get highest test score for a specific chapter test
+export const getHighestChapterTestScore = async (userId: string, chapterId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_test_results')
+      .select('score')
+      .eq('user_id', userId)
+      .eq('chapter_id', chapterId)
+      .order('score', { ascending: false })
+      .limit(1);
+      
+    if (error) {
+      console.error('Error fetching highest test score:', error);
+      throw error;
+    }
+    
+    return data && data.length > 0 ? data[0].score : null;
+  } catch (error) {
+    console.error('Error in getHighestChapterTestScore:', error);
+    return null;
+  }
+};
+
+// Get all test history for a user
+export const getUserTestHistory = async (userId: string, courseId?: string) => {
+  try {
+    let query = supabase
+      .from('user_test_results')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+      
+    if (courseId) {
+      query = query.eq('course_id', courseId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching test history:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in getUserTestHistory:', error);
     return [];
   }
 };

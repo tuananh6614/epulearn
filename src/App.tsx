@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,6 +23,7 @@ const ChapterTestPage = lazy(() => import("./pages/ChapterTestPage"));
 const CourseTest = lazy(() => import("./pages/CourseTest"));
 const GeneralTestPage = lazy(() => import("./pages/GeneralTestPage"));
 const StartLearningPage = lazy(() => import("./pages/StartLearningPage"));
+const TestHistoryPage = lazy(() => import("./pages/TestHistoryPage"));
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -130,6 +130,9 @@ function App() {
                 
                 {/* VIP courses route */}
                 <Route path="/vip-courses" element={<VipCourses />} />
+                
+                {/* Test history page */}
+                <Route path="/course/:courseId/test-history" element={<ProtectedRoute element={<TestHistoryPage />} />} />
                 
                 {/* Catch-all route */}
                 <Route path="*" element={<NotFound />} />

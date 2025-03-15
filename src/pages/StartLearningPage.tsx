@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -7,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, Clock, FileText, Zap, Lightbulb, Users, Trophy } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle, Clock, FileText, Zap, Lightbulb, Users, Trophy, History } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useCourseData } from '@/hooks/useCourseData';
 import { useCourseProgress } from '@/hooks/useCourseProgress';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const StartLearningPage = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -21,6 +21,9 @@ const StartLearningPage = () => {
   const { enrolled, progress, refreshProgress, enrollInCourse } = useCourseProgress({ courseId });
   
   const [activeChapter, setActiveChapter] = useState<string | null>(null);
+  const [lastLessonId, setLastLessonId] = useState<string | null>(null);
+  const [lastChapterId, setLastChapterId] = useState<string | null>(null);
+  const [loadingLastLesson, setLoadingLastLesson] = useState(false);
   
   useEffect(() => {
     if (!user) {
@@ -35,6 +38,39 @@ const StartLearningPage = () => {
     }
   }, [courseData]);
   
+  useEffect(() => {
+    const fetchLastLesson = async () => {
+      if (!user || !courseId) return;
+      
+      try {
+        setLoadingLastLesson(true);
+        
+        const { data, error } = await supabase
+          .from('user_lesson_progress')
+          .select('lesson_id, chapter_id')
+          .eq('user_id', user.id)
+          .eq('course_id', courseId)
+          .order('updated_at', { ascending: false })
+          .limit(1);
+        
+        if (error) {
+          console.error('Error fetching last lesson:', error);
+        } else if (data && data.length > 0) {
+          console.log('Last accessed lesson:', data[0]);
+          setLastLessonId(data[0].lesson_id);
+          setLastChapterId(data[0].chapter_id);
+        }
+        
+        setLoadingLastLesson(false);
+      } catch (err) {
+        console.error('Error in fetchLastLesson:', err);
+        setLoadingLastLesson(false);
+      }
+    };
+    
+    fetchLastLesson();
+  }, [user, courseId]);
+  
   const handleStartLearning = async () => {
     if (!courseId) {
       toast.error("Không tìm thấy khóa học");
@@ -45,7 +81,6 @@ const StartLearningPage = () => {
       console.log("Starting course:", courseId);
       
       if (!enrolled) {
-        // Enroll in the course first
         console.log("Not enrolled yet, enrolling now...");
         const enrollResult = await enrollInCourse();
         if (!enrollResult) {
@@ -55,7 +90,12 @@ const StartLearningPage = () => {
         console.log("Enrollment successful");
       }
       
-      // Find the first chapter and lesson to start with
+      if (lastLessonId && lastChapterId) {
+        console.log("Continuing from last lesson:", lastLessonId);
+        navigate(`/course/${courseId}/chapter/${lastChapterId}/lesson/${lastLessonId}`);
+        return;
+      }
+      
       if (courseData?.chapters?.length > 0) {
         const firstChapter = courseData.chapters[0];
         console.log("First chapter:", firstChapter.id, firstChapter.title);
@@ -64,7 +104,6 @@ const StartLearningPage = () => {
           const firstLesson = firstChapter.lessons[0];
           console.log("First lesson:", firstLesson.id, firstLesson.title);
           
-          // Navigate to the lesson page
           const lessonUrl = `/course/${courseId}/chapter/${firstChapter.id}/lesson/${firstLesson.id}`;
           console.log("Navigating to:", lessonUrl);
           navigate(lessonUrl);
@@ -87,12 +126,16 @@ const StartLearningPage = () => {
     }
     
     try {
-      // Find the first incomplete lesson
+      if (lastLessonId && lastChapterId) {
+        console.log("Continuing from last lesson:", lastLessonId);
+        navigate(`/course/${courseId}/chapter/${lastChapterId}/lesson/${lastLessonId}`);
+        return;
+      }
+      
       let foundIncompleteLesson = false;
       
       for (const chapter of courseData?.chapters || []) {
         for (const lesson of chapter.lessons) {
-          // Check if this lesson is not completed yet
           if (!lesson.completed) {
             console.log("Continuing with lesson:", lesson.id, lesson.title);
             navigate(`/course/${courseId}/chapter/${chapter.id}/lesson/${lesson.id}`);
@@ -103,7 +146,6 @@ const StartLearningPage = () => {
         if (foundIncompleteLesson) break;
       }
       
-      // If all lessons are completed, start from the beginning
       if (!foundIncompleteLesson && courseData?.chapters?.length > 0) {
         const firstChapter = courseData.chapters[0];
         if (firstChapter.lessons && firstChapter.lessons.length > 0) {
@@ -165,30 +207,30 @@ const StartLearningPage = () => {
             <Card className="mb-8">
               <CardHeader>
                 <CardTitle>Tổng quan khóa học</CardTitle>
-                <CardDescription>{courseData.description}</CardDescription>
+                <CardDescription>{courseData?.description}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-muted/50 p-4 rounded-lg flex flex-col items-center justify-center text-center">
                     <Clock className="h-6 w-6 text-primary mb-2" />
                     <div className="text-sm font-medium">Thời lượng</div>
-                    <div className="text-xs text-muted-foreground">{courseData.duration}</div>
+                    <div className="text-xs text-muted-foreground">{courseData?.duration}</div>
                   </div>
                   <div className="bg-muted/50 p-4 rounded-lg flex flex-col items-center justify-center text-center">
                     <Zap className="h-6 w-6 text-primary mb-2" />
                     <div className="text-sm font-medium">Cấp độ</div>
-                    <div className="text-xs text-muted-foreground">{courseData.level}</div>
+                    <div className="text-xs text-muted-foreground">{courseData?.level}</div>
                   </div>
                   <div className="bg-muted/50 p-4 rounded-lg flex flex-col items-center justify-center text-center">
                     <BookOpen className="h-6 w-6 text-primary mb-2" />
                     <div className="text-sm font-medium">Chương</div>
-                    <div className="text-xs text-muted-foreground">{courseData.chapters?.length || 0} chương học</div>
+                    <div className="text-xs text-muted-foreground">{courseData?.chapters?.length || 0} chương học</div>
                   </div>
                   <div className="bg-muted/50 p-4 rounded-lg flex flex-col items-center justify-center text-center">
                     <FileText className="h-6 w-6 text-primary mb-2" />
                     <div className="text-sm font-medium">Bài học</div>
                     <div className="text-xs text-muted-foreground">
-                      {courseData.chapters?.reduce((sum, chapter) => sum + chapter.lessons.length, 0) || 0} bài
+                      {courseData?.chapters?.reduce((sum, chapter) => sum + chapter.lessons.length, 0) || 0} bài
                     </div>
                   </div>
                 </div>
@@ -196,7 +238,7 @@ const StartLearningPage = () => {
                 <div>
                   <h3 className="text-lg font-medium mb-3">Bạn sẽ học được</h3>
                   <ul className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4">
-                    {(courseData.objectives || []).map((objective, index) => (
+                    {(courseData?.objectives || []).map((objective, index) => (
                       <li key={index} className="flex items-start">
                         <CheckCircle className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
                         <span className="text-sm">{objective}</span>
@@ -208,7 +250,7 @@ const StartLearningPage = () => {
                 <Alert>
                   <Lightbulb className="h-4 w-4 text-primary" />
                   <AlertDescription>
-                    Khóa học này được thiết kế để giúp bạn học theo tốc độ của riêng mình. Bạn có thể tạm dừng và tiếp tục bất cứ lúc nào.
+                    Khóa học n��y được thiết kế để giúp bạn học theo tốc độ của riêng mình. Bạn có thể tạm dừng và tiếp tục bất cứ lúc nào.
                   </AlertDescription>
                 </Alert>
               </CardContent>
@@ -336,9 +378,11 @@ const StartLearningPage = () => {
                   {enrolled ? (
                     <Button 
                       className="w-full mb-3"
-                      onClick={progress > 0 ? handleContinueLearning : handleStartLearning}
+                      onClick={lastLessonId ? handleContinueLearning : handleStartLearning}
+                      disabled={loadingLastLesson}
                     >
-                      {progress > 0 ? 'Tiếp tục học' : 'Bắt đầu học'}
+                      {loadingLastLesson ? 'Đang tải...' : 
+                        lastLessonId ? 'Tiếp tục học' : 'Bắt đầu học'}
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   ) : (
@@ -352,14 +396,25 @@ const StartLearningPage = () => {
                   )}
                   
                   {enrolled && (
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => navigate(`/course/${courseId}/test`)}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Bài kiểm tra tổng quát
-                    </Button>
+                    <>
+                      <Button 
+                        variant="outline" 
+                        className="w-full mb-3"
+                        onClick={() => navigate(`/course/${courseId}/test`)}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Bài kiểm tra tổng quát
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => navigate(`/course/${courseId}/test-history`)}
+                      >
+                        <History className="h-4 w-4 mr-2" />
+                        Lịch sử kiểm tra
+                      </Button>
+                    </>
                   )}
                   
                   <Separator className="my-6" />

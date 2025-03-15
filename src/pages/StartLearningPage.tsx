@@ -59,8 +59,12 @@ const StartLearningPage = () => {
         } else if (data && data.length > 0) {
           console.log('Last accessed lesson:', data[0]);
           
-          // Get the chapter_id for this lesson if it's not in the progress record
-          if (!data[0].chapter_id) {
+          if (data[0].chapter_id) {
+            // If chapter_id is available in the data, use it
+            setLastLessonId(data[0].lesson_id);
+            setLastChapterId(data[0].chapter_id);
+          } else {
+            // If chapter_id is not available, fetch it from the lessons table
             const { data: lessonData, error: lessonError } = await supabase
               .from('lessons')
               .select('chapter_id')
@@ -71,9 +75,6 @@ const StartLearningPage = () => {
               setLastLessonId(data[0].lesson_id);
               setLastChapterId(lessonData.chapter_id);
             }
-          } else {
-            setLastLessonId(data[0].lesson_id);
-            setLastChapterId(data[0].chapter_id);
           }
         }
         
@@ -266,7 +267,7 @@ const StartLearningPage = () => {
                 <Alert>
                   <Lightbulb className="h-4 w-4 text-primary" />
                   <AlertDescription>
-                    Khóa học n��y được thiết kế để giúp bạn học theo tốc độ của riêng mình. Bạn có thể tạm dừng và tiếp tục bất cứ lúc nào.
+                    Khóa học này được thiết kế để giúp bạn học theo tốc độ của riêng mình. Bạn có thể tạm dừng và tiếp tục bất cứ lúc nào.
                   </AlertDescription>
                 </Alert>
               </CardContent>

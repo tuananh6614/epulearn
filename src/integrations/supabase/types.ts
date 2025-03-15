@@ -404,6 +404,7 @@ export type Database = {
       }
       user_lesson_progress: {
         Row: {
+          chapter_id: string | null
           completed: boolean
           completed_at: string | null
           course_id: string
@@ -415,6 +416,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          chapter_id?: string | null
           completed?: boolean
           completed_at?: string | null
           course_id: string
@@ -426,6 +428,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          chapter_id?: string | null
           completed?: boolean
           completed_at?: string | null
           course_id?: string
@@ -437,6 +440,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_lesson_progress_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_lesson_progress_course_id_fkey"
             columns: ["course_id"]

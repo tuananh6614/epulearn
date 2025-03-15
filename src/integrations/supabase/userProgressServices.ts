@@ -53,6 +53,7 @@ export const saveLessonProgress = async (
   userId: string,
   courseId: string,
   lessonId: string,
+  chapterId: string, // Added chapterId parameter
   position: any, // Could be time position for video, or scroll position, etc.
   completed: boolean = false
 ) => {
@@ -64,6 +65,7 @@ export const saveLessonProgress = async (
         user_id: userId,
         lesson_id: lessonId,
         course_id: courseId,
+        chapter_id: chapterId, // Save the chapter_id
         completed,
         last_position: JSON.stringify(position),
         completed_at: completed ? new Date().toISOString() : null,

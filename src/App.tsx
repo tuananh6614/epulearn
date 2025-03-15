@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +22,8 @@ const Certification = lazy(() => import("./pages/Certification"));
 const VipCourses = lazy(() => import("./pages/VipCourses"));
 const ChapterTestPage = lazy(() => import("./pages/ChapterTestPage"));
 const CourseTest = lazy(() => import("./pages/CourseTest"));
+const GeneralTestPage = lazy(() => import("./pages/GeneralTestPage"));
+const StartLearningPage = lazy(() => import("./pages/StartLearningPage"));
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -81,6 +84,13 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
+                {/* Start learning page */}
+                <Route path="/course/:courseId/start" element={
+                  <ProtectedRoute>
+                    <StartLearningPage />
+                  </ProtectedRoute>
+                } />
+                
                 {/* Course lessons */}
                 <Route path="/course/:courseId/chapter/:chapterId/lesson/:lessonId" element={
                   <ProtectedRoute>
@@ -97,8 +107,12 @@ function App() {
                   </ProtectedRoute>
                 } />
                 
-                {/* Course test route */}
-                <Route path="/course/:courseId/test" element={<CourseTest />} />
+                {/* Course test routes */}
+                <Route path="/course/:courseId/test" element={
+                  <ProtectedRoute>
+                    <GeneralTestPage />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Chapter test route with lessonId */}
                 <Route path="/course/:courseId/chapter/:chapterId/test/:lessonId" element={

@@ -80,11 +80,9 @@ const CourseDetail = () => {
           return;
         }
         
-        // Check if course is premium and requires VIP
         setIsVipRequired(courseData.is_premium);
         
         if (user) {
-          // Check enrollment
           const { data: enrollment, error } = await supabase
             .from('user_courses')
             .select('*')
@@ -99,7 +97,6 @@ const CourseDetail = () => {
             setProgress(enrollment?.progress_percentage || 0);
           }
           
-          // Check VIP status with the new function that returns an object
           const vipStatusResult = await checkVipAccess(user.id);
           setVipStatus(vipStatusResult);
         }
@@ -159,7 +156,6 @@ const CourseDetail = () => {
     
     if (!courseId) return;
     
-    // Check if course requires VIP
     if (isVipRequired && !vipStatus.isVip) {
       toast.error("Bạn cần đăng ký gói VIP để truy cập khóa học này");
       setShowVipModal(true);
@@ -190,30 +186,15 @@ const CourseDetail = () => {
   };
   
   const startCourse = () => {
-    if (!course || !course.chapters[0]?.lessons[0]) return;
+    if (!course || !courseId) return;
     
-    navigate(`/course/${courseId}/chapter/${course.chapters[0].id}/lesson/${course.chapters[0].lessons[0].id}`);
+    navigate(`/course/${courseId}/start`);
   };
   
   const continueCourse = () => {
-    if (!course) return;
+    if (!course || !courseId) return;
     
-    let foundNextLesson = false;
-    
-    for (const chapter of course.chapters) {
-      for (const lesson of chapter.lessons) {
-        if (!lesson.completed) {
-          navigate(`/course/${courseId}/chapter/${chapter.id}/lesson/${lesson.id}`);
-          foundNextLesson = true;
-          break;
-        }
-      }
-      if (foundNextLesson) break;
-    }
-    
-    if (!foundNextLesson && course.chapters[0]?.lessons[0]) {
-      navigate(`/course/${courseId}/chapter/${course.chapters[0].id}/lesson/${course.chapters[0].lessons[0].id}`);
-    }
+    navigate(`/course/${courseId}/start`);
   };
   
   const getRandomColor = (id: string) => {
@@ -277,7 +258,6 @@ const CourseDetail = () => {
       <Navbar />
       
       <div className="container mx-auto px-4 pt-24 pb-10">
-        {/* Only show VIP alert for non-VIP users */}
         {isVipRequired && !vipStatus.isVip && (
           <Alert variant="warning" className="mb-8">
             <Crown className="h-4 w-4" />
@@ -491,7 +471,7 @@ const CourseDetail = () => {
                         {progress > 0 ? 'Tiếp tục học' : 'Bắt đầu học'}
                       </Button>
                       
-                      <Link to={`/course-test/${courseId}`}>
+                      <Link to={`/course/${courseId}/test`}>
                         <Button 
                           variant="outline" 
                           className="w-full"

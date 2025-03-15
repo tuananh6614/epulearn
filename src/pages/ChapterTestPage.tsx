@@ -1,111 +1,114 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import ChapterTest from '@/components/ChapterTest';
-import { Button } from "@/components/ui/button";
-import { FileText, ArrowLeft } from 'lucide-react';
+import { fetchTestQuestions, saveTestResult } from '@/integrations/supabase/testServices';
+import { ChapterTest } from '@/components/ChapterTest';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
-const ChapterTestPage = () => {
-  const { chapterId, courseId } = useParams<{ chapterId: string; courseId: string }>();
-  const navigate = useNavigate();
-  const { currentUser } = useAuth();
-  
-  const handleTestComplete = (score: number, total: number) => {
-    const percentageScore = Math.round((score / total) * 100);
-    
-    if (percentageScore >= 70) {
-      toast.success("Chúc mừng! Bạn đã hoàn thành bài kiểm tra");
-    } else {
-      toast.error("Bạn cần ôn tập lại và làm lại bài kiểm tra");
-    }
-  };
-  
-  const handleGoBack = () => {
-    if (courseId) {
-      navigate(`/course/${courseId}`);
-    } else {
-      navigate('/courses');
-    }
-  };
-  
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-grow flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto p-6">
-            <FileText className="h-16 w-16 text-primary mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Bạn cần đăng nhập</h1>
-            <p className="text-muted-foreground mb-6">
-              Vui lòng đăng nhập để làm bài kiểm tra
-            </p>
-            <Button onClick={() => navigate('/login')}>
-              Đăng nhập
-            </Button>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-  
-  if (!chapterId || !courseId) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-grow flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto p-6">
-            <FileText className="h-16 w-16 text-primary mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-2">Không tìm thấy bài kiểm tra</h1>
-            <p className="text-muted-foreground mb-6">
-              Bài kiểm tra bạn đang tìm kiếm không tồn tại hoặc đã bị xóa
-            </p>
-            <Button onClick={() => navigate('/courses')}>
-              Xem danh sách khóa học
-            </Button>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+interface ChapterTestPageProps {}
 
+const ChapterTestPage: React.FC<ChapterTestPageProps> = () => {
+  const { user } = useAuth();
+  const { courseId, chapterId, lessonId } = useParams();
+  const navigate = useNavigate();
+  
+  const [loading, setLoading] = useState(true);
+  const [questions, setQuestions] = useState<any[]>([]);
+  
+  useEffect(() => {
+    if (!courseId || !chapterId) {
+      toast.error("Thông tin bài kiểm tra không hợp lệ");
+      navigate(`/courses`);
+      return;
+    }
+    
+    const loadQuestions = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch test questions from Supabase
+        const testQuestions = await fetchTestQuestions(chapterId);
+        
+        if (!testQuestions || testQuestions.length === 0) {
+          toast.error("Không tìm thấy câu hỏi cho bài kiểm tra này");
+          navigate(`/course/${courseId}`);
+          return;
+        }
+        
+        // Format questions for the test component
+        const formattedQuestions = testQuestions.map((q) => ({
+          id: q.id,
+          question: q.question,
+          options: Array.isArray(q.options) ? q.options : [],
+          answer: q.correct_answer
+        }));
+        
+        setQuestions(formattedQuestions);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading test questions:', error);
+        toast.error("Không thể tải câu hỏi kiểm tra");
+        setLoading(false);
+      }
+    };
+    
+    loadQuestions();
+  }, [courseId, chapterId, navigate]);
+  
+  const handleTestComplete = async (score: number, passed: boolean) => {
+    if (!user || !courseId || !chapterId) {
+      toast.error("Không thể lưu kết quả kiểm tra");
+      return;
+    }
+    
+    // Save the test result to Supabase
+    try {
+      const total = questions.length;
+      const result = await saveTestResult(
+        user.id,
+        courseId,
+        chapterId,
+        lessonId || '',
+        score,
+        total
+      );
+      
+      if (result.success) {
+        toast.success(`Bạn đã hoàn thành bài kiểm tra với kết quả ${score}/${total}`);
+        
+        // Navigate back to course detail
+        setTimeout(() => {
+          navigate(`/course/${courseId}`);
+        }, 2000);
+      } else {
+        toast.error("Không thể lưu kết quả kiểm tra");
+      }
+    } catch (error) {
+      console.error('Error saving test result:', error);
+      toast.error("Đã xảy ra lỗi khi lưu kết quả");
+    }
+  };
+  
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <main className="flex-grow pt-24 pb-16">
-        <div className="container mx-auto px-4">
-          <Button 
-            variant="ghost" 
-            className="mb-6 flex items-center gap-2" 
-            onClick={handleGoBack}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Quay lại khóa học
-          </Button>
-          
-          <div className="mb-8 text-center">
-            <div className="inline-flex items-center justify-center p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
-              <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h1 className="text-3xl font-bold">Bài Kiểm Tra Kiến Thức</h1>
-            <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-              Hoàn thành bài kiểm tra dưới đây để kiểm tra mức độ hiểu bài của bạn.
-              Bạn cần đạt tối thiểu 70% số câu đúng để vượt qua bài kiểm tra.
-            </p>
+      
+      <div className="container mx-auto px-4 pt-24 pb-16">
+        <h1 className="text-3xl font-bold mb-8 text-center">Bài kiểm tra kiến thức</h1>
+        
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
-          
+        ) : (
           <ChapterTest 
-            chapterId={chapterId} 
-            courseId={courseId}
-            onComplete={handleTestComplete}
+            questions={questions} 
+            onComplete={handleTestComplete} 
           />
-        </div>
-      </main>
-      <Footer />
+        )}
+      </div>
     </div>
   );
 };

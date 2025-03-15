@@ -50,7 +50,13 @@ const ChapterTestPage = () => {
     fetchNextChapter();
   }, [courseId, chapterId]);
 
-  const handleTestComplete = (passed: boolean) => {
+  // Update this function to accept score and total parameters
+  const handleTestComplete = (score: number, total: number) => {
+    // Calculate if the test is passed (typically 70% or more is passing)
+    const passPercentage = 70;
+    const scorePercentage = (score / total) * 100;
+    const passed = scorePercentage >= passPercentage;
+    
     setTestCompleted(true);
     setTestPassed(passed);
   };

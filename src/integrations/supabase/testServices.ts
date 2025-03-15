@@ -1,9 +1,10 @@
 
 import { supabase } from './client';
 import { updateCourseProgress } from './userProgressServices';
+import { TestQuestion } from '@/components/ChapterTest';
 
 // Optimized helper function for fetching test questions
-export const fetchTestQuestions = async (chapterId: string) => {
+export const fetchTestQuestions = async (chapterId: string): Promise<TestQuestion[]> => {
   try {
     console.log(`Fetching test questions for chapter: ${chapterId}`);
     const { data, error } = await supabase
@@ -18,7 +19,16 @@ export const fetchTestQuestions = async (chapterId: string) => {
     }
     
     console.log(`Found ${data?.length || 0} test questions for chapter ${chapterId}`);
-    return data || [];
+    
+    // Transform the data to match the TestQuestion interface
+    const transformedQuestions: TestQuestion[] = data.map(question => ({
+      id: question.id,
+      question: question.question,
+      options: Array.isArray(question.options) ? question.options : [],
+      answer: question.correct_answer
+    }));
+    
+    return transformedQuestions;
   } catch (error) {
     console.error('Error in fetchTestQuestions:', error);
     return [];

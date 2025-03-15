@@ -1,178 +1,118 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Navbar from '@/components/Navbar';
-import { fetchTestQuestions, saveTestResult } from '@/integrations/supabase/testServices';
-import ChapterTest, { TestQuestion } from '@/components/ChapterTest'; 
 import { useAuth } from '@/context/AuthContext';
-import { toast } from 'sonner';
+import Navbar from '@/components/Navbar';
+import ChapterTest from '@/components/ChapterTest';
 import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import GreenButton from '@/components/GreenButton';
 
-const ChapterTestPage: React.FC = () => {
-  const { user } = useAuth();
-  const { courseId, chapterId, lessonId } = useParams<{ courseId: string; chapterId: string; lessonId: string }>();
+const ChapterTestPage = () => {
+  const { courseId, chapterId, lessonId } = useParams();
   const navigate = useNavigate();
-  
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState<TestQuestion[]>([]);
-  const [highestScore, setHighestScore] = useState<number | null>(null);
-  
+  const [error, setError] = useState<string | null>(null);
+  const [testCompleted, setTestCompleted] = useState(false);
+  const [testPassed, setTestPassed] = useState(false);
+  const [nextChapterId, setNextChapterId] = useState<string | null>(null);
+
   useEffect(() => {
-    if (!courseId || !chapterId) {
-      toast.error("Thông tin bài kiểm tra không hợp lệ");
-      navigate(`/courses`);
-      return;
-    }
-    
-    const loadQuestions = async () => {
+    const fetchNextChapter = async () => {
+      if (!courseId || !chapterId) return;
+      
       try {
-        setLoading(true);
+        // Find the current chapter's index
+        const { data: chapters, error: chaptersError } = await supabase
+          .from('chapters')
+          .select('id, order_index')
+          .eq('course_id', courseId)
+          .order('order_index', { ascending: true });
+          
+        if (chaptersError) throw chaptersError;
         
-        // Fetch test questions from Supabase
-        const testQuestions = await fetchTestQuestions(chapterId);
-        
-        if (!testQuestions || testQuestions.length === 0) {
-          toast.error("Không tìm thấy câu hỏi cho bài kiểm tra này");
-          navigate(`/course/${courseId}`);
-          return;
-        }
-        
-        // Format questions for the test component
-        // Make sure options are converted to string[] explicitly
-        const formattedQuestions: TestQuestion[] = testQuestions.map((q) => ({
-          id: q.id,
-          question: q.question,
-          options: Array.isArray(q.options) 
-            ? q.options.map(option => String(option)) 
-            : [],
-          answer: q.correct_answer
-        }));
-        
-        setQuestions(formattedQuestions);
-        
-        // Fetch highest score for this test if user is logged in
-        if (user && chapterId) {
-          try {
-            const { data, error } = await supabase
-              .from('user_test_results')
-              .select('score')
-              .eq('user_id', user.id)
-              .eq('chapter_id', chapterId)
-              .order('score', { ascending: false })
-              .limit(1);
-              
-            if (error) {
-              console.error('Error fetching highest score:', error);
-            } else if (data && data.length > 0) {
-              setHighestScore(data[0].score);
-            }
-          } catch (err) {
-            console.error('Error fetching highest score:', err);
+        if (chapters && chapters.length > 0) {
+          const currentChapterIndex = chapters.findIndex(chapter => chapter.id === chapterId);
+          if (currentChapterIndex !== -1 && currentChapterIndex < chapters.length - 1) {
+            // Get the next chapter
+            setNextChapterId(chapters[currentChapterIndex + 1].id);
           }
         }
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading test questions:', error);
-        toast.error("Không thể tải câu hỏi kiểm tra");
+      } catch (err) {
+        console.error('Error fetching next chapter:', err);
+      } finally {
         setLoading(false);
       }
     };
     
-    loadQuestions();
-  }, [courseId, chapterId, navigate, user]);
-  
-  const handleTestComplete = async (score: number, total: number) => {
-    if (!user || !courseId || !chapterId) {
-      toast.error("Không thể lưu kết quả kiểm tra");
-      return;
-    }
-    
-    // Calculate if passed (70% or more)
-    const percentage = Math.round((score / total) * 100);
-    const passed = percentage >= 70;
-    
-    // Check if it's a new high score
-    const isNewHighScore = highestScore === null || percentage > highestScore;
-    if (isNewHighScore) {
-      setHighestScore(percentage);
-    }
-    
-    // Save user answers (simply dummy data for now)
-    const answers = {
-      score: score,
-      total: total,
-      percentage: percentage,
-      timestamp: new Date().toISOString()
-    };
-    
-    // Save the test result to Supabase
-    try {
-      console.log(`Saving test result: ${score}/${total}, passed: ${passed}`);
-      
-      const result = await saveTestResult(
-        user.id,
-        courseId,
-        chapterId,
-        lessonId || '',
-        score,
-        total,
-        answers
-      );
-      
-      // Also save to user_test_results for history tracking
-      const { error: historyError } = await supabase
-        .from('user_test_results')
-        .insert({
-          user_id: user.id,
-          course_id: courseId,
-          chapter_id: chapterId,
-          score: percentage,
-          passed: passed,
-          answers: answers,
-          created_at: new Date().toISOString()
-        });
-        
-      if (historyError) {
-        console.error('Error saving test history:', historyError);
-      }
-      
-      if (result.success) {
-        toast.success(`Bạn đã hoàn thành bài kiểm tra với kết quả ${score}/${total}`);
-        
-        if (isNewHighScore && percentage >= 70) {
-          toast.success("Chúc mừng! Đây là điểm cao nhất của bạn cho bài kiểm tra này!");
-        }
-        
-        // Navigate back to course detail
-        setTimeout(() => {
-          navigate(`/course/${courseId}`);
-        }, 2000);
-      } else {
-        toast.error("Không thể lưu kết quả kiểm tra");
-      }
-    } catch (error) {
-      console.error('Error saving test result:', error);
-      toast.error("Đã xảy ra lỗi khi lưu kết quả");
+    fetchNextChapter();
+  }, [courseId, chapterId]);
+
+  const handleTestComplete = (passed: boolean) => {
+    setTestCompleted(true);
+    setTestPassed(passed);
+  };
+
+  const handleContinue = () => {
+    if (nextChapterId) {
+      // Navigate to the next chapter
+      navigate(`/course/${courseId}/chapter/${nextChapterId}`);
+    } else {
+      // If there's no next chapter, go back to the course page
+      navigate(`/course/${courseId}/start`);
     }
   };
-  
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="container max-w-4xl py-8 flex items-center justify-center h-[80vh]">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Navbar />
-      
-      <div className="container mx-auto px-4 pt-24 pb-16">
-        <h1 className="text-3xl font-bold mb-8 text-center">Bài kiểm tra kiến thức</h1>
-        
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="container max-w-4xl py-8">
+        {testCompleted ? (
+          <div className="text-center py-16">
+            <h1 className="text-3xl font-bold mb-4">
+              {testPassed ? "Chúc mừng! Bạn đã hoàn thành bài kiểm tra" : "Bạn chưa vượt qua bài kiểm tra"}
+            </h1>
+            <p className="text-xl mb-8">
+              {testPassed 
+                ? "Bạn đã vượt qua bài kiểm tra này và sẵn sàng cho chương tiếp theo!" 
+                : "Đừng lo lắng, bạn có thể học lại và thử lại bài kiểm tra."}
+            </p>
+            
+            <div className="flex justify-center gap-4">
+              <Button variant="outline" onClick={() => navigate(`/course/${courseId}/start`)}>
+                Về trang khóa học
+              </Button>
+              
+              {testPassed && nextChapterId ? (
+                <GreenButton onClick={handleContinue}>
+                  Tiếp tục học chương tiếp theo
+                </GreenButton>
+              ) : (
+                <Button onClick={() => window.location.reload()}>
+                  Làm lại bài kiểm tra
+                </Button>
+              )}
+            </div>
           </div>
         ) : (
           <ChapterTest 
-            questions={questions} 
+            courseId={courseId || ''} 
+            chapterId={chapterId || ''} 
+            lessonId={lessonId}
             onComplete={handleTestComplete}
-            chapterId={chapterId || ''}
           />
         )}
       </div>

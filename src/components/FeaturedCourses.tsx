@@ -33,8 +33,18 @@ const FeaturedCourses = () => {
         throw new Error('Không thể kết nối đến máy chủ dữ liệu. Vui lòng thử lại sau.');
       }
       
-      // Truy vấn dữ liệu khóa học
-      const coursesData = await fetchFeaturedCourses();
+      // Truy vấn dữ liệu khóa học - giới hạn chỉ lấy 4 khóa học
+      const { data: coursesData, error: coursesError } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('is_featured', true)
+        .limit(4)
+        .order('created_at', { ascending: false });
+      
+      if (coursesError) {
+        throw coursesError;
+      }
+      
       console.log('Dữ liệu khóa học nổi bật:', coursesData);
       
       if (!coursesData || coursesData.length === 0) {
@@ -89,7 +99,7 @@ const FeaturedCourses = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-baseline mb-12">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Khóa Học Nổi Bật</h2>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Khóa Học</h2>
               <p className="text-gray-700 dark:text-gray-300">Đang tải khóa học...</p>
             </div>
           </div>
@@ -109,7 +119,7 @@ const FeaturedCourses = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-baseline mb-12">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Khóa Học Nổi Bật</h2>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Khóa Học</h2>
               <p className="text-gray-700 dark:text-gray-300">Không thể tải khóa học. {error}</p>
             </div>
           </div>
@@ -131,9 +141,9 @@ const FeaturedCourses = () => {
       <div className="container mx-auto px-4 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-baseline mb-12">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Khóa Học Nổi Bật</h2>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Khóa Học</h2>
             <p className="text-gray-700 dark:text-gray-300 max-w-2xl">
-              Khám phá các khóa học lập trình phổ biến nhất của chúng tôi và bắt đầu hành trình học code ngay hôm nay.
+              Khám phá các khóa học lập trình phổ biến của chúng tôi và bắt đầu hành trình học code ngay hôm nay.
             </p>
           </div>
           <Button variant="link" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover-lift" asChild>
@@ -162,7 +172,7 @@ const FeaturedCourses = () => {
               />
             ))
           ) : (
-            <p className="col-span-4 text-center text-gray-500 dark:text-gray-400 py-10">Không có khóa học nổi bật nào. Vui lòng quay lại sau.</p>
+            <p className="col-span-4 text-center text-gray-500 dark:text-gray-400 py-10">Không có khóa học nào. Vui lòng quay lại sau.</p>
           )}
         </div>
       </div>

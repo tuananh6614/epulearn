@@ -25,6 +25,7 @@ const CourseTest = lazy(() => import("./pages/CourseTest"));
 const GeneralTestPage = lazy(() => import("./pages/GeneralTestPage"));
 const StartLearningPage = lazy(() => import("./pages/StartLearningPage"));
 const TestHistoryPage = lazy(() => import("./pages/TestHistoryPage"));
+const ChapterContent = lazy(() => import("./pages/ChapterContent")); // Import the new page
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -100,6 +101,13 @@ function App() {
                 } />
                 <Route path="/lesson-demo" element={<LessonDemo />} />
                 <Route path="/demo" element={<LessonDemo />} />
+                
+                {/* New Chapter Content Page */}
+                <Route path="/course/:courseId/chapter/:chapterId" element={
+                  <ProtectedRoute>
+                    <ChapterContent />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Chapter test route */}
                 <Route path="/course/:courseId/chapter/:chapterId/test" element={

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,74 +9,37 @@ import { AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { supabase, fetchTestQuestions, saveTestResult } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase";
 import { useAuth } from '@/context/AuthContext';
 
 interface TestQuestion {
   id: string;
   question: string;
   options: string[];
-  correct_answer: number;
+  answer: number;
 }
 
 interface ChapterTestProps {
-  chapterId: string;
-  courseId: string;
-  onComplete?: (score: number, total: number) => void;
+  questions: TestQuestion[];
+  onComplete: (score: number, total: number) => void;
 }
 
-const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComplete }) => {
-  const [questions, setQuestions] = useState<TestQuestion[]>([]);
+const ChapterTest: React.FC<ChapterTestProps> = ({ questions, onComplete }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [score, setScore] = useState(0);
   const [testCompleted, setTestCompleted] = useState(false);
   const { user } = useAuth();
 
-  React.useEffect(() => {
-    const fetchQuestions = async () => {
-      try {
-        setIsLoading(true);
-        
-        console.log('Fetching test questions for chapter:', chapterId);
-        const data = await fetchTestQuestions(chapterId);
-        console.log('Received test questions:', data);
-        
-        if (data && data.length > 0) {
-          const transformedQuestions: TestQuestion[] = data.map(q => ({
-            id: q.id,
-            question: q.question,
-            options: Array.isArray(q.options) ? q.options : JSON.parse(q.options as string),
-            correct_answer: q.correct_answer
-          }));
-          
-          console.log('Transformed questions:', transformedQuestions);
-          setQuestions(transformedQuestions);
-        } else {
-          console.warn('No test questions found for chapter:', chapterId);
-          toast.error("Không tìm thấy bài kiểm tra cho chương này");
-        }
-      } catch (error) {
-        console.error("Error fetching test questions:", error);
-        toast.error("Không thể tải bài kiểm tra. Vui lòng thử lại sau.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchQuestions();
-  }, [chapterId]);
-  
   const handleSelectAnswer = (value: string) => {
     setSelectedAnswer(parseInt(value));
   };
   
   const handleNextQuestion = () => {
     const currentQ = questions[currentQuestion];
-    const isAnswerCorrect = selectedAnswer === currentQ.correct_answer;
+    const isAnswerCorrect = selectedAnswer === currentQ.answer;
     
     if (isAnswerCorrect) {
       setScore(prev => prev + 1);
@@ -92,45 +56,11 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
       } else {
         setTestCompleted(true);
         
-        if (user) {
-          updateTestProgress();
-        }
-        
         if (onComplete) {
           onComplete(score + (isAnswerCorrect ? 1 : 0), questions.length);
         }
       }
     }, 1500);
-  };
-  
-  const updateTestProgress = async () => {
-    try {
-      const finalScore = score + (isCorrect ? 1 : 0);
-      
-      if (user) {
-        const { data: lessonData } = await supabase
-          .from('lessons')
-          .select('id')
-          .eq('chapter_id', chapterId)
-          .eq('type', 'test')
-          .limit(1);
-          
-        if (lessonData && lessonData.length > 0) {
-          const testLessonId = lessonData[0].id;
-          
-          await saveTestResult(
-            user.id,
-            courseId,
-            chapterId,
-            testLessonId,
-            finalScore,
-            questions.length
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error updating test progress:", error);
-    }
   };
   
   const restartTest = () => {
@@ -140,26 +70,6 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
     setScore(0);
     setTestCompleted(false);
   };
-  
-  if (isLoading) {
-    return (
-      <Card className="w-full max-w-3xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-center">Đang tải bài kiểm tra...</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-md"></div>
-            <div className="space-y-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-md"></div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
   
   if (questions.length === 0) {
     return (
@@ -266,7 +176,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
               key={index} 
               className={`flex items-center space-x-2 p-3 rounded-md border ${
                 showResult 
-                  ? index === currentQ.correct_answer 
+                  ? index === currentQ.answer 
                     ? "border-green-500 bg-green-50 dark:bg-green-900/20" 
                     : selectedAnswer === index 
                       ? "border-red-500 bg-red-50 dark:bg-red-900/20"
@@ -278,9 +188,9 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
                 value={index.toString()} 
                 id={`option-${index}`} 
                 className={
-                  showResult && index === currentQ.correct_answer
+                  showResult && index === currentQ.answer
                     ? "text-green-500 border-green-500"
-                    : showResult && selectedAnswer === index && selectedAnswer !== currentQ.correct_answer
+                    : showResult && selectedAnswer === index && selectedAnswer !== currentQ.answer
                     ? "text-red-500 border-red-500"
                     : ""
                 }
@@ -288,10 +198,10 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
               <Label htmlFor={`option-${index}`} className="flex-grow cursor-pointer">
                 {option}
               </Label>
-              {showResult && index === currentQ.correct_answer && (
+              {showResult && index === currentQ.answer && (
                 <CheckCircle className="h-4 w-4 text-green-500" />
               )}
-              {showResult && selectedAnswer === index && selectedAnswer !== currentQ.correct_answer && (
+              {showResult && selectedAnswer === index && selectedAnswer !== currentQ.answer && (
                 <XCircle className="h-4 w-4 text-red-500" />
               )}
             </div>
@@ -309,7 +219,7 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ chapterId, courseId, onComple
             <p className="text-sm mt-1">
               {isCorrect 
                 ? "Bạn đã trả lời đúng. Chuyển sang câu tiếp theo..." 
-                : `Đáp án đúng là: ${currentQ.options[currentQ.correct_answer]}`}
+                : `Đáp án đúng là: ${currentQ.options[currentQ.answer]}`}
             </p>
           </div>
         )}

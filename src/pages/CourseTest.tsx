@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from "@/components/ui/button";
-import { fetchCourseTests, supabase } from '@/integrations/supabase/client';
+import { fetchCourseTests, supabase } from '@/integrations/supabase';
 import CourseTestForm from '@/components/CourseTestForm';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';

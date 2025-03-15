@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from '@/context/AuthContext';
+import { fetchTestQuestions } from '@/integrations/supabase/testServices';
 
 export interface TestQuestion {
   id: string;
@@ -20,12 +20,20 @@ export interface TestQuestion {
 }
 
 export interface ChapterTestProps {
-  questions: TestQuestion[];
+  questions?: TestQuestion[];
   onComplete: (score: number, total: number) => void;
   chapterId: string;
+  courseId: string;
+  lessonId?: string;
 }
 
-const ChapterTest: React.FC<ChapterTestProps> = ({ questions, onComplete, chapterId }) => {
+const ChapterTest: React.FC<ChapterTestProps> = ({ 
+  questions: initialQuestions, 
+  onComplete, 
+  chapterId,
+  courseId,
+  lessonId 
+}) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -34,9 +42,34 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ questions, onComplete, chapte
   const [testCompleted, setTestCompleted] = useState(false);
   const [highestScore, setHighestScore] = useState<number | null>(null);
   const [previousAttempts, setPreviousAttempts] = useState<number>(0);
+  const [questions, setQuestions] = useState<TestQuestion[]>(initialQuestions || []);
+  const [loading, setLoading] = useState(!initialQuestions);
   const { user } = useAuth();
 
-  // Fetch highest score on component mount
+  useEffect(() => {
+    const loadQuestions = async () => {
+      if (initialQuestions && initialQuestions.length > 0) {
+        setQuestions(initialQuestions);
+        return;
+      }
+      
+      if (!chapterId) return;
+      
+      try {
+        setLoading(true);
+        const testQuestions = await fetchTestQuestions(chapterId);
+        setQuestions(testQuestions);
+      } catch (error) {
+        console.error('Error loading test questions:', error);
+        toast.error('Không thể tải câu hỏi kiểm tra');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadQuestions();
+  }, [chapterId, initialQuestions]);
+
   useEffect(() => {
     const fetchTestHistory = async () => {
       if (!user || !chapterId) return;
@@ -116,6 +149,19 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ questions, onComplete, chapte
     setScore(0);
     setTestCompleted(false);
   };
+  
+  if (loading) {
+    return (
+      <Card className="w-full max-w-3xl mx-auto">
+        <CardHeader>
+          <CardTitle className="text-center">Đang tải bài kiểm tra...</CardTitle>
+        </CardHeader>
+        <CardContent className="flex justify-center">
+          <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+        </CardContent>
+      </Card>
+    );
+  }
   
   if (questions.length === 0) {
     return (

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
@@ -42,7 +43,7 @@ const Navbar = () => {
     <header className={`fixed top-0 left-0 right-0 z-50 w-full border-b transition-all duration-300 ${
       scrolled ? "bg-white/90 dark:bg-gray-900/90 shadow-md backdrop-blur-md" : "bg-transparent dark:bg-gray-900/90"
     }`}>
-      <div className="container mx-auto flex h-16 items-center justify-between">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2 font-bold text-xl">
             <div className="flex items-center justify-center w-10 h-10 rounded-md bg-gradient-to-r from-green-500 to-blue-500 shadow-inner">
@@ -52,20 +53,20 @@ const Navbar = () => {
           </Link>
         </div>
         
-        <nav className="hidden md:flex items-center gap-8">
-          <Link to="/" className="nav-link text-sm font-medium flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-green-500 dark:hover:text-green-400 transition-colors">
+        <nav className="hidden md:flex items-center gap-6">
+          <Link to="/" className="nav-link text-sm font-medium flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-green-500 dark:hover:text-green-400 transition-colors whitespace-nowrap">
             <Home className="h-4 w-4" />
             Trang Chủ
           </Link>
-          <Link to="/courses" className="nav-link text-sm font-medium flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-green-500 dark:hover:text-green-400 transition-colors">
+          <Link to="/courses" className="nav-link text-sm font-medium flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-green-500 dark:hover:text-green-400 transition-colors whitespace-nowrap">
             <BookOpen className="h-4 w-4" />
             Khóa Học
           </Link>
-          <Link to="/vip-courses" className="nav-link text-sm font-medium flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors">
+          <Link to="/vip-courses" className="nav-link text-sm font-medium flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors whitespace-nowrap">
             <Crown className="h-4 w-4" />
             Khóa Học VIP
           </Link>
-          <Link to="/certification" className="nav-link text-sm font-medium flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-green-500 dark:hover:text-green-400 transition-colors">
+          <Link to="/certification" className="nav-link text-sm font-medium flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-green-500 dark:hover:text-green-400 transition-colors whitespace-nowrap">
             <GraduationCap className="h-4 w-4" />
             Chứng Chỉ
           </Link>
@@ -81,7 +82,7 @@ const Navbar = () => {
                   <User className="h-4 w-4 text-green-600 dark:text-green-400" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-gray-800 shadow-md">
                 <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/profile')}>
@@ -117,7 +118,7 @@ const Navbar = () => {
       </div>
       
       <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''} md:hidden`}>
-        <nav className="flex flex-col items-center gap-8 py-8">
+        <nav className="flex flex-col items-center gap-8 py-8 mt-16">
           <Link to="/" className="text-lg font-medium flex items-center gap-2 text-gray-900 dark:text-white" onClick={() => setMobileMenuOpen(false)}>
             <Home className="h-5 w-5" />
             Trang Chủ

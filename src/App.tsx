@@ -86,8 +86,8 @@ function App() {
                     <UserProfile />
                   </ProtectedRoute>
                 } />
-                
-                {/* Start learning page */}
+                Start
+                {/*  learning page */}
                 <Route path="/course/:courseId/start" element={
                   <ProtectedRoute>
                     <StartLearningPage />

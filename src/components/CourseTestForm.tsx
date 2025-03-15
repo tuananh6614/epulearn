@@ -165,7 +165,7 @@ const CourseTestForm = ({ test, courseId, onComplete }: CourseTestFormProps) => 
   // If showing results, render the results screen
   if (showResults) {
     return (
-      <Card className="w-full">
+      <Card className="w-full pt-18">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 bg-primary/10 p-4 rounded-full w-16 h-16 flex items-center justify-center">
             <Award className="h-8 w-8 text-primary" />

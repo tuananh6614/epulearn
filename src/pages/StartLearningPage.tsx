@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -16,17 +15,56 @@ import { useCourseData } from '@/hooks/useCourseData';
 import { getCourseProgress } from '@/integrations/supabase/userProgressServices';
 import { fetchCourseTests } from '@/integrations/supabase/courseServices';
 
+// Định nghĩa các kiểu dữ liệu
+interface Lesson {
+  id: string;
+  title: string;
+  type?: string;
+  duration?: string;
+  content?: string;
+}
+
+interface Chapter {
+  id: string;
+  title: string;
+  lessons?: Lesson[];
+}
+
+interface Course {
+  id: string;
+  title: string;
+  duration: string;
+  chapters?: Chapter[];
+}
+
+interface LessonProgress {
+  id?: string;
+  user_id?: string;
+  lesson_id: string;
+  course_id?: string;
+  completed: boolean;
+  last_position?: string; // Có thể là JSON string
+}
+
+interface CourseTest {
+  id?: string;
+  course_id?: string;
+  passing_score?: number;
+  time_limit?: number;
+  questions?: { id: string; question: string }[];
+}
+
 const StartLearningPage: React.FC = () => {
-  const { courseId } = useParams();
+  const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
-  const [lessonProgress, setLessonProgress] = useState<Record<string, any>>({});
-  const [activeTab, setActiveTab] = useState('chapters');
-  const [courseTests, setCourseTests] = useState<any[]>([]);
+  const [lessonProgress, setLessonProgress] = useState<Record<string, LessonProgress>>({});
+  const [activeTab, setActiveTab] = useState<'chapters' | 'all-lessons' | 'tests'>('chapters');
+  const [courseTests, setCourseTests] = useState<CourseTest[]>([]);
   
-  const { courseData, userProgress, isEnrolled, error } = useCourseData(courseId);
+  const { courseData, userProgress, isEnrolled, error } = useCourseData(courseId as string);
   
   useEffect(() => {
     if (!courseId || !user) return;
@@ -45,8 +83,8 @@ const StartLearningPage: React.FC = () => {
         if (progressError) throw progressError;
         
         // Convert to a map for easier lookup
-        const progressMap: Record<string, any> = {};
-        progressData?.forEach(item => {
+        const progressMap: Record<string, LessonProgress> = {};
+        progressData?.forEach((item) => {
           progressMap[item.lesson_id] = item;
         });
         
@@ -112,7 +150,7 @@ const StartLearningPage: React.FC = () => {
   }
   
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pt-20">
       <Navbar />
       
       <div className="container max-w-6xl py-8">
@@ -132,7 +170,11 @@ const StartLearningPage: React.FC = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs 
+              value={activeTab} 
+              onValueChange={(value: 'chapters' | 'all-lessons' | 'tests') => setActiveTab(value)} 
+              className="w-full"
+            >
               <TabsList className="mb-6">
                 <TabsTrigger value="chapters">
                   <BookOpen className="h-4 w-4 mr-2" />

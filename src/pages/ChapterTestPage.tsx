@@ -83,9 +83,9 @@ const ChapterTestPage = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen ">
       <Navbar />
-      <div className="container max-w-4xl py-8">
+      <div className="container max-w-4xl py-8 ">
         {testCompleted ? (
           <div className="text-center py-16">
             <h1 className="text-3xl font-bold mb-4">

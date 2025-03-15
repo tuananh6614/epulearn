@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
@@ -13,18 +12,40 @@ import Navbar from '@/components/Navbar';
 import GreenButton from '@/components/GreenButton';
 import { saveLessonProgress } from '@/integrations/supabase/userProgressServices';
 
+// Định nghĩa kiểu dữ liệu
+interface Lesson {
+  id: string;
+  title: string;
+  content: string;
+  type: string;
+  order_index: number;
+  chapter_id: string;
+}
+
+interface Chapter {
+  id: string;
+  title: string;
+  course_id: string;
+  order_index: number;
+}
+
+interface LessonProgress {
+  completed: boolean;
+  position: number | { scrollPosition: number };
+}
+
 const LessonContentPage = () => {
-  const { courseId, chapterId, lessonId } = useParams();
+  const { courseId, chapterId, lessonId } = useParams<{ courseId: string; chapterId: string; lessonId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const [lesson, setLesson] = useState<any>(null);
-  const [chapter, setChapter] = useState<any>(null);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [chapter, setChapter] = useState<Chapter | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [nextLesson, setNextLesson] = useState<any>(null);
-  const [prevLesson, setPrevLesson] = useState<any>(null);
-  const [lessonProgress, setLessonProgress] = useState<any>({
+  const [nextLesson, setNextLesson] = useState<Lesson | { id: string; title: string; isTest: boolean } | null>(null);
+  const [prevLesson, setPrevLesson] = useState<Lesson | null>(null);
+  const [lessonProgress, setLessonProgress] = useState<LessonProgress>({
     completed: false,
     position: 0
   });
@@ -44,7 +65,7 @@ const LessonContentPage = () => {
           .single();
           
         if (chapterError) throw chapterError;
-        setChapter(chapterData);
+        setChapter(chapterData as Chapter);
         
         // Get current lesson
         const { data: lessonData, error: lessonError } = await supabase
@@ -54,7 +75,7 @@ const LessonContentPage = () => {
           .single();
           
         if (lessonError) throw lessonError;
-        setLesson(lessonData);
+        setLesson(lessonData as Lesson);
         
         // Get all lessons in this chapter for navigation
         const { data: chapterLessons, error: chapterLessonsError } = await supabase
@@ -69,11 +90,11 @@ const LessonContentPage = () => {
           const currentIndex = chapterLessons.findIndex(l => l.id === lessonId);
           
           if (currentIndex > 0) {
-            setPrevLesson(chapterLessons[currentIndex - 1]);
+            setPrevLesson(chapterLessons[currentIndex - 1] as Lesson);
           }
           
           if (currentIndex < chapterLessons.length - 1) {
-            setNextLesson(chapterLessons[currentIndex + 1]);
+            setNextLesson(chapterLessons[currentIndex + 1] as Lesson);
           } else {
             // If this is the last lesson, check if there's a chapter test
             const { data: testLesson, error: testError } = await supabase
@@ -84,7 +105,7 @@ const LessonContentPage = () => {
               .maybeSingle();
               
             if (!testError && testLesson) {
-              setNextLesson({ ...testLesson, isTest: true });
+              setNextLesson({ ...testLesson, isTest: true } as { id: string; title: string; isTest: boolean });
             }
           }
         }
@@ -134,7 +155,7 @@ const LessonContentPage = () => {
       
       // Navigate to next lesson if available
       if (nextLesson) {
-        if (nextLesson.isTest) {
+        if ('isTest' in nextLesson) {
           navigate(`/course/${courseId}/chapter/${chapterId}/test/${nextLesson.id}`);
         } else {
           navigate(`/course/${courseId}/chapter/${chapterId}/lesson/${nextLesson.id}`);
@@ -191,7 +212,7 @@ const LessonContentPage = () => {
   }
   
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pt-20"> {/* Thêm pt-20 */}
       <Navbar />
       
       <div className="container max-w-4xl py-8">

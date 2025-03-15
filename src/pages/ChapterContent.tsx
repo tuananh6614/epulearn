@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,18 +17,55 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import GreenButton from '@/components/GreenButton';
 
+// Định nghĩa các kiểu dữ liệu
+interface Lesson {
+  id: string;
+  title: string;
+  type: string;
+  duration: string;
+  chapter_id: string;
+  order_index: number;
+}
+
+interface Chapter {
+  id: string;
+  title: string;
+  description?: string;
+  course_id: string;
+  order_index: number;
+}
+
+interface Course {
+  id: string;
+  title: string;
+}
+
+interface LessonProgress {
+  lesson_id: string;
+  user_id?: string;
+  chapter_id?: string;
+  completed: boolean;
+  last_position?: string;
+}
+
+interface ChapterNavigation {
+  id: string;
+  title: string;
+  order_index: number;
+}
+
 const ChapterContent = () => {
-  const { courseId, chapterId } = useParams();
+  const { courseId, chapterId } = useParams<{ courseId: string; chapterId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
-  const [chapter, setChapter] = useState<any>(null);
-  const [lessons, setLessons] = useState<any[]>([]);
-  const [course, setCourse] = useState<any>(null);
-  const [previousChapter, setPreviousChapter] = useState<any>(null);
-  const [nextChapter, setNextChapter] = useState<any>(null);
-  const [lessonProgress, setLessonProgress] = useState<Record<string, any>>({});
+  const [chapter, setChapter] = useState<Chapter | null>(null);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [course, setCourse] = useState<Course | null>(null);
+  const [previousChapter, setPreviousChapter] = useState<ChapterNavigation | null>(null);
+  const [nextChapter, setNextChapter] = useState<ChapterNavigation | null>(null);
+  const [lessonProgress, setLessonProgress] = useState<Record<string, LessonProgress>>({});
   const [chapterProgress, setChapterProgress] = useState(0);
   
   useEffect(() => {
@@ -47,7 +83,7 @@ const ChapterContent = () => {
           .single();
           
         if (courseError) throw courseError;
-        setCourse(courseData);
+        setCourse(courseData as Course);
         
         // Fetch chapter details
         const { data: chapterData, error: chapterError } = await supabase
@@ -57,7 +93,7 @@ const ChapterContent = () => {
           .single();
           
         if (chapterError) throw chapterError;
-        setChapter(chapterData);
+        setChapter(chapterData as Chapter);
         
         // Fetch chapter lessons
         const { data: lessonsData, error: lessonsError } = await supabase
@@ -82,11 +118,11 @@ const ChapterContent = () => {
           const currentIndex = chaptersData.findIndex(c => c.id === chapterId);
           
           if (currentIndex > 0) {
-            setPreviousChapter(chaptersData[currentIndex - 1]);
+            setPreviousChapter(chaptersData[currentIndex - 1] as ChapterNavigation);
           }
           
           if (currentIndex < chaptersData.length - 1) {
-            setNextChapter(chaptersData[currentIndex + 1]);
+            setNextChapter(chaptersData[currentIndex + 1] as ChapterNavigation);
           }
         }
         
@@ -99,7 +135,7 @@ const ChapterContent = () => {
           
         if (progressError) throw progressError;
         
-        const progressMap: Record<string, any> = {};
+        const progressMap: Record<string, LessonProgress> = {};
         progressData?.forEach(item => {
           progressMap[item.lesson_id] = item;
         });

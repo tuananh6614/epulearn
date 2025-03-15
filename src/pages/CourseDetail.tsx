@@ -32,7 +32,7 @@ const CourseDetail: React.FC = () => {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center pt-20">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -40,7 +40,7 @@ const CourseDetail: React.FC = () => {
   
   if (!course) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center pt-20">
         <Card>
           <CardHeader>
             <CardTitle>Không tìm thấy khóa học</CardTitle>
@@ -67,27 +67,27 @@ const CourseDetail: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen bg-background">
+    // Đổi pt-16 thành pt-20 (hoặc pt-[72px], v.v.) để tránh header đè lên nội dung
+    <div className="min-h-screen bg-background pt-20">
       <Navbar />
-      
       <div className="container max-w-6xl py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Course Content */}
-          <div className="md:col-span-2">
-            <Card className="bg-white dark:bg-secondary">
+          <div className="md:col-span-2 ">
+            <Card className="bg-white dark:bg-secondary ">
               <CardHeader>
-                <CardTitle className="text-2xl font-bold">{course.title}</CardTitle>
+                <CardTitle className="text-2xl font-bold ">{course.title}</CardTitle>
                 <CardDescription>{course.description}</CardDescription>
               </CardHeader>
               
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 ">
                 <img
                   src={course.image}
                   alt={course.title}
-                  className="rounded-md w-full object-cover aspect-video"
+                  className="rounded-md w-full object-cover aspect-video "
                 />
                 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-4 ">
                   <Badge variant="secondary">{course.level}</Badge>
                   <span className="text-muted-foreground">{course.duration}</span>
                 </div>
@@ -126,11 +126,11 @@ const CourseDetail: React.FC = () => {
                         key={chapter.id}
                         type="single"
                         collapsible
-                        className="mb-4 border rounded-lg"
+                        className="mb-4 border rounded-lg "
                       >
                         <AccordionItem value={`chapter-${index}`} className="border-none">
                           <AccordionTrigger
-                            className="px-4 py-2 hover:no-underline hover:bg-muted/50"
+                            className="px-4 py-2 hover:no-underline hover:bg-muted/50 "
                           >
                             <div className="flex items-center justify-between w-full pr-4">
                               <div className="flex items-center">
@@ -158,7 +158,7 @@ const CourseDetail: React.FC = () => {
                               )}
                             </div>
                           </AccordionTrigger>
-                          <AccordionContent className="px-4 pt-0 pb-3">
+                          <AccordionContent className="px-4 pt-26 pb-3">
                             <ul className="space-y-2">
                               {chapter.lessons?.map((lesson) => (
                                 <li
@@ -206,7 +206,7 @@ const CourseDetail: React.FC = () => {
                   </TabsContent>
                   
                   <TabsContent value="reviews" className="mt-4">
-                    <p>Tính năng đánh giá sẽ sớm ra mắt!</p>
+                    <p>Chưa có tính năng!</p>
                   </TabsContent>
                 </Tabs>
               </CardContent>
@@ -261,7 +261,8 @@ const CourseDetail: React.FC = () => {
               </CardContent>
               
               <CardContent>
-                {!isEnrolled ? (
+                {!isEnrolled ? 
+                (
                   <Button className="w-full" onClick={enrollInCourse} disabled={loading}>
                     {course.is_premium && !currentUser?.isVip ? "Nâng cấp VIP để đăng ký" : "Đăng ký khóa học"}
                   </Button>

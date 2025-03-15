@@ -3,19 +3,17 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { fetchTestQuestions, saveTestResult } from '@/integrations/supabase/testServices';
-import ChapterTest from '@/components/ChapterTest'; 
+import ChapterTest, { TestQuestion } from '@/components/ChapterTest'; 
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
-interface ChapterTestPageProps {}
-
-const ChapterTestPage: React.FC<ChapterTestPageProps> = () => {
+const ChapterTestPage: React.FC = () => {
   const { user } = useAuth();
-  const { courseId, chapterId, lessonId } = useParams();
+  const { courseId, chapterId, lessonId } = useParams<{ courseId: string; chapterId: string; lessonId: string }>();
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<TestQuestion[]>([]);
   
   useEffect(() => {
     if (!courseId || !chapterId) {
@@ -57,7 +55,6 @@ const ChapterTestPage: React.FC<ChapterTestPageProps> = () => {
     loadQuestions();
   }, [courseId, chapterId, navigate]);
   
-  // Fixed type signature to match the ChapterTest component's onComplete prop
   const handleTestComplete = async (score: number, total: number) => {
     if (!user || !courseId || !chapterId) {
       toast.error("Không thể lưu kết quả kiểm tra");
@@ -70,6 +67,8 @@ const ChapterTestPage: React.FC<ChapterTestPageProps> = () => {
     
     // Save the test result to Supabase
     try {
+      console.log(`Saving test result: ${score}/${total}, passed: ${passed}`);
+      
       const result = await saveTestResult(
         user.id,
         courseId,

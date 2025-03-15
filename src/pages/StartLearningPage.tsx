@@ -36,23 +36,38 @@ const StartLearningPage = () => {
   }, [courseData]);
   
   const handleStartLearning = async () => {
-    if (!courseId) return;
+    if (!courseId) {
+      toast.error("Không tìm thấy khóa học");
+      return;
+    }
     
     try {
+      console.log("Starting course:", courseId);
+      
       if (!enrolled) {
         // Enroll in the course first
+        console.log("Not enrolled yet, enrolling now...");
         const enrollResult = await enrollInCourse();
         if (!enrollResult) {
+          toast.error("Không thể đăng ký khóa học");
           return;
         }
+        console.log("Enrollment successful");
       }
       
       // Find the first chapter and lesson to start with
       if (courseData?.chapters?.length > 0) {
         const firstChapter = courseData.chapters[0];
-        if (firstChapter.lessons.length > 0) {
+        console.log("First chapter:", firstChapter.id, firstChapter.title);
+        
+        if (firstChapter.lessons && firstChapter.lessons.length > 0) {
           const firstLesson = firstChapter.lessons[0];
-          navigate(`/course/${courseId}/chapter/${firstChapter.id}/lesson/${firstLesson.id}`);
+          console.log("First lesson:", firstLesson.id, firstLesson.title);
+          
+          // Navigate to the lesson page
+          const lessonUrl = `/course/${courseId}/chapter/${firstChapter.id}/lesson/${firstLesson.id}`;
+          console.log("Navigating to:", lessonUrl);
+          navigate(lessonUrl);
         } else {
           toast.error("Không tìm thấy bài học trong chương này");
         }
@@ -66,7 +81,10 @@ const StartLearningPage = () => {
   };
   
   const handleContinueLearning = async () => {
-    if (!courseId || !enrolled) return;
+    if (!courseId || !enrolled) {
+      toast.error("Bạn chưa đăng ký khóa học này");
+      return;
+    }
     
     try {
       // Find the first incomplete lesson
@@ -75,8 +93,8 @@ const StartLearningPage = () => {
       for (const chapter of courseData?.chapters || []) {
         for (const lesson of chapter.lessons) {
           // Check if this lesson is not completed yet
-          // This is a simplified check - you may need to query actual progress data
           if (!lesson.completed) {
+            console.log("Continuing with lesson:", lesson.id, lesson.title);
             navigate(`/course/${courseId}/chapter/${chapter.id}/lesson/${lesson.id}`);
             foundIncompleteLesson = true;
             break;
@@ -88,8 +106,11 @@ const StartLearningPage = () => {
       // If all lessons are completed, start from the beginning
       if (!foundIncompleteLesson && courseData?.chapters?.length > 0) {
         const firstChapter = courseData.chapters[0];
-        if (firstChapter.lessons.length > 0) {
+        if (firstChapter.lessons && firstChapter.lessons.length > 0) {
+          console.log("All lessons completed, starting from beginning");
           navigate(`/course/${courseId}/chapter/${firstChapter.id}/lesson/${firstChapter.lessons[0].id}`);
+        } else {
+          toast.error("Không tìm thấy bài học trong chương này");
         }
       }
     } catch (error) {
@@ -136,7 +157,7 @@ const StartLearningPage = () => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Quay lại thông tin khóa học
           </Button>
-          <h1 className="text-2xl md:text-3xl font-bold">Bắt đầu học: {courseData.title}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Bắt đầu học: {courseData?.title}</h1>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -196,7 +217,7 @@ const StartLearningPage = () => {
             <div className="space-y-4">
               <h2 className="text-xl font-bold">Nội dung khóa học</h2>
               
-              {courseData.chapters?.map((chapter, chapterIndex) => (
+              {courseData?.chapters?.map((chapter, chapterIndex) => (
                 <Card key={chapter.id} className="overflow-hidden">
                   <CardHeader 
                     className="cursor-pointer hover:bg-muted/50"
@@ -205,7 +226,7 @@ const StartLearningPage = () => {
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-lg">Chương {chapterIndex + 1}: {chapter.title}</CardTitle>
                       <div className="text-sm text-muted-foreground">
-                        {chapter.lessons.length} bài học
+                        {chapter.lessons?.length || 0} bài học
                       </div>
                     </div>
                   </CardHeader>
@@ -213,7 +234,7 @@ const StartLearningPage = () => {
                   {activeChapter === chapter.id && (
                     <CardContent className="pt-4">
                       <div className="space-y-3">
-                        {chapter.lessons.map((lesson, lessonIndex) => (
+                        {chapter.lessons?.map((lesson, lessonIndex) => (
                           <div 
                             key={lesson.id}
                             className="flex items-center justify-between p-3 rounded-md hover:bg-muted/50"
@@ -246,7 +267,10 @@ const StartLearningPage = () => {
                                 variant="ghost" 
                                 size="sm"
                                 className="text-xs"
-                                onClick={() => navigate(`/course/${courseId}/chapter/${chapter.id}/lesson/${lesson.id}`)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/course/${courseId}/chapter/${chapter.id}/lesson/${lesson.id}`);
+                                }}
                               >
                                 {lesson.type === 'test' ? 'Làm bài' : 'Xem'}
                               </Button>
@@ -268,8 +292,8 @@ const StartLearningPage = () => {
               <Card>
                 <div className="aspect-video relative overflow-hidden">
                   <img 
-                    src={courseData.thumbnail_url || '/placeholder.svg'} 
-                    alt={courseData.title} 
+                    src={courseData?.thumbnail_url || '/placeholder.svg'} 
+                    alt={courseData?.title} 
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
@@ -277,10 +301,10 @@ const StartLearningPage = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <h3 className="text-lg font-bold mb-1">{courseData.title}</h3>
+                    <h3 className="text-lg font-bold mb-1">{courseData?.title}</h3>
                     <div className="flex items-center text-sm">
                       <Users className="h-4 w-4 mr-1" />
-                      <span>Giảng viên: {courseData.instructor}</span>
+                      <span>Giảng viên: {courseData?.instructor}</span>
                     </div>
                   </div>
                 </div>

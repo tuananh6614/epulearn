@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -129,6 +130,9 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
       ...prev,
       [questionId]: answerIndex
     }));
+    
+    // Log to verify the selection is being saved properly
+    console.log(`Selected answer for question ${questionId}: option ${answerIndex}`);
   };
   
   const submitTest = async () => {
@@ -148,17 +152,17 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
     
     const maxPossibleScore = questions.reduce((total, q) => total + (q.points || 1), 0);
     const percentage = Math.round((score / maxPossibleScore) * 100);
-    const passed = percentage >= (courseTest.passing_score || 70);
+    const passed = percentage >= (courseTest?.passing_score || 70);
     
     try {
-      const timeTaken = (courseTest.time_limit * 60) - timeRemaining;
+      const timeTaken = (courseTest?.time_limit * 60) - timeRemaining;
       
       const { error } = await supabase
         .from('user_test_results')
         .insert({
           user_id: user.id,
           course_id: courseId,
-          course_test_id: courseTest.id,
+          course_test_id: courseTest?.id,
           score: percentage,
           passed,
           time_taken: timeTaken,
@@ -169,6 +173,8 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
         console.error('Error saving test result:', error);
         toast.error("Không thể lưu kết quả kiểm tra");
       } else {
+        toast.success("Đã lưu kết quả kiểm tra");
+        
         const { data: previousTests, error: fetchError } = await supabase
           .from('user_test_results')
           .select('*')
@@ -185,6 +191,7 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
       }
     } catch (error) {
       console.error('Error in submit test:', error);
+      toast.error("Đã xảy ra lỗi khi lưu kết quả");
     }
     
     setTestResults({
@@ -217,7 +224,7 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
   const retakeTest = () => {
     setSelectedAnswers({});
     setCurrentQuestion(0);
-    setTimeRemaining(courseTest.time_limit * 60);
+    setTimeRemaining(courseTest?.time_limit * 60);
     setTestCompleted(false);
     setTestStarted(true);
   };
@@ -253,13 +260,13 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
         {!testStarted ? (
           <Card className="max-w-3xl mx-auto">
             <CardHeader>
-              <CardTitle className="text-2xl">{courseTest.title}</CardTitle>
-              <CardDescription>{courseTest.description}</CardDescription>
+              <CardTitle className="text-2xl">{courseTest?.title}</CardTitle>
+              <CardDescription>{courseTest?.description}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center">
                 <Clock className="h-5 w-5 text-muted-foreground mr-2" />
-                <span>Thời gian: {courseTest.time_limit} phút</span>
+                <span>Thời gian: {courseTest?.time_limit} phút</span>
               </div>
               <div className="flex items-center">
                 <FileText className="h-5 w-5 text-muted-foreground mr-2" />
@@ -267,7 +274,7 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
               </div>
               <div className="flex items-center">
                 <Trophy className="h-5 w-5 text-muted-foreground mr-2" />
-                <span>Điểm đạt: {courseTest.passing_score || 70}%</span>
+                <span>Điểm đạt: {courseTest?.passing_score || 70}%</span>
               </div>
               
               {testResults.previousAttempts.length > 0 && (
@@ -340,7 +347,7 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
               
               <Progress 
                 value={testResults.percentage} 
-                className={`h-3 ${testResults.passed ? "bg-green-500" : "bg-red-500"}`}
+                className="h-3"
               />
               
               <div className="grid grid-cols-2 gap-4 mt-6">
@@ -450,14 +457,12 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
                   {currentQuestion < questions.length - 1 ? (
                     <Button 
                       onClick={nextQuestion}
-                      disabled={!selectedAnswers[questions[currentQuestion]?.id]}
                     >
                       Câu tiếp theo
                     </Button>
                   ) : (
                     <Button 
                       onClick={submitTest}
-                      disabled={!selectedAnswers[questions[currentQuestion]?.id]}
                     >
                       Nộp bài
                     </Button>

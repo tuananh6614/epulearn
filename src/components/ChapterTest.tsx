@@ -12,14 +12,14 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase";
 import { useAuth } from '@/context/AuthContext';
 
-interface TestQuestion {
+export interface TestQuestion {
   id: string;
   question: string;
   options: string[];
   answer: number;
 }
 
-interface ChapterTestProps {
+export interface ChapterTestProps {
   questions: TestQuestion[];
   onComplete: (score: number, total: number) => void;
 }
@@ -57,7 +57,9 @@ const ChapterTest: React.FC<ChapterTestProps> = ({ questions, onComplete }) => {
         setTestCompleted(true);
         
         if (onComplete) {
-          onComplete(score + (isAnswerCorrect ? 1 : 0), questions.length);
+          // Calculate final score after the last question
+          const finalScore = score + (isAnswerCorrect ? 1 : 0);
+          onComplete(finalScore, questions.length);
         }
       }
     }, 1500);

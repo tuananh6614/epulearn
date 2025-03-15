@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
 interface UseCourseProgressProps {
-  courseId: string | undefined;
+  courseId?: string;
 }
 
 interface CourseProgressData {
@@ -73,13 +73,12 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         .eq('course_id', courseId)
         .maybeSingle();
 
-      if (enrollmentError && enrollmentError.code !== 'PGRST116') {
-        // PGRST116 means no rows found, which is expected if not enrolled
+      if (enrollmentError) {
         console.error('Error checking enrollment:', enrollmentError);
         setError(enrollmentError);
       }
 
-      console.log('Progress data received:', data ? 'found' : 'not found');
+      console.log('Progress data received:', data);
       
       if (data) {
         setEnrolled(true);
@@ -128,6 +127,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
 
     try {
       console.log('Enrolling in course:', courseId);
+      
       // Add user to course
       const { error: enrollError } = await supabase
         .from('user_courses')
@@ -142,9 +142,10 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
       if (enrollError) {
         console.error('Error enrolling in course:', enrollError);
         toast.error('Không thể đăng ký khóa học. Vui lòng thử lại sau.');
-        throw enrollError;
+        return false;
       }
 
+      // Update local state
       setEnrolled(true);
       setProgress(0);
       setLastAccessed(new Date().toISOString());
@@ -158,13 +159,12 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         },
         timestamp: Date.now()
       });
-      
-      toast.success('Đăng ký khóa học thành công!');
-      console.log('Successfully enrolled in course');
+
+      toast.success('Đã đăng ký khóa học thành công!');
       return true;
     } catch (err) {
       console.error('Error enrolling in course:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error'));
+      toast.error('Đã xảy ra lỗi khi đăng ký khóa học');
       return false;
     }
   };

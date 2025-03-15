@@ -287,7 +287,7 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge variant={attempt.passed ? "success" : "destructive"}>
+                            <Badge variant={attempt.passed ? "default" : "destructive"}>
                               {attempt.score}%
                             </Badge>
                             {attempt.passed ? (

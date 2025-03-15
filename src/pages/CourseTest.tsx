@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -73,8 +74,9 @@ const CourseTest: React.FC = () => {
         const testsData = await fetchCourseTests(courseId);
         console.log('Tests data:', testsData);
         
-        if (testsData) {
-          const formattedTests: CourseTestType[] = [{
+        if (testsData && testsData.test) {
+          // Properly format test data to match CourseTestType structure
+          const formattedTest: CourseTestType = {
             id: testsData.test.id,
             title: testsData.test.title,
             description: testsData.test.description || undefined,
@@ -90,9 +92,9 @@ const CourseTest: React.FC = () => {
             course_id: testsData.test.course_id,
             created_at: testsData.test.created_at,
             updated_at: testsData.test.updated_at
-          }];
+          };
           
-          setTests(formattedTests);
+          setTests([formattedTest]);
         }
 
         if (user) {

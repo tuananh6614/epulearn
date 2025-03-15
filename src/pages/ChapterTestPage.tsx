@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { fetchTestQuestions, saveTestResult } from '@/integrations/supabase/testServices';
-import ChapterTest from '@/components/ChapterTest';  // Changed from { ChapterTest }
+import ChapterTest from '@/components/ChapterTest'; 
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
@@ -57,15 +57,19 @@ const ChapterTestPage: React.FC<ChapterTestPageProps> = () => {
     loadQuestions();
   }, [courseId, chapterId, navigate]);
   
-  const handleTestComplete = async (score: number, passed: boolean) => {
+  // Fixed type signature to match the ChapterTest component's onComplete prop
+  const handleTestComplete = async (score: number, total: number) => {
     if (!user || !courseId || !chapterId) {
       toast.error("Không thể lưu kết quả kiểm tra");
       return;
     }
     
+    // Calculate if passed (70% or more)
+    const percentage = (score / total) * 100;
+    const passed = percentage >= 70;
+    
     // Save the test result to Supabase
     try {
-      const total = questions.length;
       const result = await saveTestResult(
         user.id,
         courseId,

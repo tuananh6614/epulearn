@@ -24,7 +24,7 @@ export const fetchTestQuestions = async (chapterId: string): Promise<TestQuestio
     const transformedQuestions: TestQuestion[] = data.map(question => ({
       id: question.id,
       question: question.question,
-      options: Array.isArray(question.options) ? question.options : [],
+      options: Array.isArray(question.options) ? question.options as string[] : [],
       answer: question.correct_answer
     }));
     

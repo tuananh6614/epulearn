@@ -19,7 +19,8 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  ReferenceLine
+  ReferenceLine,
+  Label
 } from 'recharts';
 
 interface TestResult {
@@ -93,27 +94,31 @@ const TestHistoryPage: React.FC = () => {
         
         if (data) {
           // Get chapter titles for all chapter IDs
-          const chapterIds = [...new Set(data.map(result => result.chapter_id))];
+          const chapterIds = [...new Set(data.map(result => result.chapter_id).filter(Boolean))];
           
-          const { data: chaptersData, error: chaptersError } = await supabase
-            .from('chapters')
-            .select('id, title')
-            .in('id', chapterIds);
+          if (chapterIds.length > 0) {
+            const { data: chaptersData, error: chaptersError } = await supabase
+              .from('chapters')
+              .select('id, title')
+              .in('id', chapterIds);
+              
+            if (chaptersError) {
+              console.error('Error fetching chapter titles:', chaptersError);
+            }
             
-          if (chaptersError) {
-            console.error('Error fetching chapter titles:', chaptersError);
+            // Map chapter titles to test results
+            const resultsWithChapterTitles = data.map(result => {
+              const chapter = chaptersData?.find(c => c.id === result.chapter_id);
+              return {
+                ...result,
+                chapter_title: chapter?.title || 'Chương không xác định'
+              };
+            });
+            
+            setTestResults(resultsWithChapterTitles);
+          } else {
+            setTestResults(data);
           }
-          
-          // Map chapter titles to test results
-          const resultsWithChapterTitles = data.map(result => {
-            const chapter = chaptersData?.find(c => c.id === result.chapter_id);
-            return {
-              ...result,
-              chapter_title: chapter?.title || 'Chương không xác định'
-            };
-          });
-          
-          setTestResults(resultsWithChapterTitles);
         }
       } catch (error) {
         console.error('Error fetching test history:', error);
@@ -131,10 +136,12 @@ const TestHistoryPage: React.FC = () => {
     
     // Group results by chapter
     testResults.forEach(result => {
-      if (!chapterResults[result.chapter_id]) {
-        chapterResults[result.chapter_id] = [];
+      if (result.chapter_id) {
+        if (!chapterResults[result.chapter_id]) {
+          chapterResults[result.chapter_id] = [];
+        }
+        chapterResults[result.chapter_id].push(result);
       }
-      chapterResults[result.chapter_id].push(result);
     });
     
     // Get the latest 10 attempts for each chapter, in chronological order
@@ -231,8 +238,8 @@ const TestHistoryPage: React.FC = () => {
                           return `${item?.chapter} - ${item?.date}`;
                         }}
                       />
-                      <ReferenceLine y={70} stroke="red" strokeDasharray="3 3" >
-                        <label position="insideBottomRight" value="Đạt" offset={-20} fill="red" />
+                      <ReferenceLine y={70} stroke="red" strokeDasharray="3 3">
+                        <Label value="Đạt" position="insideBottomRight" offset={-20} fill="red" />
                       </ReferenceLine>
                       <Line 
                         type="monotone" 
@@ -288,8 +295,7 @@ const TestHistoryPage: React.FC = () => {
                       </div>
                       <Progress 
                         value={result.score} 
-                        className="h-2" 
-                        indicatorClassName={result.passed ? 'bg-green-500' : 'bg-red-500'}
+                        className={result.passed ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"}
                       />
                     </div>
                   </CardContent>

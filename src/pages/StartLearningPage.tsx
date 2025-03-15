@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -57,8 +58,23 @@ const StartLearningPage = () => {
           console.error('Error fetching last lesson:', error);
         } else if (data && data.length > 0) {
           console.log('Last accessed lesson:', data[0]);
-          setLastLessonId(data[0].lesson_id);
-          setLastChapterId(data[0].chapter_id);
+          
+          // Get the chapter_id for this lesson if it's not in the progress record
+          if (!data[0].chapter_id) {
+            const { data: lessonData, error: lessonError } = await supabase
+              .from('lessons')
+              .select('chapter_id')
+              .eq('id', data[0].lesson_id)
+              .single();
+              
+            if (!lessonError && lessonData) {
+              setLastLessonId(data[0].lesson_id);
+              setLastChapterId(lessonData.chapter_id);
+            }
+          } else {
+            setLastLessonId(data[0].lesson_id);
+            setLastChapterId(data[0].chapter_id);
+          }
         }
         
         setLoadingLastLesson(false);

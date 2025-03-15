@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -132,7 +133,11 @@ function App() {
                 <Route path="/vip-courses" element={<VipCourses />} />
                 
                 {/* Test history page */}
-                <Route path="/course/:courseId/test-history" element={<ProtectedRoute element={<TestHistoryPage />} />} />
+                <Route path="/course/:courseId/test-history" element={
+                  <ProtectedRoute>
+                    <TestHistoryPage />
+                  </ProtectedRoute>
+                } />
                 
                 {/* Catch-all route */}
                 <Route path="*" element={<NotFound />} />

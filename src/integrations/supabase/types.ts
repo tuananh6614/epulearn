@@ -456,6 +456,7 @@ export type Database = {
       user_test_results: {
         Row: {
           answers: Json | null
+          chapter_id: string | null
           course_id: string | null
           course_test_id: string | null
           created_at: string | null
@@ -467,6 +468,7 @@ export type Database = {
         }
         Insert: {
           answers?: Json | null
+          chapter_id?: string | null
           course_id?: string | null
           course_test_id?: string | null
           created_at?: string | null
@@ -478,6 +480,7 @@ export type Database = {
         }
         Update: {
           answers?: Json | null
+          chapter_id?: string | null
           course_id?: string | null
           course_test_id?: string | null
           created_at?: string | null
@@ -488,6 +491,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_test_results_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_test_results_course_id_fkey"
             columns: ["course_id"]

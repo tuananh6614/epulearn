@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -55,7 +54,6 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
       try {
         setLoading(true);
         
-        // Fetch course test
         const testData = await fetchCourseTests(courseId);
         
         if (!testData) {
@@ -66,9 +64,8 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
         
         setCourseTest(testData.test);
         setQuestions(testData.questions);
-        setTimeRemaining(testData.test.time_limit * 60); // Convert to seconds
+        setTimeRemaining(testData.test.time_limit * 60);
         
-        // Fetch previous test attempts if user is logged in
         if (user) {
           const { data: previousTests, error } = await supabase
             .from('user_test_results')
@@ -96,7 +93,6 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
     loadCourseTest();
   }, [courseId, navigate, user]);
   
-  // Timer effect
   useEffect(() => {
     let timer: NodeJS.Timeout;
     
@@ -144,7 +140,6 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
     let score = 0;
     const totalQuestions = questions.length;
     
-    // Calculate score
     questions.forEach(question => {
       if (selectedAnswers[question.id] === question.correct_answer) {
         score += question.points || 1;
@@ -155,7 +150,6 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
     const percentage = Math.round((score / maxPossibleScore) * 100);
     const passed = percentage >= (courseTest.passing_score || 70);
     
-    // Save test result to database
     try {
       const timeTaken = (courseTest.time_limit * 60) - timeRemaining;
       
@@ -175,7 +169,6 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
         console.error('Error saving test result:', error);
         toast.error("Không thể lưu kết quả kiểm tra");
       } else {
-        // Fetch updated previous test attempts
         const { data: previousTests, error: fetchError } = await supabase
           .from('user_test_results')
           .select('*')
@@ -194,7 +187,6 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
       console.error('Error in submit test:', error);
     }
     
-    // Update test results state
     setTestResults({
       score,
       totalQuestions,
@@ -210,7 +202,6 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
     } else {
-      // Confirm before submitting
       if (window.confirm('Bạn có chắc muốn nộp bài kiểm tra?')) {
         submitTest();
       }
@@ -340,7 +331,7 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
                   {testResults.percentage}%
                 </div>
                 <Badge 
-                  variant={testResults.passed ? "success" : "destructive"}
+                  variant={testResults.passed ? "default" : "destructive"}
                   className="text-lg px-3 py-1"
                 >
                   {testResults.passed ? "Đạt" : "Chưa đạt"}
@@ -349,8 +340,7 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
               
               <Progress 
                 value={testResults.percentage} 
-                className="h-3" 
-                indicatorClassName={testResults.passed ? "bg-green-500" : "bg-red-500"}
+                className={`h-3 ${testResults.passed ? "bg-green-500" : "bg-red-500"}`}
               />
               
               <div className="grid grid-cols-2 gap-4 mt-6">

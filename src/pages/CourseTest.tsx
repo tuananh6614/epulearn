@@ -18,20 +18,27 @@ import { Clock, FileText, Book, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-// ========================
-// KHAI BÁO KIỂU DỮ LIỆU
-// ========================
+interface CourseTestQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correct_answer: number;
+  points?: number;
+  course_test_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 interface CourseTestType {
   id: string;
   title: string;
   description?: string;
-  questions?: {
-    id: string;
-    text: string;
-    // Thêm các trường khác nếu cần
-  }[];
   time_limit: number;
   passing_score: number;
+  questions: CourseTestQuestion[];
+  course_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface UserTestResultType {
@@ -41,18 +48,14 @@ interface UserTestResultType {
   score: number;
   passed: boolean;
   time_taken?: number;
-  answers?: string;     // Dùng để lưu JSON.stringify(...)
-  created_at?: string;  // Phụ thuộc vào cột 'created_at' trong DB
+  answers?: string;
+  created_at?: string;
 }
 
-// ========================
-// COMPONENT CHÍNH
-// ========================
 const CourseTest: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
 
-  // State sử dụng kiểu dữ liệu rõ ràng thay vì any
   const [tests, setTests] = useState<CourseTestType[]>([]);
   const [selectedTest, setSelectedTest] = useState<CourseTestType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,12 +70,31 @@ const CourseTest: React.FC = () => {
       try {
         setLoading(true);
 
-        // fetchCourseTests nên trả về Promise<CourseTestType[]>
         const testsData = await fetchCourseTests(courseId);
         console.log('Tests data:', testsData);
-        setTests(testsData);
+        
+        if (testsData) {
+          const formattedTests: CourseTestType[] = [{
+            id: testsData.test.id,
+            title: testsData.test.title,
+            description: testsData.test.description || undefined,
+            time_limit: testsData.test.time_limit || 30,
+            passing_score: testsData.test.passing_score || 70,
+            questions: testsData.questions.map((q: any) => ({
+              id: q.id,
+              question: q.question,
+              options: Array.isArray(q.options) ? q.options : [],
+              correct_answer: q.correct_answer,
+              points: q.points || 1
+            })),
+            course_id: testsData.test.course_id,
+            created_at: testsData.test.created_at,
+            updated_at: testsData.test.updated_at
+          }];
+          
+          setTests(formattedTests);
+        }
 
-        // Nếu người dùng đã đăng nhập, tải kết quả cũ
         if (user) {
           const { data: resultsData, error: resultsError } = await supabase
             .from('user_test_results')
@@ -97,21 +119,17 @@ const CourseTest: React.FC = () => {
     loadTests();
   }, [courseId, user]);
 
-  // Chọn bài kiểm tra
   const handleTestSelect = (test: CourseTestType) => {
     setSelectedTest(test);
   };
 
-  // Xử lý khi người dùng hoàn thành bài kiểm tra
   const handleTestComplete = async (score: number, passed: boolean) => {
     if (!user || !courseId || !selectedTest) return;
 
     try {
-      // Ghi nhận hành vi "cheat" (VD: đổi tab) - chỉ minh họa
       const cheatAttempts = document.visibilityState === 'hidden' ? 1 : 0;
       console.log('Cheat attempts:', cheatAttempts);
 
-      // Lưu kết quả bài kiểm tra vào DB
       const { error } = await supabase
         .from('user_test_results')
         .insert({
@@ -126,7 +144,6 @@ const CourseTest: React.FC = () => {
 
       if (error) throw error;
 
-      // Nếu qua bài, cập nhật tiến độ trong bảng user_courses
       if (passed) {
         const { data: enrollment } = await supabase
           .from('user_courses')
@@ -136,7 +153,6 @@ const CourseTest: React.FC = () => {
           .single();
 
         if (enrollment) {
-          // Tăng tiến độ thêm 10% (có thể thay đổi logic này)
           const newProgress = Math.min(
             100,
             (enrollment.progress_percentage || 0) + 10
@@ -159,7 +175,6 @@ const CourseTest: React.FC = () => {
           : 'Bạn chưa đạt điểm yêu cầu cho bài kiểm tra này'
       );
 
-      // Tải lại kết quả cũ
       const { data: resultsData } = await supabase
         .from('user_test_results')
         .select('*')
@@ -173,7 +188,6 @@ const CourseTest: React.FC = () => {
     }
   };
 
-  // Kiểm tra người dùng đã ghi danh (enrolled) hay chưa
   const checkEnrollment = async (): Promise<boolean> => {
     if (!user || !courseId) return false;
 
@@ -196,7 +210,6 @@ const CourseTest: React.FC = () => {
     }
   };
 
-  // Hiển thị loading
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -216,7 +229,6 @@ const CourseTest: React.FC = () => {
     );
   }
 
-  // Giao diện chính
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -238,7 +250,6 @@ const CourseTest: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Tiêu đề */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold tracking-tight">Bài kiểm tra</h1>
               <p className="text-muted-foreground mt-2">
@@ -246,7 +257,6 @@ const CourseTest: React.FC = () => {
               </p>
             </div>
 
-            {/* Cảnh báo đăng nhập */}
             {!user && (
               <Alert className="mb-6">
                 <AlertCircle className="h-4 w-4" />
@@ -256,7 +266,6 @@ const CourseTest: React.FC = () => {
               </Alert>
             )}
 
-            {/* Kết quả bài kiểm tra trước đây */}
             {user && previousResults.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">
@@ -311,7 +320,6 @@ const CourseTest: React.FC = () => {
               </div>
             )}
 
-            {/* Danh sách bài kiểm tra */}
             {tests.length === 0 ? (
               <Card>
                 <CardContent className="pt-6 text-center">
@@ -331,7 +339,6 @@ const CourseTest: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tests.map((test) => {
-                  // Tìm kết quả tốt nhất (nếu có)
                   const testResults = previousResults.filter(
                     (r) => r.course_test_id === test.id
                   );

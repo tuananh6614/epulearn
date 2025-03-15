@@ -36,10 +36,13 @@ const ChapterTestPage: React.FC = () => {
         }
         
         // Format questions for the test component
-        const formattedQuestions = testQuestions.map((q) => ({
+        // Make sure options are converted to string[] explicitly
+        const formattedQuestions: TestQuestion[] = testQuestions.map((q) => ({
           id: q.id,
           question: q.question,
-          options: Array.isArray(q.options) ? q.options : [],
+          options: Array.isArray(q.options) 
+            ? q.options.map(option => String(option)) // Convert each option to string
+            : [],
           answer: q.correct_answer
         }));
         

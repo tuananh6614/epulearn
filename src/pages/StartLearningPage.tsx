@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -176,7 +177,7 @@ const StartLearningPage: React.FC = () => {
                               <BookOpen className="h-4 w-4 text-primary mr-2" />
                               {chapter.title}
                             </h3>
-                            <Badge variant={progressPercentage === 100 ? "success" : "outline"}>
+                            <Badge variant={progressPercentage === 100 ? "secondary" : "outline"} className={progressPercentage === 100 ? "bg-green-500 hover:bg-green-600 text-white" : ""}>
                               {progressPercentage === 100 ? (
                                 <CheckCircle className="h-3 w-3 mr-1" />
                               ) : null}
@@ -303,7 +304,7 @@ const StartLearningPage: React.FC = () => {
                               <FileText className="h-4 w-4 text-primary mr-2" />
                               Kiểm tra: {chapter.title}
                             </h3>
-                            <Badge variant={isCompleted ? "success" : "outline"}>
+                            <Badge variant={isCompleted ? "secondary" : "outline"} className={isCompleted ? "bg-green-500 hover:bg-green-600 text-white" : ""}>
                               {isCompleted ? (
                                 <CheckCircle className="h-3 w-3 mr-1" />
                               ) : null}

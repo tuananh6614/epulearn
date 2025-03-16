@@ -3,3 +3,70 @@
 @import './base.css';
 @import './components.css';
 @import './utilities.css';
+
+/* Responsive breakpoints */
+:root {
+  --mobile: 480px;
+  --tablet: 768px;
+  --laptop: 1024px;
+  --desktop: 1280px;
+}
+
+/* Responsive container class */
+.container-responsive {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) {
+  .container-responsive {
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-responsive {
+    max-width: 1280px;
+  }
+}
+
+/* Fix for mobile portrait-mode screens */
+@media (max-width: 480px) {
+  .hide-on-mobile {
+    display: none;
+  }
+  
+  .text-sm-on-mobile {
+    font-size: 0.875rem;
+  }
+  
+  .text-base-on-mobile {
+    font-size: 1rem;
+  }
+  
+  .text-lg-on-mobile {
+    font-size: 1.125rem;
+  }
+}
+
+/* Fix for tablets in portrait orientation */
+@media (min-width: 481px) and (max-width: 768px) {
+  .hide-on-tablet {
+    display: none;
+  }
+}

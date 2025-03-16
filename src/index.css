@@ -63,6 +63,7 @@
   padding-top: 4rem;
   height: 100vh;
   overflow-y: auto;
+  z-index: 50;
 }
 
 /* Fix for course cards title overflow */
@@ -93,5 +94,98 @@
   .container {
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+}
+
+/* Add fixes for small screens */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.75rem !important;
+    line-height: 2rem !important;
+  }
+  
+  h2 {
+    font-size: 1.5rem !important;
+    line-height: 1.75rem !important;
+  }
+  
+  body {
+    font-size: 0.875rem;
+  }
+  
+  .py-20 {
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
+  }
+  
+  .px-6 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  /* Fix spacing in cards on mobile */
+  .card-content {
+    padding: 1rem !important;
+  }
+  
+  /* Ensure buttons don't overflow */
+  .btn-responsive {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.875rem !important;
+  }
+  
+  /* Fix for floating code elements on mobile */
+  .floating-code {
+    display: none;
+  }
+}
+
+/* Fix for landscape orientation on mobile */
+@media (max-height: 480px) and (orientation: landscape) {
+  .mobile-menu {
+    overflow-y: scroll;
+  }
+  
+  .hero-section {
+    min-height: 100vh;
+    padding-top: 5rem;
+  }
+}
+
+/* Fix for tablets */
+@media (min-width: 481px) and (max-width: 768px) {
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Fix for touch screens */
+@media (hover: none) {
+  .hover-card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  
+  .nav-link:hover::after {
+    width: 0 !important;
+  }
+  
+  /* Make buttons more touch-friendly */
+  button, .btn, a.btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Add safe areas for newer iOS devices */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .fixed-bottom {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
   }
 }

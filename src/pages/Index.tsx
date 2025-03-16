@@ -11,6 +11,7 @@ import Footer from '@/components/Footer';
 import FloatingCode from '@/components/FloatingCode';
 import NumberRain from '@/components/ui/NumberRain';
 import ParallaxEffect from '@/components/ParallaxEffect';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Component trang chủ chính
 const Index = () => {
@@ -19,6 +20,7 @@ const Index = () => {
     return document.documentElement.classList.contains('dark');
   });
   const fireflyContainerRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   // Update dark mode state when it changes
   useEffect(() => {
@@ -82,28 +84,32 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background dark:bg-[#0a0c12] overflow-hidden relative">
-      {/* Digital rain effect */}
-      <NumberRain density={40} interactive={true} />
+      {/* Digital rain effect - reduce density on mobile */}
+      <NumberRain density={isMobile ? 20 : 40} interactive={!isMobile} />
       
       {/* Firefly container for dark mode */}
       <div ref={fireflyContainerRef} className="firefly-container"></div>
       
-      {/* Floating code elements */}
-      <ParallaxEffect speed={-0.2}>
-        <FloatingCode style={{ top: '15%', right: '5%', transform: 'rotate(15deg)' }} language="javascript" />
-      </ParallaxEffect>
-      
-      <ParallaxEffect speed={-0.4}>
-        <FloatingCode style={{ bottom: '20%', left: '2%', transform: 'rotate(-10deg)' }} language="python" />
-      </ParallaxEffect>
-      
-      <ParallaxEffect speed={-0.3}>
-        <FloatingCode style={{ top: '40%', left: '10%', transform: 'rotate(5deg)' }} language="html" />
-      </ParallaxEffect>
+      {/* Floating code elements - only show on larger screens */}
+      {!isMobile && (
+        <>
+          <ParallaxEffect speed={-0.2}>
+            <FloatingCode style={{ top: '15%', right: '5%', transform: 'rotate(15deg)' }} language="javascript" className="floating-code" />
+          </ParallaxEffect>
+          
+          <ParallaxEffect speed={-0.4}>
+            <FloatingCode style={{ bottom: '20%', left: '2%', transform: 'rotate(-10deg)' }} language="python" className="floating-code" />
+          </ParallaxEffect>
+          
+          <ParallaxEffect speed={-0.3}>
+            <FloatingCode style={{ top: '40%', left: '10%', transform: 'rotate(5deg)' }} language="html" className="floating-code" />
+          </ParallaxEffect>
+        </>
+      )}
       
       <Navbar />
       
-      <main className="pt-28"> {/* Tăng padding-top để tạo khoảng cách với navbar cố định */}
+      <main className="pt-20 sm:pt-28 safe-area-inset"> {/* Tăng padding-top để tạo khoảng cách với navbar cố định */}
         <Hero />
         
         <div className="lazy-fade-in">
@@ -115,7 +121,7 @@ const Index = () => {
         </div>
         
         <div className="lazy-fade-in">
-          <ParallaxEffect speed={0.1}>
+          <ParallaxEffect speed={isMobile ? 0 : 0.1}>
             <StatsSection />
           </ParallaxEffect>
         </div>

@@ -139,4 +139,60 @@
   .language-javascript .comment {
     @apply text-gray-500 dark:text-gray-400;
   }
+  
+  /* Responsive utilities */
+  .responsive-grid {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+  
+  .responsive-padding {
+    @apply p-4 md:p-6 lg:p-8;
+  }
+  
+  .responsive-margin {
+    @apply m-4 md:m-6 lg:m-8;
+  }
+  
+  .responsive-text {
+    @apply text-sm md:text-base lg:text-lg;
+  }
+  
+  .responsive-heading {
+    @apply text-xl md:text-2xl lg:text-3xl font-bold;
+  }
+  
+  /* Hide on specific screen sizes */
+  .hide-on-mobile {
+    @apply hidden sm:block;
+  }
+  
+  .hide-on-desktop {
+    @apply block md:hidden;
+  }
+  
+  /* Touch target size fix */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Support for notches and rounded corners */
+  .safe-area-inset {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  /* Fix for hover effects on touch devices */
+  @media (hover: hover) {
+    .hover-only {
+      @apply opacity-0 transition-opacity;
+    }
+    
+    .group:hover .hover-only {
+      @apply opacity-100;
+    }
+  }
 }

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // Explicitly import React
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CourseCard from '@/components/CourseCard';
@@ -25,7 +24,6 @@ const VipCourses = () => {
   const [expandedChapter, setExpandedChapter] = useState<number | null>(1);
   const [vipStatus, setVipStatus] = useState<VipStatus>({ isVip: false, daysRemaining: null });
   
-  // Fetch VIP courses data with improved error handling
   const { data: coursesData, isLoading, error, refetch } = useQuery({
     queryKey: ['vipCourses'],
     queryFn: async () => {
@@ -41,10 +39,9 @@ const VipCourses = () => {
       }
     },
     retry: 2,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
   
-  // Fetch VIP status when component mounts or currentUser changes
   useEffect(() => {
     const checkUserVipStatus = async () => {
       if (currentUser?.id) {
@@ -61,7 +58,6 @@ const VipCourses = () => {
     checkUserVipStatus();
   }, [currentUser]);
   
-  // Parse tab from URL if present
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
@@ -78,7 +74,6 @@ const VipCourses = () => {
     }
   };
 
-  // Sample chapters for preview
   const sampleChapters = [
     {
       id: 1,
@@ -92,7 +87,7 @@ const VipCourses = () => {
       id: 2,
       title: "Kiến thức nền tảng",
       lessons: [
-        { id: "l3", title: "Cơ bản về HTML", duration: "20 phút", isLocked: true },
+        { id: "l3", title: "Cơ cơ bản về HTML", duration: "20 phút", isLocked: true },
         { id: "l4", title: "Cơ bản về CSS", duration: "25 phút", isLocked: true },
         { id: "l5", title: "Bài kiểm tra kiến thức", duration: "15 phút", isLocked: true },
       ]
@@ -105,6 +100,33 @@ const VipCourses = () => {
         { id: "l7", title: "Dự án thực hành", duration: "60 phút", isLocked: true },
       ]
     }
+  ];
+
+  const vipPackages = [
+    {
+      id: 1,
+      title: "Đăng ký Tháng",
+      price: 99000,
+      duration: "1 tháng",
+      discount: null,
+      features: ["Truy cập khóa học VIP", "Hỗ trợ qua email"],
+    },
+    {
+      id: 2,
+      title: "Đăng ký 3 Tháng",
+      price: 500000,
+      duration: "3 tháng",
+      discount: "Tiết kiệm 10%",
+      features: ["Truy cập khóa học VIP", "Hỗ trợ qua email", "Bài kiểm tra", "Chứng chỉ"],
+    },
+    {
+      id: 3,
+      title: "Đăng ký 1 Năm",
+      price: 1600000,
+      duration: "12 tháng",
+      discount: "Tiết kiệm 20%",
+      features: ["Truy cập khóa học VIP", "Hỗ trợ trực tiếp", "Bài kiểm tra", "Chứng chỉ", "Học cùng giảng viên"],
+    },
   ];
 
   if (isLoading) {
@@ -203,7 +225,7 @@ const VipCourses = () => {
                           category={course.category}
                           image={course.thumbnail_url || '/placeholder.svg'}
                           color="#ffd700"
-                          isPremium={!vipStatus.isVip} // Only show as premium if user is not VIP
+                          isPremium={!vipStatus.isVip}
                           price={vipStatus.isVip ? undefined : course.price || undefined}
                           discountPrice={vipStatus.isVip ? undefined : course.discount_price || undefined}
                           vipUnlocked={vipStatus.isVip}
@@ -211,7 +233,6 @@ const VipCourses = () => {
                       ))}
                     </div>
                     
-                    {/* Content preview section - kept as is */}
                     <div className="mt-12">
                       <h2 className="text-2xl font-bold mb-6">Xem trước nội dung khóa học</h2>
                       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
@@ -273,7 +294,6 @@ const VipCourses = () => {
                       </div>
                     </div>
                     
-                    {/* Knowledge test section - kept as is */}
                     <div className="mt-12">
                       <h2 className="text-2xl font-bold mb-6">Bài kiểm tra kiến thức</h2>
                       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6">
@@ -300,19 +320,19 @@ const VipCourses = () => {
                             <div className={`space-y-2 ${vipStatus.isVip ? '' : 'opacity-50'}`}>
                               <div className="flex items-center gap-2 p-2 rounded bg-gray-100 dark:bg-gray-600">
                                 <div className="w-4 h-4 border border-gray-300 dark:border-gray-500 rounded"></div>
-                                <span>&lt;h1&gt;</span>
+                                <span>{"<h1>"}</span>
                               </div>
                               <div className="flex items-center gap-2 p-2 rounded bg-gray-100 dark:bg-gray-600">
                                 <div className="w-4 h-4 border border-gray-300 dark:border-gray-500 rounded"></div>
-                                <span>&lt;header&gt;</span>
+                                <span>{"<header>"}</span>
                               </div>
                               <div className="flex items-center gap-2 p-2 rounded bg-gray-100 dark:bg-gray-600">
                                 <div className="w-4 h-4 border border-gray-300 dark:border-gray-500 rounded"></div>
-                                <span>&lt;heading&gt;</span>
+                                <span>{"<heading>"}</span>
                               </div>
                               <div className="flex items-center gap-2 p-2 rounded bg-gray-100 dark:bg-gray-600">
                                 <div className="w-4 h-4 border border-gray-300 dark:border-gray-500 rounded"></div>
-                                <span>&lt;h6&gt;</span>
+                                <span>{"<h6>"}</span>
                               </div>
                             </div>
                             {!vipStatus.isVip && (
@@ -326,11 +346,9 @@ const VipCourses = () => {
                     </div>
                   </div>
                   
-                  {/* Sidebar - update to conditionally show content */}
                   <div className="lg:col-span-1">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-sm p-6 sticky top-24">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg border shadow-md p-6 sticky top-24">
                       {vipStatus.isVip ? (
-                        // VIP user already has access
                         <>
                           <div className="flex items-center gap-3 mb-4">
                             <div className="bg-yellow-100 dark:bg-yellow-900/30 p-3 rounded-full">
@@ -384,59 +402,56 @@ const VipCourses = () => {
                           </p>
                         </>
                       ) : (
-                        // Non-VIP user needs to subscribe
                         <>
-                          <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                          <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                             <Crown className="h-5 w-5 text-yellow-500" />
                             Đăng ký Gói VIP
                           </h3>
-                          <p className="text-muted-foreground mb-6">
-                            Truy cập toàn bộ khóa học VIP và mở khóa các tính năng cao cấp
-                          </p>
                           
-                          <div className="space-y-4 mb-6">
-                            <div className="flex items-start gap-2">
-                              <div className="text-green-500 mt-0.5">✓</div>
-                              <div>Truy cập toàn bộ khóa học VIP</div>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <div className="text-green-500 mt-0.5">✓</div>
-                              <div>Bài kiểm tra và đánh giá chuyên sâu</div>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <div className="text-green-500 mt-0.5">✓</div>
-                              <div>Hỗ trợ trực tiếp từ giảng viên</div>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <div className="text-green-500 mt-0.5">✓</div>
-                              <div>Chứng chỉ hoàn thành khóa học</div>
-                            </div>
+                          <div className="space-y-6">
+                            {vipPackages.map((pkg) => (
+                              <Card
+                                key={pkg.id}
+                                className="border-2 border-yellow-300 bg-yellow-50 dark:bg-yellow-900/30 hover:shadow-lg transition-shadow duration-300 rounded-lg p-4"
+                              >
+                                <CardContent className="p-0">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                      {pkg.title}
+                                    </h4>
+                                    <Crown className="h-5 w-5 text-yellow-600" />
+                                  </div>
+                                  <div className="text-2xl font-bold text-yellow-800 dark:text-yellow-300 mb-2">
+                                    {pkg.price.toLocaleString('vi-VN')}đ
+                                  </div>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                    {pkg.duration}
+                                  </p>
+                                  {pkg.discount && (
+                                    <Badge className="bg-green-500 text-white mb-4">
+                                      {pkg.discount}
+                                    </Badge>
+                                  )}
+                                  <ul className="space-y-2 mb-4">
+                                    {pkg.features.map((feature, index) => (
+                                      <li key={index} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                                        <CheckCircle className="h-4 w-4 text-green-500" />
+                                        <span>{feature}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                  <Button
+                                    className="w-full bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white"
+                                    onClick={() => setActiveTab("purchase")}
+                                  >
+                                    Chọn gói
+                                  </Button>
+                                </CardContent>
+                              </Card>
+                            ))}
                           </div>
                           
-                          <div className="mb-6">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-lg font-bold">Giá:</span>
-                              <div>
-                                <span className="text-xl font-bold text-yellow-600 dark:text-yellow-500">500.000đ</span>
-                                <span className="text-sm text-muted-foreground ml-2">(3 tháng)</span>
-                              </div>
-                            </div>
-                            <div className="text-sm text-muted-foreground text-right">
-                              Tiết kiệm 10% khi đăng ký gói năm
-                            </div>
-                          </div>
-                          
-                          <Separator className="my-6" />
-                          
-                          <Button 
-                            className="w-full bg-yellow-600 hover:bg-yellow-700 mb-3" 
-                            size="lg"
-                            onClick={() => setActiveTab("purchase")}
-                          >
-                            Đăng ký ngay
-                          </Button>
-                          
-                          <p className="text-xs text-center text-muted-foreground">
+                          <p className="text-xs text-center text-muted-foreground mt-6">
                             Bảo đảm hoàn tiền trong 30 ngày nếu không hài lòng
                           </p>
                         </>

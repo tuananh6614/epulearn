@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, BookOpen, FileText, PlayCircle, Lock } from 'lucide-react';
@@ -7,20 +6,39 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
 
+// Định nghĩa các giao diện
+interface Lesson {
+  id: string;
+  title: string;
+  type: string;
+  duration: string;
+  is_premium: boolean;
+}
+
+interface Chapter {
+  id: string;
+  title: string;
+  lessons: Lesson[];
+}
+
+interface LessonProgress {
+  completed: boolean;
+}
+
 interface ChapterLessonListProps {
   courseId: string;
-  chapters: any[];
-  lessonProgress: Record<string, any>;
+  chapters: Chapter[];
+  lessonProgress: Record<string, LessonProgress>;
   isEnrolled: boolean;
 }
 
 const ChapterLessonList = ({ courseId, chapters, lessonProgress, isEnrolled }: ChapterLessonListProps) => {
   const navigate = useNavigate();
   
-  const getChapterProgress = (chapter: any) => {
+  const getChapterProgress = (chapter: Chapter) => {
     const chapterLessons = chapter.lessons || [];
     const completedLessons = chapterLessons.filter(
-      (lesson: any) => lessonProgress[lesson.id]?.completed
+      (lesson) => lessonProgress[lesson.id]?.completed
     ).length;
     const totalLessons = chapterLessons.length;
     return totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
@@ -81,7 +99,7 @@ const ChapterLessonList = ({ courseId, chapters, lessonProgress, isEnrolled }: C
                 </AccordionTrigger>
                 <AccordionContent>
                   <ul className="divide-y">
-                    {chapter.lessons?.map((lesson: any) => {
+                    {chapter.lessons?.map((lesson) => {
                       const isCompleted = lessonProgress[lesson.id]?.completed || false;
                       
                       return (

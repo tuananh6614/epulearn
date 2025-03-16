@@ -44,18 +44,18 @@ export function useRealtimeSubscription({
       // Tạo channel mới với ID duy nhất
       const channelId = `${table}_${Date.now()}`;
       
-      // Create channel and configure it properly with the correct method chaining
+      // Create and subscribe to the channel with proper configuration
       const newChannel = supabase.channel(channelId);
       
-      // Add the postgres_changes listener
+      // Configure the channel with postgres_changes event
       newChannel.on(
-        'postgres_changes',
-        {
-          event,
-          schema,
-          table,
-          ...(filterConfig || {})
-        },
+        'postgres_changes', 
+        { 
+          event, 
+          schema, 
+          table, 
+          ...(filterConfig || {}) 
+        }, 
         (payload) => {
           console.log(`[Realtime] Received ${payload.eventType} for ${table}:`, payload);
           setLastPayload(payload);
@@ -65,7 +65,7 @@ export function useRealtimeSubscription({
         }
       );
 
-      // Subscribe to the channel after setting up the listener
+      // Subscribe to the channel after configuration
       const subscribedChannel = newChannel.subscribe((status) => {
         console.log(`[Realtime] Channel ${table} status:`, status);
         if (status === 'CHANNEL_ERROR') {
@@ -78,7 +78,7 @@ export function useRealtimeSubscription({
       // Cleanup function
       return () => {
         console.log(`[Realtime] Unsubscribing from ${table}`);
-        subscribedChannel.unsubscribe();
+        newChannel.unsubscribe();
       };
     } catch (err) {
       console.error(`[Realtime] Error subscribing to ${table}:`, err);

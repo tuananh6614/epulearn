@@ -93,29 +93,23 @@ const Index = () => {
       {/* Floating code elements - only show on larger screens */}
       {!isMobile && (
         <>
-          <ParallaxEffect speed={-0.2}>
-            <FloatingCode 
-              style={{ top: '15%', right: '5%', transform: 'rotate(15deg)' }} 
-              language="javascript" 
-              className="floating-code" 
-            />
-          </ParallaxEffect>
+          <FloatingCode 
+            style={{ top: '15%', right: '5%', transform: 'rotate(15deg)' }} 
+            language="javascript" 
+            className="floating-code" 
+          />
           
-          <ParallaxEffect speed={-0.4}>
-            <FloatingCode 
-              style={{ bottom: '20%', left: '2%', transform: 'rotate(-10deg)' }} 
-              language="python" 
-              className="floating-code" 
-            />
-          </ParallaxEffect>
+          <FloatingCode 
+            style={{ bottom: '20%', left: '2%', transform: 'rotate(-10deg)' }} 
+            language="python" 
+            className="floating-code" 
+          />
           
-          <ParallaxEffect speed={-0.3}>
-            <FloatingCode 
-              style={{ top: '40%', left: '10%', transform: 'rotate(5deg)' }} 
-              language="html" 
-              className="floating-code" 
-            />
-          </ParallaxEffect>
+          <FloatingCode 
+            style={{ top: '40%', left: '10%', transform: 'rotate(5deg)' }} 
+            language="html" 
+            className="floating-code" 
+          />
         </>
       )}
       
@@ -133,9 +127,7 @@ const Index = () => {
         </div>
         
         <div className="lazy-fade-in">
-          <ParallaxEffect speed={isMobile ? 0 : 0.1}>
-            <StatsSection />
-          </ParallaxEffect>
+          <StatsSection />
         </div>
         
         <div className="lazy-fade-in">

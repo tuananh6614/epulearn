@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 
 interface ParallaxProps {
   children: React.ReactNode;
-  speed?: number; // Movement speed factor (negative values move in opposite direction)
+  speed?: number;
   className?: string;
 }
 
@@ -12,40 +12,9 @@ const ParallaxEffect: React.FC<ParallaxProps> = ({
   speed = 0.5, 
   className = ''
 }) => {
-  const elementRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const parallaxElement = elementRef.current;
-    if (!parallaxElement) return;
-
-    let ticking = false;
-    let lastScrollY = window.scrollY;
-
-    const updatePosition = () => {
-      if (!parallaxElement) return;
-      
-      const yPos = lastScrollY * speed;
-      parallaxElement.style.transform = `translate3d(0, ${yPos}px, 0)`;
-      
-      ticking = false;
-    };
-
-    const onScroll = () => {
-      lastScrollY = window.scrollY;
-      
-      if (!ticking) {
-        window.requestAnimationFrame(updatePosition);
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [speed]);
-
+  // Simply return the children without any parallax effect
   return (
-    <div ref={elementRef} className={`parallax-element ${className}`}>
+    <div className={`${className}`}>
       {children}
     </div>
   );

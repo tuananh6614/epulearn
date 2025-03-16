@@ -43,17 +43,15 @@ export function useRealtimeSubscription({
     try {
       // Tạo channel mới với ID duy nhất
       const channelId = `${table}_${Date.now()}`;
-      const newChannel = supabase.channel(channelId);
-
-      // Thiết lập lắng nghe thay đổi từ Postgres
-      newChannel
+      const channel = supabase
+        .channel(channelId)
         .on(
           'postgres_changes',
           {
             event,
             schema,
             table,
-            ...filterConfig,
+            ...(filterConfig || {})
           },
           (payload) => {
             console.log(`[Realtime] Received ${payload.eventType} for ${table}:`, payload);
@@ -70,12 +68,12 @@ export function useRealtimeSubscription({
           }
         });
 
-      setChannel(newChannel);
+      setChannel(channel);
 
       // Cleanup function
       return () => {
         console.log(`[Realtime] Unsubscribing from ${table}`);
-        newChannel.unsubscribe();
+        channel.unsubscribe();
       };
     } catch (err) {
       console.error(`[Realtime] Error subscribing to ${table}:`, err);

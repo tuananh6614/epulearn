@@ -58,7 +58,9 @@ export function useRealtimeSubscription({
           ...(filterConfig || {}) 
         }, 
         (payload) => {
-          console.log(`[Realtime] Received ${payload.eventType} for ${table}:`, payload);
+          // Fix: Access the event property correctly from the payload
+          // The payload structure from postgres_changes doesn't have eventType
+          console.log(`[Realtime] Received ${payload.event} for ${table}:`, payload);
           setLastPayload(payload);
           if (onDataChange) {
             onDataChange(payload);

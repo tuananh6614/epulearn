@@ -1,5 +1,6 @@
 
 import { supabase } from './client';
+import { toast } from 'sonner';
 
 // Add function to update course progress
 export const updateCourseProgress = async (userId: string, courseId: string) => {
@@ -43,7 +44,7 @@ export const updateCourseProgress = async (userId: string, courseId: string) => 
     
     return { success: true, progress: progressPercentage };
   } catch (error) {
-    console.error('Error updating course progress:', error);
+    console.error('[UserProgress] Error updating course progress:', error);
     return { success: false, error };
   }
 };
@@ -58,6 +59,10 @@ export const saveLessonProgress = async (
   completed: boolean = false
 ) => {
   try {
+    console.log('[UserProgress] Saving lesson progress:', { 
+      userId, courseId, lessonId, chapterId, completed
+    });
+    
     // Update the lesson progress
     const { error } = await supabase
       .from('user_lesson_progress')
@@ -72,7 +77,10 @@ export const saveLessonProgress = async (
         updated_at: new Date().toISOString()
       });
       
-    if (error) throw error;
+    if (error) {
+      console.error('[UserProgress] Error in user_lesson_progress upsert:', error);
+      throw error;
+    }
     
     // If the lesson is marked as completed, update overall course progress
     if (completed) {
@@ -81,7 +89,8 @@ export const saveLessonProgress = async (
     
     return { success: true };
   } catch (error) {
-    console.error('Error saving lesson progress:', error);
+    console.error('[UserProgress] Error saving lesson progress:', error);
+    toast.error('Không thể lưu tiến độ học tập. Vui lòng thử lại sau.');
     return { success: false, error };
   }
 };
@@ -104,7 +113,30 @@ export const getCourseProgress = async (userId: string, courseId: string) => {
       lastAccessed: data?.last_accessed || null
     };
   } catch (error) {
-    console.error('Error getting course progress:', error);
+    console.error('[UserProgress] Error getting course progress:', error);
     return { success: false, progress: 0, error };
+  }
+};
+
+// Lấy tiến độ của tất cả các bài học trong một khóa học
+export const getLessonProgressInCourse = async (userId: string, courseId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_lesson_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('course_id', courseId);
+      
+    if (error) throw error;
+    
+    const progressMap = (data || []).reduce((map: Record<string, any>, item) => {
+      map[item.lesson_id] = item;
+      return map;
+    }, {});
+    
+    return { success: true, progressMap };
+  } catch (error) {
+    console.error('[UserProgress] Error getting lesson progress:', error);
+    return { success: false, progressMap: {}, error };
   }
 };

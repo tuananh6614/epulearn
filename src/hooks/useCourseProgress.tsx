@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { useRealtimeSubscription } from './useRealtimeSubscription';
 
 interface UseCourseProgressProps {
   courseId?: string;
@@ -47,7 +48,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
 
     try {
       setLoading(true);
-      console.log('Fetching progress data for courseId:', courseId, 'userId:', user.id);
+      console.log('[CourseProgress] Fetching progress data for courseId:', courseId, 'userId:', user.id);
       
       // Check cache first if not explicitly skipping it
       if (!skipCache) {
@@ -56,7 +57,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         const now = Date.now();
         
         if (cached && now - cached.timestamp < CACHE_DURATION) {
-          console.log('Using cached progress data');
+          console.log('[CourseProgress] Using cached progress data');
           setEnrolled(cached.data.enrolled);
           setProgress(cached.data.progress);
           setLastAccessed(cached.data.lastAccessed);
@@ -74,11 +75,11 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         .maybeSingle();
 
       if (enrollmentError) {
-        console.error('Error checking enrollment:', enrollmentError);
+        console.error('[CourseProgress] Error checking enrollment:', enrollmentError);
         setError(enrollmentError);
       }
 
-      console.log('Progress data received:', data);
+      console.log('[CourseProgress] Progress data received:', data);
       
       if (data) {
         setEnrolled(true);
@@ -102,7 +103,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
       
       setLoading(false);
     } catch (err) {
-      console.error('Error in progress hook:', err);
+      console.error('[CourseProgress] Error in progress hook:', err);
       setError(err instanceof Error ? err : new Error('Unknown error'));
       toast.error('Không thể kiểm tra tiến độ khóa học. Vui lòng thử lại sau.');
       setLoading(false);
@@ -113,6 +114,31 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
   useEffect(() => {
     fetchProgressData();
   }, [fetchProgressData]);
+
+  // Subscribe to realtime updates for this user's course progress
+  useRealtimeSubscription({
+    table: 'user_courses',
+    userId: user?.id,
+    filter: user?.id && courseId ? `user_id=eq.${user.id}&course_id=eq.${courseId}` : undefined,
+    onDataChange: (payload) => {
+      console.log('[CourseProgress] Realtime update detected:', payload);
+      if (payload.new && payload.new.user_id === user?.id && payload.new.course_id === courseId) {
+        setEnrolled(true);
+        setProgress(payload.new.progress_percentage || 0);
+        setLastAccessed(payload.new.last_accessed);
+        
+        // Update cache
+        progressCache.set(getCacheKey(), {
+          data: {
+            enrolled: true,
+            progress: payload.new.progress_percentage || 0,
+            lastAccessed: payload.new.last_accessed
+          },
+          timestamp: Date.now()
+        });
+      }
+    }
+  });
 
   // Function to refresh progress data
   const refreshProgress = async () => {
@@ -126,7 +152,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
     }
 
     try {
-      console.log('Enrolling in course:', courseId);
+      console.log('[CourseProgress] Enrolling in course:', courseId);
       
       // Add user to course
       const { error: enrollError } = await supabase
@@ -140,12 +166,12 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         });
 
       if (enrollError) {
-        console.error('Error enrolling in course:', enrollError);
+        console.error('[CourseProgress] Error enrolling in course:', enrollError);
         toast.error('Không thể đăng ký khóa học. Vui lòng thử lại sau.');
         return false;
       }
 
-      // Update local state
+      // Update local state (không cần thiết do đã có realtime, nhưng giữ để UI cập nhật ngay lập tức)
       setEnrolled(true);
       setProgress(0);
       setLastAccessed(new Date().toISOString());
@@ -163,7 +189,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
       toast.success('Đã đăng ký khóa học thành công!');
       return true;
     } catch (err) {
-      console.error('Error enrolling in course:', err);
+      console.error('[CourseProgress] Error enrolling in course:', err);
       toast.error('Đã xảy ra lỗi khi đăng ký khóa học');
       return false;
     }

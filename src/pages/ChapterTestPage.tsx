@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import GreenButton from '@/components/GreenButton';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 const ChapterTestPage = () => {
   const { courseId, chapterId, lessonId } = useParams();
@@ -18,6 +19,23 @@ const ChapterTestPage = () => {
   const [testCompleted, setTestCompleted] = useState(false);
   const [testPassed, setTestPassed] = useState(false);
   const [nextChapterId, setNextChapterId] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<any>(null);
+
+  // Lắng nghe kết quả bài kiểm tra realtime
+  useRealtimeSubscription({
+    table: 'user_test_results',
+    userId: user?.id,
+    filter: user?.id && chapterId ? `user_id=eq.${user.id}&chapter_id=eq.${chapterId}` : undefined,
+    onDataChange: (payload) => {
+      console.log('[ChapterTest] Realtime test result update:', payload);
+      if (payload.new && payload.new.user_id === user?.id && payload.new.chapter_id === chapterId) {
+        setTestResults(payload.new);
+        const passed = payload.new.passed;
+        setTestPassed(passed);
+        setTestCompleted(true);
+      }
+    }
+  });
 
   useEffect(() => {
     const fetchNextChapter = async () => {
@@ -40,15 +58,34 @@ const ChapterTestPage = () => {
             setNextChapterId(chapters[currentChapterIndex + 1].id);
           }
         }
+        
+        // Kiểm tra nếu đã có kết quả bài kiểm tra trước đó
+        if (user && chapterId) {
+          const { data: previousResult, error: resultError } = await supabase
+            .from('user_test_results')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('chapter_id', chapterId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+            
+          if (!resultError && previousResult) {
+            console.log('[ChapterTest] Found previous test result:', previousResult);
+            setTestResults(previousResult);
+            setTestPassed(previousResult.passed);
+            setTestCompleted(true);
+          }
+        }
       } catch (err) {
-        console.error('Error fetching next chapter:', err);
+        console.error('[ChapterTest] Error fetching next chapter:', err);
       } finally {
         setLoading(false);
       }
     };
     
     fetchNextChapter();
-  }, [courseId, chapterId]);
+  }, [courseId, chapterId, user]);
 
   // Update this function to accept score and total parameters
   const handleTestComplete = (score: number, total: number) => {
@@ -69,6 +106,12 @@ const ChapterTestPage = () => {
       // If there's no next chapter, go back to the course page
       navigate(`/course/${courseId}/start`);
     }
+  };
+  
+  const handleRetakeTest = () => {
+    setTestCompleted(false);
+    setTestPassed(false);
+    setTestResults(null);
   };
 
   if (loading) {
@@ -107,7 +150,7 @@ const ChapterTestPage = () => {
                   Tiếp tục học chương tiếp theo
                 </GreenButton>
               ) : (
-                <Button onClick={() => window.location.reload()}>
+                <Button onClick={handleRetakeTest}>
                   Làm lại bài kiểm tra
                 </Button>
               )}

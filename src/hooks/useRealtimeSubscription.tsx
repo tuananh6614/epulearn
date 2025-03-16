@@ -45,7 +45,7 @@ export function useRealtimeSubscription({
       const newChannel = supabase.channel(`${table}_${Date.now()}`);
 
       // Thiết lập lắng nghe thay đổi từ Postgres
-      newChannel.on(
+      const channel = newChannel.on(
         'postgres_changes',
         {
           event,
@@ -60,7 +60,9 @@ export function useRealtimeSubscription({
             onDataChange(payload);
           }
         }
-      ).subscribe((status) => {
+      );
+
+      channel.subscribe((status) => {
         console.log(`[Realtime] Channel ${table} status:`, status);
         if (status === 'CHANNEL_ERROR') {
           setError(new Error(`Failed to subscribe to ${table}`));

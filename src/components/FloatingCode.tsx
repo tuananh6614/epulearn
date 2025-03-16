@@ -4,9 +4,10 @@ import React from 'react';
 interface FloatingCodeProps {
   style?: React.CSSProperties;
   language?: 'javascript' | 'python' | 'html';
+  className?: string; // Add className prop to the interface
 }
 
-const FloatingCode: React.FC<FloatingCodeProps> = ({ style, language = 'javascript' }) => {
+const FloatingCode: React.FC<FloatingCodeProps> = ({ style, language = 'javascript', className = '' }) => {
   // Simple Hello World code snippets for each language
   const getCodeSnippet = () => {
     switch (language) {
@@ -21,7 +22,7 @@ const FloatingCode: React.FC<FloatingCodeProps> = ({ style, language = 'javascri
 
   return (
     <div
-      className="absolute pointer-events-none select-none opacity-20 text-xs font-mono hover:opacity-60 dark:hover:opacity-70 transition-all duration-300 group"
+      className={`absolute pointer-events-none select-none opacity-20 text-xs font-mono hover:opacity-60 dark:hover:opacity-70 transition-all duration-300 group ${className}`}
       style={{
         ...style,
         animation: `float 10s ease-in-out infinite, rotate-slow 20s linear infinite`,

@@ -17,7 +17,7 @@ const Footer = () => {
               <span className="font-bold text-xl text-gray-900 dark:text-white">EPU<span className="text-green-400">Learn</span></span>
             </Link>
             <p className="text-gray-700 dark:text-gray-300 mb-6">
-              Nền tảng hàng đầu để học các ngôn ngữ lập trình thông qua bài học tương tác và kiểm tra sau mỗi chương.
+              Nền tảng hàng đầu để học các ngôn ngữ lập trình, các bài học liên quan đến các chuyên ngành thông qua bài học tương tác và kiểm tra sau mỗi chương.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors hover-scale">
@@ -38,22 +38,22 @@ const Footer = () => {
           <div className="col-span-1">
             <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">Khóa Học</h3>
             <ul className="space-y-3">
-              <li><Link to="/courses/web-development" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Phát Triển Web</Link></li>
-              <li><Link to="/courses/python" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Python</Link></li>
-              <li><Link to="/courses/javascript" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">JavaScript</Link></li>
-              <li><Link to="/courses/java" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Java</Link></li>
-              <li><Link to="/courses/c-plus-plus" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">C++</Link></li>
+              <li><Link to="/courses" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Phát Triển Web</Link></li>
+              <li><Link to="/courses" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Javascript nâng cao</Link></li>
+              <li><Link to="/courses" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">JavaScript cơ bản</Link></li>
+              <li><Link to="/courses" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">lập trình fullstack</Link></li>
+              <li><Link to="/courses" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">React cơ bản</Link></li>
             </ul>
           </div>
           
           <div className="col-span-1">
             <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">Tài Nguyên</h3>
             <ul className="space-y-3">
-              <li><Link to="/blog" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Blog</Link></li>
-              <li><Link to="/tutorials" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Hướng Dẫn</Link></li>
-              <li><Link to="/documentation" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Tài Liệu</Link></li>
-              <li><Link to="/faq" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">FAQ</Link></li>
-              <li><Link to="/community" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Cộng Đồng</Link></li>
+              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Blog</Link></li>
+              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Hướng Dẫn</Link></li>
+              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Tài Liệu</Link></li>
+              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">FAQ</Link></li>
+              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Cộng Đồng</Link></li>
             </ul>
           </div>
           
@@ -64,18 +64,18 @@ const Footer = () => {
               Nguyễn Tuấn Anh</a></li>
               <li><a href="https://www.facebook.com/inhdung.936915" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">
               Trần Đình Dũng</a></li>
-              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">Lovavle</Link></li>
-              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">GPT</Link></li>
+              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">...</Link></li>
+              <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">...</Link></li>
               <li><Link to="" className="text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">...</Link></li>
             </ul>
           </div>
         </div>
         
         <div className="border-t border-gray-200 dark:border-gray-800 mt-10 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-600 dark:text-gray-400">© 2025 EPU Learn. Phát triển bơi nhóm 1.</p>
+          <p className="text-gray-600 dark:text-gray-400">© 2025 EPU Learn. Phát triển bởi nhóm 1.</p>
           <div className="flex items-center mt-4 md:mt-0">
             <Mail className="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" />
-            <a href="mailto:contact@epulearn.com" className="text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">tuananh6614@gmailgmail.com</a>
+            <a href="mailto:contact@epulearn.com" className="text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors">tuananh6614@gmail.com</a>
           </div>
         </div>
       </div>

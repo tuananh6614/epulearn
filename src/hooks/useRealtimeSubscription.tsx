@@ -42,39 +42,40 @@ export function useRealtimeSubscription({
 
     try {
       // Tạo channel mới với ID duy nhất
-      const newChannel = supabase.channel(`${table}_${Date.now()}`);
+      const channelId = `${table}_${Date.now()}`;
+      const newChannel = supabase.channel(channelId);
 
       // Thiết lập lắng nghe thay đổi từ Postgres
-      const channel = newChannel.on(
-        'postgres_changes',
-        {
-          event,
-          schema,
-          table,
-          ...filterConfig,
-        },
-        (payload) => {
-          console.log(`[Realtime] Received ${payload.eventType} for ${table}:`, payload);
-          setLastPayload(payload);
-          if (onDataChange) {
-            onDataChange(payload);
+      newChannel
+        .on(
+          'postgres_changes',
+          {
+            event,
+            schema,
+            table,
+            ...filterConfig,
+          },
+          (payload) => {
+            console.log(`[Realtime] Received ${payload.eventType} for ${table}:`, payload);
+            setLastPayload(payload);
+            if (onDataChange) {
+              onDataChange(payload);
+            }
           }
-        }
-      );
-
-      channel.subscribe((status) => {
-        console.log(`[Realtime] Channel ${table} status:`, status);
-        if (status === 'CHANNEL_ERROR') {
-          setError(new Error(`Failed to subscribe to ${table}`));
-        }
-      });
+        )
+        .subscribe((status) => {
+          console.log(`[Realtime] Channel ${table} status:`, status);
+          if (status === 'CHANNEL_ERROR') {
+            setError(new Error(`Failed to subscribe to ${table}`));
+          }
+        });
 
       setChannel(newChannel);
 
       // Cleanup function
       return () => {
         console.log(`[Realtime] Unsubscribing from ${table}`);
-        supabase.removeChannel(newChannel);
+        newChannel.unsubscribe();
       };
     } catch (err) {
       console.error(`[Realtime] Error subscribing to ${table}:`, err);

@@ -44,12 +44,13 @@ export function useRealtimeSubscription({
       // Tạo channel mới với ID duy nhất
       const channelId = `${table}_${Date.now()}`;
       
-      // Create and subscribe to the channel with proper configuration
+      // Create the channel first
       const newChannel = supabase.channel(channelId);
       
-      // Configure the channel with postgres_changes event
+      // Configure the channel with postgres_changes events using the correct type pattern
+      // TypeScript expects a specific format for the event listener
       newChannel.on(
-        'postgres_changes', 
+        'postgres_changes' as any, 
         { 
           event, 
           schema, 
@@ -78,7 +79,7 @@ export function useRealtimeSubscription({
       // Cleanup function
       return () => {
         console.log(`[Realtime] Unsubscribing from ${table}`);
-        newChannel.unsubscribe();
+        subscribedChannel.unsubscribe();
       };
     } catch (err) {
       console.error(`[Realtime] Error subscribing to ${table}:`, err);

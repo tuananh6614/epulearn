@@ -43,37 +43,42 @@ export function useRealtimeSubscription({
     try {
       // Tạo channel mới với ID duy nhất
       const channelId = `${table}_${Date.now()}`;
-      const channel = supabase
-        .channel(channelId)
-        .on(
-          'postgres_changes',
-          {
-            event,
-            schema,
-            table,
-            ...(filterConfig || {})
-          },
-          (payload) => {
-            console.log(`[Realtime] Received ${payload.eventType} for ${table}:`, payload);
-            setLastPayload(payload);
-            if (onDataChange) {
-              onDataChange(payload);
-            }
+      
+      // Create channel and configure it properly with the correct method chaining
+      const newChannel = supabase.channel(channelId);
+      
+      // Add the postgres_changes listener
+      newChannel.on(
+        'postgres_changes',
+        {
+          event,
+          schema,
+          table,
+          ...(filterConfig || {})
+        },
+        (payload) => {
+          console.log(`[Realtime] Received ${payload.eventType} for ${table}:`, payload);
+          setLastPayload(payload);
+          if (onDataChange) {
+            onDataChange(payload);
           }
-        )
-        .subscribe((status) => {
-          console.log(`[Realtime] Channel ${table} status:`, status);
-          if (status === 'CHANNEL_ERROR') {
-            setError(new Error(`Failed to subscribe to ${table}`));
-          }
-        });
+        }
+      );
 
-      setChannel(channel);
+      // Subscribe to the channel after setting up the listener
+      const subscribedChannel = newChannel.subscribe((status) => {
+        console.log(`[Realtime] Channel ${table} status:`, status);
+        if (status === 'CHANNEL_ERROR') {
+          setError(new Error(`Failed to subscribe to ${table}`));
+        }
+      });
+
+      setChannel(subscribedChannel);
 
       // Cleanup function
       return () => {
         console.log(`[Realtime] Unsubscribing from ${table}`);
-        channel.unsubscribe();
+        subscribedChannel.unsubscribe();
       };
     } catch (err) {
       console.error(`[Realtime] Error subscribing to ${table}:`, err);

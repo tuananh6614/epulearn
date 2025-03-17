@@ -9,12 +9,12 @@
   "theme_color": "#7cb342",
   "icons": [
     {
-      "src": "/lovable-uploads/1af8949c-0d52-45b0-a78e-daac6e8d6ca9.png",
+      "src": "/placeholder.svg",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/lovable-uploads/1af8949c-0d52-45b0-a78e-daac6e8d6ca9.png",
+      "src": "/placeholder.svg",
       "sizes": "512x512",
       "type": "image/png"
     }

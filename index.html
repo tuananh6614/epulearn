@@ -1,23 +1,25 @@
-
 <!DOCTYPE html>
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Title và description cơ bản (SEO) -->
     <title>EPU Learn - Học Lập Trình Tương Tác</title>
     <meta name="description" content="Học các ngôn ngữ lập trình với bài học tương tác và kiểm tra sau mỗi chương trên EPU Learn." />
-    
+
     <!-- Preload critical assets -->
     <link rel="preload" href="/src/styles/base.css" as="style" />
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" />
-    
+    <link rel="preload"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          as="style" />
+
     <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    
+
     <!-- Critical CSS (minimal styles for initial render) -->
     <style>
-      /* Critical CSS for fastest initial render */
       :root {
         --background: 0 0% 100%;
         --foreground: 240 10% 3.9%;
@@ -45,13 +47,21 @@
         padding-top: 5rem;
       }
     </style>
-    
+
     <!-- Fonts and other styles (loaded asynchronously) -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" media="print" onload="this.media='all'" />
-    <meta name="author" content="EPU Learn" />
-    <meta property="og:image" content="" />
-    
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+          media="print"
+          onload="this.media='all'" />
+
+    <!-- Xóa tất cả thẻ Open Graph hoặc Twitter Card để tránh hiển thị ảnh preview -->
+    <!-- <meta property="og:image" content="..." /> -->
+    <!-- <meta property="og:title" content="..." /> -->
+    <!-- <meta property="og:description" content="..." /> -->
+    <!-- <meta name="twitter:card" content="summary_large_image" /> -->
+
     <!-- App metadata -->
+    <meta name="author" content="EPU Learn" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="EPU Learn" />

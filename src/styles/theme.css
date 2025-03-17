@@ -1,4 +1,3 @@
-
 /* Import base, components, and utility styles */
 @import './base.css';
 @import './components.css';
@@ -10,39 +9,114 @@
   --tablet: 768px;
   --laptop: 1024px;
   --desktop: 1280px;
+  
+  /* Modern interface subtle shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.05), 0 10px 10px -5px rgba(0,0,0,0.02);
+  
+  /* New modern glass effects */
+  --glass-background: rgba(255, 255, 255, 0.7);
+  --glass-background-dark: rgba(26, 32, 44, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-border-dark: rgba(255, 255, 255, 0.1);
+  
+  /* Modern border radius */
+  --radius-sm: 0.25rem;
+  --radius: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
 }
 
-/* Responsive container class */
+/* Responsive container class with improved styling */
 .container-responsive {
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  position: relative;
+  z-index: 1;
 }
 
 @media (min-width: 640px) {
   .container-responsive {
     max-width: 640px;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
 }
 
 @media (min-width: 768px) {
   .container-responsive {
     max-width: 768px;
+    padding-left: 2rem;
+    padding-right: 2rem;
   }
 }
 
 @media (min-width: 1024px) {
   .container-responsive {
     max-width: 1024px;
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
   }
 }
 
 @media (min-width: 1280px) {
   .container-responsive {
     max-width: 1280px;
+    padding-left: 3rem;
+    padding-right: 3rem;
   }
+}
+
+/* Modern glass morphism effect */
+.glass-card {
+  background: var(--glass-background);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.dark .glass-card {
+  background: var(--glass-background-dark);
+  border-color: var(--glass-border-dark);
+}
+
+/* Modern button styles */
+.button-modern {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  transform: translateY(0);
+}
+
+.button-modern:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.button-modern::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 80%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.button-modern:active::after {
+  opacity: 0.6;
 }
 
 /* Fix for mobile portrait-mode screens */
@@ -69,4 +143,60 @@
   .hide-on-tablet {
     display: none;
   }
+}
+
+/* Modern card hover effects */
+.hover-card-modern {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hover-card-modern:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Modern text gradients */
+.text-gradient-green {
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+.text-gradient-blue {
+  background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+.text-gradient-purple {
+  background: linear-gradient(90deg, #a855f7, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+/* Modern animation utilities */
+.hover-lift {
+  transition: transform 0.2s ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+.hover-glow {
+  transition: box-shadow 0.2s ease-out;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+}
+
+.dark .hover-glow:hover {
+  box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);
 }

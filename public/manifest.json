@@ -1,13 +1,18 @@
 
 {
-  "name": "EPU Learn - Học Lập Trình Tương Tác",
+  "name": "EPU Learn - Nền tảng học lập trình trực tuyến",
   "short_name": "EPU Learn",
-  "description": "Nền tảng học lập trình tương tác với bài kiểm tra sau mỗi chương",
+  "description": "Nền tảng học lập trình tương tác với bài kiểm tra sau mỗi chương dành cho sinh viên CNTT",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#7cb342",
+  "theme_color": "#4ade80",
   "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
     {
       "src": "/placeholder.svg",
       "sizes": "192x192",
@@ -18,5 +23,23 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Khóa học",
+      "short_name": "Khóa học",
+      "description": "Xem tất cả khóa học",
+      "url": "/courses",
+      "icons": [{ "src": "/placeholder.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Đăng nhập",
+      "short_name": "Đăng nhập",
+      "description": "Đăng nhập vào tài khoản của bạn",
+      "url": "/login",
+      "icons": [{ "src": "/placeholder.svg", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

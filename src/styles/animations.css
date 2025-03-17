@@ -1,7 +1,7 @@
 
-/* Lovable-inspired animations */
+/* Modern animations */
 
-/* Gradient animation */
+/* Gradient animation - improved */
 @keyframes gradient-shift {
   0% {
     background-position: 0% 50%;
@@ -19,11 +19,11 @@
   animation: gradient-shift 15s ease infinite;
 }
 
-/* Lovable-like fade in animation */
+/* Modern fade in animation with subtle lift */
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -32,13 +32,13 @@
 }
 
 .fade-in {
-  animation: fade-in 0.5s ease-out forwards;
+  animation: fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* Staggered fade in for children */
+/* Modern staggered fade in for children */
 .stagger-fade-in > * {
   opacity: 0;
-  animation: fade-in 0.5s ease-out forwards;
+  animation: fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .stagger-fade-in > *:nth-child(1) { animation-delay: 0.1s; }
@@ -48,7 +48,35 @@
 .stagger-fade-in > *:nth-child(5) { animation-delay: 0.5s; }
 .stagger-fade-in > *:nth-child(6) { animation-delay: 0.6s; }
 
-/* Firefly animation */
+/* Modern shimmer effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.2) 20%, 
+    rgba(255, 255, 255, 0.5) 60%, 
+    rgba(255, 255, 255, 0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.dark .shimmer {
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.1) 20%, 
+    rgba(255, 255, 255, 0.2) 60%, 
+    rgba(255, 255, 255, 0) 100%);
+}
+
+/* Elegant firefly animation */
 @keyframes firefly-move {
   0%, 100% {
     transform: translateX(0) translateY(0);
@@ -71,21 +99,23 @@
   z-index: 0;
 }
 
-/* Lovable logo pulse */
-@keyframes logo-pulse {
+/* Modern pulse animation */
+@keyframes modern-pulse {
   0%, 100% {
     transform: scale(1);
+    opacity: 1;
   }
   50% {
-    transform: scale(1.05);
+    transform: scale(1.08);
+    opacity: 0.8;
   }
 }
 
-.logo-pulse {
-  animation: logo-pulse 4s ease-in-out infinite;
+.modern-pulse {
+  animation: modern-pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Gentle floating animation */
+/* Modern floating animation */
 @keyframes float {
   0%, 100% {
     transform: translateY(0);
@@ -96,10 +126,10 @@
 }
 
 .float {
-  animation: float 6s ease-in-out infinite;
+  animation: float 6s cubic-bezier(0.37, 0, 0.63, 1) infinite;
 }
 
-/* Lovable-style typing cursor */
+/* Modern typing cursor */
 @keyframes blink {
   0%, 100% {
     opacity: 1;
@@ -119,28 +149,28 @@
   animation: blink 1s step-start infinite;
 }
 
-/* Lovable card hover effect */
-.lovable-card {
-  transition: all 0.3s ease;
+/* Modern card hover effect */
+.modern-card {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.lovable-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
+.modern-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.1);
 }
 
-.dark .lovable-card:hover {
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+.dark .modern-card:hover {
+  box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.4);
 }
 
-/* Lovable button hover effect */
-.lovable-button-effect {
+/* Modern button hover effect */
+.modern-button-effect {
   position: relative;
   overflow: hidden;
   z-index: 1;
 }
 
-.lovable-button-effect:after {
+.modern-button-effect:after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -150,48 +180,110 @@
   background-color: rgba(255, 255, 255, 0.2);
   transform: scaleX(0);
   transform-origin: right;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: -1;
 }
 
-.lovable-button-effect:hover:after {
+.modern-button-effect:hover:after {
   transform: scaleX(1);
   transform-origin: left;
 }
 
-.dark .lovable-button-effect:after {
+.dark .modern-button-effect:after {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Lovable gradient text animation */
+/* Modern gradient text animation */
 .gradient-text-animate {
   background-size: 200% auto;
-  background-image: linear-gradient(to right, #2780E3, #0EA5E9, #2780E3);
+  background-image: linear-gradient(to right, #4ade80, #22c55e, #4ade80);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
   animation: gradient-shift 3s linear infinite;
 }
 
-/* Lovable smooth page transitions */
-.page-transition-enter {
+/* Elegant spotlight hover effect */
+.spotlight-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight-effect::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
   opacity: 0;
-  transform: translateY(20px);
+  transition: opacity 0.3s;
+  pointer-events: none;
+  transform: translate(-100%, -100%);
 }
 
-.page-transition-enter-active {
+.spotlight-effect:hover::before {
   opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.4s, transform 0.4s;
+  transform: translate(var(--x, 0), var(--y, 0));
 }
 
-.page-transition-exit {
-  opacity: 1;
-  transform: translateY(0);
+/* Modern swipe reveal animation */
+@keyframes swipe-reveal {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
-.page-transition-exit-active {
+.swipe-reveal {
+  position: relative;
+  overflow: hidden;
+}
+
+.swipe-reveal::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #4ade80;
+  transform: translateX(-100%);
+  z-index: 1;
+}
+
+.swipe-reveal-active::after {
+  animation: swipe-reveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.swipe-reveal-content {
   opacity: 0;
-  transform: translateY(-20px);
-  transition: opacity 0.4s, transform 0.4s;
+  transition: opacity 0.3s ease 0.4s;
+}
+
+.swipe-reveal-active .swipe-reveal-content {
+  opacity: 1;
+}
+
+/* Modern scale animation for attention */
+@keyframes scale-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.1);
+  }
+  60% {
+    transform: scale(0.95);
+  }
+  80% {
+    transform: scale(1.05);
+  }
+}
+
+.scale-attention {
+  animation: scale-bounce 1s cubic-bezier(0.22, 1, 0.36, 1);
 }

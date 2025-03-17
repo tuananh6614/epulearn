@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import { Code, BookOpen, GraduationCap, Home, Menu, X, User, LogOut, Crown } from "lucide-react";
+import { BookOpen, GraduationCap, Home, Menu, X, User, LogOut, Crown } from "lucide-react";
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -38,7 +37,6 @@ const Navbar = () => {
   }, []);
   
   useEffect(() => {
-    // Close mobile menu when screen size changes
     const handleResize = () => {
       if (window.innerWidth >= 768 && mobileMenuOpen) {
         setMobileMenuOpen(false);
@@ -51,7 +49,6 @@ const Navbar = () => {
     };
   }, [mobileMenuOpen]);
   
-  // Disable scroll when mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -75,9 +72,11 @@ const Navbar = () => {
       <div className="container-responsive mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center gap-2 font-bold text-xl">
-            <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-md bg-gradient-to-r from-green-500 to-blue-500 shadow-inner">
-              <Code className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-            </div>
+            <img 
+              src="/lovable-uploads/1af8949c-0d52-45b0-a78e-daac6e8d6ca9.png" 
+              alt="EPULearn Logo" 
+              className="h-8 w-8 sm:h-10 sm:w-10 rounded-md"
+            />
             <span className="text-gray-900 dark:text-white font-bold tracking-wide text-sm sm:text-xl">EPU<span className="text-green-400">Learn</span></span>
           </Link>
         </div>

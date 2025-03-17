@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -23,7 +22,6 @@ const Hero = () => {
       const x = e.clientX;
       const y = e.clientY;
       
-      // Use requestAnimationFrame for smoother performance
       requestAnimationFrame(() => {
         layers.forEach((layer: Element) => {
           const htmlLayer = layer as HTMLElement;
@@ -66,7 +64,7 @@ const Hero = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="space-y-6">
             <div className="parallax-mouse-layer" data-speed="1.5">
-              <div className="typewriter mb-4">
+              <div className="mb-4">
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-white leading-tight mb-4 inline-block">
                   Học lập trình cùng EPU
                   <span className="text-green-500 [text-shadow:0_0_8px_rgba(34,197,94,0.7)]">
@@ -80,7 +78,6 @@ const Hero = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 parallax-mouse-layer" data-speed="1">
-              {/* Gói HoverButton trong Link để có thể chuyển trang khi click */}
               <Link to="/courses">
                 <HoverButton />
               </Link>

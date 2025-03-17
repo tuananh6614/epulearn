@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface NumberRainProps {
   density?: number;
@@ -17,166 +17,193 @@ const NumberRain: React.FC<NumberRainProps> = ({
   interactive = true
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const requestRef = useRef<number>();
+  const columnsRef = useRef<any[]>([]);
+  const mouseXRef = useRef(0);
+  const mouseYRef = useRef(0);
+  
+  // Use Intersection Observer to only animate when visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          setIsVisible(entry.isIntersecting);
+        });
+      },
+      { threshold: 0.1 }
+    );
+    
+    if (canvasRef.current) {
+      observer.observe(canvasRef.current);
+    }
+    
+    return () => {
+      if (canvasRef.current) {
+        observer.unobserve(canvasRef.current);
+      }
+    };
+  }, []);
   
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
-
-    let animationFrameId: number;
-    let mouseX = 0;
-    let mouseY = 0;
     
-    // Resize handler to maintain full-screen canvas
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    
-    // Initial sizing
-    handleResize();
-    window.addEventListener('resize', handleResize);
-
-    // Track mouse position for interactive effect
+    // Mouse tracking
     const handleMouseMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
+      mouseXRef.current = e.clientX;
+      mouseYRef.current = e.clientY;
     };
     
     if (interactive) {
       window.addEventListener('mousemove', handleMouseMove);
     }
 
-    // Create the matrix effect
-    class Column {
-      x: number;
-      speed: number;
-      fontSize: number;
-      text: string;
-      private drops: number[];
+    // Resize handler to maintain full-screen canvas
+    const handleResize = () => {
+      if (canvas) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Regenerate columns when resizing
+        initColumns();
+      }
+    };
+    
+    // Initialize columns
+    const initColumns = () => {
+      // Clear previous columns
+      columnsRef.current = [];
       
-      constructor(x: number, speed: number, fontSize: number) {
-        this.x = x;
-        this.speed = speed;
-        this.fontSize = fontSize;
-        this.drops = [];
-        this.text = '';
+      // Calculate columns based on density
+      const fontSize = 14;
+      const columnsCount = Math.ceil(canvas.width / fontSize) * (density / 100);
+      
+      for (let i = 0; i < columnsCount; i++) {
+        const x = i * fontSize + Math.random() * fontSize;
+        const columnSpeed = speed * (0.8 + Math.random() * 0.4); // Random speed variation
         
-        // Generate initial drops
-        const length = Math.floor(Math.random() * 15) + 5;
-        for (let i = 0; i < length; i++) {
-          this.drops.push(-Math.floor(Math.random() * canvas.height));
-        }
-        
-        // Generate random text for this column
-        this.generateText();
+        columnsRef.current.push({
+          x,
+          speed: columnSpeed,
+          fontSize,
+          drops: Array.from({ length: Math.floor(Math.random() * 15) + 5 }, 
+                           () => -Math.floor(Math.random() * canvas.height)),
+          text: Array.from({ length: Math.floor(Math.random() * 15) + 5 }, 
+                          () => characters.charAt(Math.floor(Math.random() * characters.length)))
+        });
+      }
+    };
+    
+    // Animation function with performance optimizations
+    const draw = () => {
+      if (!isVisible || !ctx) {
+        return;
       }
       
-      generateText() {
-        this.text = '';
-        for (let i = 0; i < this.drops.length; i++) {
-          this.text += characters.charAt(Math.floor(Math.random() * characters.length));
-        }
-      }
+      // Use semi-transparent rect instead of fillRect for better performance
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      draw(ctx: CanvasRenderingContext2D) {
+      // Draw columns
+      columnsRef.current.forEach(column => {
         let opacity = 1;
         
         if (interactive) {
           // Calculate distance from mouse
-          const distance = Math.sqrt(Math.pow(this.x - mouseX, 2) + Math.pow(this.drops[0] - mouseY, 2));
+          const distance = Math.hypot(column.x - mouseXRef.current, column.drops[0] - mouseYRef.current);
           const maxDistance = 200; // Max distance for interaction
           
           if (distance < maxDistance) {
             // Move away from cursor
             const repelFactor = 1 - (distance / maxDistance);
-            this.speed = speed * (1 + repelFactor);
+            column.speed = speed * (1 + repelFactor);
             opacity = 0.3 + (0.7 * (distance / maxDistance));
           } else {
-            this.speed = speed;
+            column.speed = speed;
             opacity = 1;
           }
         }
         
         ctx.fillStyle = color;
-        ctx.font = `${this.fontSize}px monospace`;
+        ctx.font = `${column.fontSize}px monospace`;
         
-        for (let i = 0; i < this.drops.length; i++) {
-          // Randomize characters sometimes
-          if (Math.random() > 0.98) {
-            this.text = this.text.substring(0, i) + 
-                        characters.charAt(Math.floor(Math.random() * characters.length)) + 
-                        this.text.substring(i + 1);
+        for (let i = 0; i < column.drops.length; i++) {
+          // Randomize characters occasionally (reduced frequency for performance)
+          if (Math.random() > 0.99) {
+            column.text[i] = characters.charAt(Math.floor(Math.random() * characters.length));
           }
           
           // First character is brighter
-          const individualOpacity = i === 0 ? 1 : (1 - i / this.drops.length) * 0.8;
+          const individualOpacity = i === 0 ? 1 : (1 - i / column.drops.length) * 0.8;
           ctx.globalAlpha = individualOpacity * opacity;
           
+          // Draw character
           ctx.fillText(
-            this.text[i],
-            this.x,
-            this.drops[i]
+            column.text[i],
+            column.x,
+            column.drops[i]
           );
           
           // Move drop
-          this.drops[i] += this.speed;
+          column.drops[i] += column.speed;
           
           // Reset drop if it's offscreen
-          if (this.drops[i] > canvas.height) {
-            this.drops[i] = 0;
-            // Generate new character
-            this.text = this.text.substring(0, i) + 
-                        characters.charAt(Math.floor(Math.random() * characters.length)) + 
-                        this.text.substring(i + 1);
+          if (column.drops[i] > canvas.height) {
+            column.drops[i] = 0;
+            column.text[i] = characters.charAt(Math.floor(Math.random() * characters.length));
           }
         }
-        
-        ctx.globalAlpha = 1;
-      }
-    }
-    
-    // Calculate columns based on density
-    const fontSize = 14;
-    const columns = [];
-    const columnsCount = Math.ceil(canvas.width / fontSize) * (density / 100);
-    
-    for (let i = 0; i < columnsCount; i++) {
-      const x = i * fontSize + Math.random() * fontSize;
-      const columnSpeed = speed * (0.8 + Math.random() * 0.4); // Random speed variation
-      columns.push(new Column(x, columnSpeed, fontSize));
-    }
-    
-    // Animation loop
-    const animate = () => {
-      // Semi-transparent black for trail effect
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      });
       
-      columns.forEach(column => column.draw(ctx));
-      
-      animationFrameId = requestAnimationFrame(animate);
+      // Reset global alpha
+      ctx.globalAlpha = 1;
     };
     
-    animate();
+    // Animation loop with performance throttling
+    let lastFrame = 0;
+    const targetFPS = 30; // Lower FPS for better performance
+    const frameInterval = 1000 / targetFPS;
     
+    const animate = (timestamp: number) => {
+      if (!lastFrame || timestamp - lastFrame >= frameInterval) {
+        lastFrame = timestamp;
+        draw();
+      }
+      
+      requestRef.current = requestAnimationFrame(animate);
+    };
+    
+    // Initialize and start the animation
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    
+    if (isVisible) {
+      requestRef.current = requestAnimationFrame(animate);
+    }
+    
+    // Cleanup function
     return () => {
       window.removeEventListener('resize', handleResize);
       if (interactive) {
         window.removeEventListener('mousemove', handleMouseMove);
       }
-      cancelAnimationFrame(animationFrameId);
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
     };
-  }, [density, speed, characters, color, interactive]);
+  }, [density, speed, characters, color, interactive, isVisible]);
   
   return (
     <canvas 
       ref={canvasRef}
       className="fixed top-0 left-0 w-full h-full pointer-events-none z-[-1]"
+      style={{ visibility: isVisible ? 'visible' : 'hidden' }}
     />
   );
 };
 
-export default NumberRain;
+export default React.memo(NumberRain);

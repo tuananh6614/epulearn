@@ -6,6 +6,7 @@ import CodeAnimation from './CodeAnimation';
 import ParallaxEffect from './ParallaxEffect';
 import HoverButton from './HoverButton';
 import { useIsMobile } from '@/hooks/use-mobile';
+import ButtonVip from './ButtonVip';
 
 const Hero = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -77,13 +78,15 @@ const Hero = () => {
               </p>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-4 parallax-mouse-layer" data-speed="1">
+            <div className="flex items-center gap-4 parallax-mouse-layer" data-speed="1">
               <Link to="/courses">
                 <HoverButton />
               </Link>
-              <Button variant="outline" className="interactive-button border-blue-500 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium px-4 sm:px-6 py-2 h-auto rounded-md text-sm sm:text-base touch-target" asChild>
-                <Link to="/lesson-demo">Thử Bài Học Demo</Link>
-              </Button>
+              
+                <Link to="/vip-courses">
+                <ButtonVip />
+                </Link>
+            
             </div>
           </div>
           

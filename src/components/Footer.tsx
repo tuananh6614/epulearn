@@ -26,19 +26,19 @@ const Footer = () => {
               Nền tảng học tập hàng đầu cho sinh viên ngành CNTT, với các bài học tương tác và kiểm tra sau mỗi chương để củng cố kiến thức.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors hover-scale hover:scale-110 transition-all">
+              <a href="https://sinhvien.epu.edu.vn/Default.aspx" target="_blank" rel="noopener noreferrer" className="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors hover-scale hover:scale-110 transition-all">
                 <Facebook className="h-5 w-5" />
               </a>
               <a href="#" className="text-gray-500 dark:text-gray-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors hover:scale-110 transition-all">
                 <Twitter className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-500 dark:text-gray-400 hover:text-pink-500 dark:hover:text-pink-400 transition-colors hover:scale-110 transition-all">
+              <a href="https://www.instagram.com/panda_anh214/?hl=pt-brT%C3%A1" target="_blank" rel="noopener noreferrer" className="text-gray-500 dark:text-gray-400 hover:text-pink-500 dark:hover:text-pink-400 transition-colors hover:scale-110 transition-all">
                 <Instagram className="h-5 w-5" />
               </a>
               <a href="#" className="text-gray-500 dark:text-gray-400 hover:text-blue-700 dark:hover:text-blue-400 transition-colors hover:scale-110 transition-all">
                 <Linkedin className="h-5 w-5" />
               </a>
-              <a href="#" className="text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors hover:scale-110 transition-all">
+              <a href="https://www.youtube.com/watch?v=abPmZCZZrFA" target="_blank" rel="noopener noreferrer" className="text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors hover:scale-110 transition-all">
                 <Youtube className="h-5 w-5" />
               </a>
               <a href="https://github.com/Boybetanol/EPULearn" target="_blank" rel="noopener noreferrer" className="text-gray-500 dark:text-gray-400 hover:text-purple-500 dark:hover:text-purple-400 transition-colors hover:scale-110 transition-all">
@@ -146,19 +146,19 @@ const Footer = () => {
               <li>
                 <Link to="" className="text-gray-700 dark:text-gray-300 hover:text-green-500 dark:hover:text-green-400 transition-colors flex items-center">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></span>
-                  Đặng Ngọc Cường
+                 ...
                 </Link>
               </li>
               <li>
                 <Link to="" className="text-gray-700 dark:text-gray-300 hover:text-green-500 dark:hover:text-green-400 transition-colors flex items-center">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></span>
-                  Nguyễn Mạnh Thắng
+                  ..
                 </Link>
               </li>
               <li>
                 <Link to="" className="text-gray-700 dark:text-gray-300 hover:text-green-500 dark:hover:text-green-400 transition-colors flex items-center">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></span>
-                  Vũ Đình Thái
+                 ..
                 </Link>
               </li>
             </ul>

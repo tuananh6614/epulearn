@@ -221,7 +221,7 @@ const VipPurchaseForm = () => {
       title: "1 Năm",
       months: 12,
       price: 2400000, // Giá gốc giữ nguyên
-      discount: 40,
+      discount: 30,
       features: [
         "Truy cập đầy đủ tất cả khóa học VIP",
         "Hỗ trợ trực tiếp từ giảng viên",

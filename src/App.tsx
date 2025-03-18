@@ -1,9 +1,8 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -27,6 +26,7 @@ const GeneralTestPage = lazy(() => import("./pages/GeneralTestPage"));
 const StartLearningPage = lazy(() => import("./pages/StartLearningPage"));
 const TestHistoryPage = lazy(() => import("./pages/TestHistoryPage"));
 const ChapterContent = lazy(() => import("./pages/ChapterContent"));
+const UseCaseDiagram = lazy(() => import("./pages/UseCaseDiagram"));
 
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -56,7 +56,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <BrowserRouter>
+        <Router>
           <AuthProvider>
             <Toaster />
             <Sonner />
@@ -150,10 +150,11 @@ function App() {
                 
                 {/* Catch-all route */}
                 <Route path="*" element={<NotFound />} />
+                <Route path="/use-case-diagram" element={<UseCaseDiagram />} />
               </Routes>
             </Suspense>
           </AuthProvider>
-        </BrowserRouter>
+        </Router>
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -22,11 +22,11 @@ const ButtonVip = ({
     <ShadcnButton
       className={`
         ${variant === "primary" 
-          ? "bg-indigo-500 hover:bg-indigo-600 text-white hover:shadow-lg hover:shadow-indigo-500/20 dark:hover:shadow-indigo-500/10" 
+          ? "bg-indigo-500 hover:bg-indigo-600 text-white" 
           : variant === "outline" 
-          ? "border-2 border-indigo-500 bg-transparent text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-600 dark:hover:bg-indigo-900/20" 
-          : "bg-gray-100 hover:bg-gray-200 text-gray-900 hover:text-gray-950 hover:shadow-sm"}
-        w-full flex items-center justify-center gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]
+          ? "border-2 border-indigo-500 bg-transparent text-indigo-600 hover:bg-indigo-50" 
+          : "bg-gray-100 hover:bg-gray-200 text-gray-900"}
+        w-full flex items-center justify-center gap-2 
         ${className || ""}
       `}
       onClick={onClick}

@@ -18,7 +18,7 @@ const GreenButton = ({
   return (
     <ShadcnButton
       className={cn(
-        "bg-green-500 hover:bg-green-600 text-white flex items-center justify-center gap-2",
+        "bg-green-500 hover:bg-green-600 text-white flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/20 dark:hover:shadow-green-500/10 hover:scale-[1.02] active:scale-[0.98]",
         className
       )}
       {...props}

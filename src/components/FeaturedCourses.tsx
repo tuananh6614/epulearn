@@ -56,7 +56,7 @@ const FeaturedCourses = () => {
       
       // Transform data to match Course interface
       const formattedCourses: Course[] = coursesData.map((course) => ({
-        id: course.id,
+        id: course.id, // Keep as string for now - will be cast to number when needed
         title: course.title,
         description: course.description,
         level: course.level,
@@ -70,6 +70,12 @@ const FeaturedCourses = () => {
         isFeatured: course.is_featured,
         instructor: course.instructor,
         chapters: [],  // Chapters will be loaded separately when viewing course details
+        // Add required properties from Course type
+        is_premium: course.is_premium,
+        is_featured: course.is_featured,
+        created_at: course.created_at,
+        updated_at: course.updated_at,
+        status: 'published'
       }));
       
       setFeaturedCourses(formattedCourses);
@@ -157,8 +163,8 @@ const FeaturedCourses = () => {
           {featuredCourses.length > 0 ? (
             featuredCourses.map((course) => (
               <CourseCard 
-                key={course.id} 
-                id={course.id}
+                key={course.id.toString()} 
+                id={course.id.toString()}
                 title={course.title}
                 description={course.description}
                 level={course.level}

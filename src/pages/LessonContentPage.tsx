@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
 import GreenButton from '@/components/GreenButton';
 import { saveLessonProgress, getLessonPages } from '@/integrations/supabase/userProgressServices';
+import { toNumberId, toStringId, idsAreEqual } from '@/utils/idConverter';
 
 interface Lesson {
   id: number;
@@ -179,9 +180,9 @@ const LessonContentPage = () => {
       try {
         await saveLessonProgress(
           user.id,
-          parseInt(courseId),
-          parseInt(lessonId),
-          parseInt(chapterId || "0"),
+          toStringId(courseId),
+          toStringId(lessonId),
+          toStringId(chapterId || "0"),
           { scrollPosition: 0 },
           false,
           pages[newIndex].id
@@ -198,9 +199,9 @@ const LessonContentPage = () => {
     try {
       await saveLessonProgress(
         user.id,
-        parseInt(courseId),
-        parseInt(lessonId),
-        parseInt(chapterId),
+        toStringId(courseId),
+        toStringId(lessonId),
+        toStringId(chapterId),
         { scrollPosition: window.scrollY },
         true,
         pages[currentPageIndex]?.id

@@ -15,13 +15,15 @@ import { useCourseData } from '@/hooks/useCourseData';
 import { fetchCourseContent } from '@/integrations/supabase/courseServices';
 import { enrollUserInCourse } from '@/integrations/supabase/apiUtils';
 import Navbar from '@/components/Navbar';
+import { toNumberId } from '@/utils/idConverter';
 
 const CourseDetail: React.FC = () => {
-  const { courseId } = useParams();
+  const { courseId } = useParams<{ courseId: string }>();
+  const numericCourseId = toNumberId(courseId);
   const navigate = useNavigate();
   const { user, currentUser } = useAuth();
   
-  const { courseData, userProgress, isEnrolled, loading, error, enrollInCourse } = useCourseData(courseId);
+  const { courseData, isEnrolled, loading, error, enrollInCourse } = useCourseData(numericCourseId);
   const course = courseData;
   
   useEffect(() => {
@@ -67,12 +69,10 @@ const CourseDetail: React.FC = () => {
   };
   
   return (
-    // Đổi pt-16 thành pt-20 (hoặc pt-[72px], v.v.) để tránh header đè lên nội dung
     <div className="min-h-screen bg-background pt-20">
       <Navbar />
       <div className="container max-w-6xl py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Course Content */}
           <div className="md:col-span-2 ">
             <Card className="bg-white dark:bg-secondary ">
               <CardHeader>
@@ -213,7 +213,6 @@ const CourseDetail: React.FC = () => {
             </Card>
           </div>
           
-          {/* Course Sidebar */}
           <div className="md:col-span-1">
             <Card className="bg-white dark:bg-secondary">
               <CardHeader>

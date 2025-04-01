@@ -3,13 +3,13 @@ import { supabase } from './client';
 import { toast } from 'sonner';
 
 // Add function to update course progress
-export const updateCourseProgress = async (userId: string, courseId: number) => {
+export const updateCourseProgress = async (userId: string, courseId: number | string) => {
   try {
     // First get total lesson count for this course
     const { data: lessons, error: lessonError } = await supabase
       .from('lessons')
       .select('id')
-      .eq('course_id', courseId);
+      .eq('course_id', courseId.toString());
       
     if (lessonError) throw lessonError;
     const totalLessons = lessons?.length || 0;
@@ -21,7 +21,7 @@ export const updateCourseProgress = async (userId: string, courseId: number) => 
       .from('user_lesson_progress')
       .select('id')
       .eq('user_id', userId)
-      .eq('course_id', courseId)
+      .eq('course_id', courseId.toString())
       .eq('completed', true);
       
     if (progressError) throw progressError;
@@ -35,7 +35,7 @@ export const updateCourseProgress = async (userId: string, courseId: number) => 
       .from('user_courses')
       .upsert({
         user_id: userId,
-        course_id: courseId,
+        course_id: courseId.toString(),
         progress_percentage: progressPercentage,
         last_accessed: new Date().toISOString()
       });
@@ -52,9 +52,9 @@ export const updateCourseProgress = async (userId: string, courseId: number) => 
 // Function to track user position in a lesson
 export const saveLessonProgress = async (
   userId: string,
-  courseId: number,
-  lessonId: number,
-  chapterId: number,
+  courseId: number | string,
+  lessonId: number | string,
+  chapterId: number | string,
   position: any, // Could be time position for video, or scroll position, etc.
   completed: boolean = false,
   currentPageId?: number // Page ID is already an integer
@@ -69,9 +69,9 @@ export const saveLessonProgress = async (
       .from('user_lesson_progress')
       .upsert({
         user_id: userId,
-        lesson_id: lessonId,
-        course_id: courseId,
-        chapter_id: chapterId,
+        lesson_id: lessonId.toString(),
+        course_id: courseId.toString(),
+        chapter_id: chapterId.toString(),
         completed,
         last_position: JSON.stringify(position),
         completed_at: completed ? new Date().toISOString() : null,
@@ -98,13 +98,13 @@ export const saveLessonProgress = async (
 };
 
 // Function to get the user's progress in a course
-export const getCourseProgress = async (userId: string, courseId: number) => {
+export const getCourseProgress = async (userId: string, courseId: number | string) => {
   try {
     const { data, error } = await supabase
       .from('user_courses')
       .select('progress_percentage, last_accessed')
       .eq('user_id', userId)
-      .eq('course_id', courseId)
+      .eq('course_id', courseId.toString())
       .maybeSingle(); // Using maybeSingle instead of single to avoid errors if no data
       
     if (error) throw error;
@@ -121,13 +121,13 @@ export const getCourseProgress = async (userId: string, courseId: number) => {
 };
 
 // Lấy tiến độ của tất cả các bài học trong một khóa học
-export const getLessonProgressInCourse = async (userId: string, courseId: number) => {
+export const getLessonProgressInCourse = async (userId: string, courseId: number | string) => {
   try {
     const { data, error } = await supabase
       .from('user_lesson_progress')
       .select('*')
       .eq('user_id', userId)
-      .eq('course_id', courseId);
+      .eq('course_id', courseId.toString());
       
     if (error) throw error;
     
@@ -144,12 +144,12 @@ export const getLessonProgressInCourse = async (userId: string, courseId: number
 };
 
 // Function to get lesson pages
-export const getLessonPages = async (lessonId: number) => {
+export const getLessonPages = async (lessonId: number | string) => {
   try {
     const { data, error } = await supabase
       .from('pages')
       .select('*')
-      .eq('lesson_id', lessonId)
+      .eq('lesson_id', lessonId.toString())
       .order('order_index', { ascending: true });
     
     if (error) {

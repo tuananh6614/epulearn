@@ -1,4 +1,3 @@
-
 // Cập nhật chỉ các hàm bị lỗi và phần giao diện EnrolledCourse
 
 import { supabase } from '@/integrations/supabase/client';
@@ -509,14 +508,14 @@ export const clearCache = () => {
   console.log('Cache cleared');
 };
 
-// Update this function to support integer-based course IDs
-export const enrollUserInCourse = async (userId: string, courseId: number): Promise<{ success: boolean, error?: any }> => {
+// Update this function to support both string and number course IDs
+export const enrollUserInCourse = async (userId: string, courseId: string | number): Promise<{ success: boolean, error?: any }> => {
   try {
     const { error } = await supabase
       .from('user_courses')
       .upsert({
         user_id: userId,
-        course_id: courseId,
+        course_id: courseId.toString(), // Convert to string for compatibility with Supabase
         progress_percentage: 0,
         enrolled_at: new Date().toISOString(),
         last_accessed: new Date().toISOString()

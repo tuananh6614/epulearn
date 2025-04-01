@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useRealtimeSubscription } from './useRealtimeSubscription';
 
 interface UseCourseProgressProps {
-  courseId?: number;
+  courseId?: number | string;
 }
 
 interface CourseProgressData {
@@ -71,7 +71,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         .from('user_courses')
         .select('progress_percentage, last_accessed')
         .eq('user_id', user.id)
-        .eq('course_id', courseId)
+        .eq('course_id', courseId.toString())
         .maybeSingle();
 
       if (enrollmentError) {
@@ -119,10 +119,10 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
   useRealtimeSubscription({
     table: 'user_courses',
     userId: user?.id,
-    filter: user?.id && courseId ? `user_id=eq.${user.id}&course_id=eq.${courseId}` : undefined,
+    filter: user?.id && courseId ? `user_id=eq.${user.id}&course_id=eq.${courseId.toString()}` : undefined,
     onDataChange: (payload) => {
       console.log('[CourseProgress] Realtime update detected:', payload);
-      if (payload.new && payload.new.user_id === user?.id && Number(payload.new.course_id) === courseId) {
+      if (payload.new && payload.new.user_id === user?.id && payload.new.course_id === courseId?.toString()) {
         setEnrolled(true);
         setProgress(payload.new.progress_percentage || 0);
         setLastAccessed(payload.new.last_accessed);
@@ -159,7 +159,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         .from('user_courses')
         .upsert({
           user_id: user.id,
-          course_id: courseId,
+          course_id: courseId.toString(),
           progress_percentage: 0,
           enrolled_at: new Date().toISOString(),
           last_accessed: new Date().toISOString()
@@ -171,7 +171,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         return false;
       }
 
-      // Update local state (không cần thiết do đã có realtime, nhưng giữ để UI cập nhật ngay lập tức)
+      // Update local state
       setEnrolled(true);
       setProgress(0);
       setLastAccessed(new Date().toISOString());

@@ -14,8 +14,8 @@ import Navbar from '@/components/Navbar';
 import { useCourseData } from '@/hooks/useCourseData';
 import { getCourseProgress } from '@/integrations/supabase/userProgressServices';
 import { fetchCourseTests } from '@/integrations/supabase/courseServices';
+import { toNumberId } from '@/utils/idConverter';
 
-// Định nghĩa các kiểu dữ liệu
 interface Lesson {
   id: string;
   title: string;
@@ -56,6 +56,7 @@ interface CourseTest {
 
 const StartLearningPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
+  const numericCourseId = toNumberId(courseId);
   const navigate = useNavigate();
   const { user } = useAuth();
   
@@ -64,10 +65,10 @@ const StartLearningPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'chapters' | 'all-lessons' | 'tests'>('chapters');
   const [courseTests, setCourseTests] = useState<CourseTest[]>([]);
   
-  const { courseData, userProgress, isEnrolled, error } = useCourseData(courseId as string);
+  const { courseData, userProgress, isEnrolled, error } = useCourseData(numericCourseId);
   
   useEffect(() => {
-    if (!courseId || !user) return;
+    if (!numericCourseId || !user) return;
     
     const fetchData = async () => {
       try {
@@ -78,7 +79,7 @@ const StartLearningPage: React.FC = () => {
           .from('user_lesson_progress')
           .select('*')
           .eq('user_id', user.id)
-          .eq('course_id', courseId);
+          .eq('course_id', numericCourseId);
           
         if (progressError) throw progressError;
         
@@ -91,7 +92,7 @@ const StartLearningPage: React.FC = () => {
         setLessonProgress(progressMap);
         
         // Fetch course tests
-        const tests = await fetchCourseTests(courseId);
+        const tests = await fetchCourseTests(numericCourseId);
         setCourseTests(tests || []);
         
       } catch (error) {
@@ -103,22 +104,22 @@ const StartLearningPage: React.FC = () => {
     };
     
     fetchData();
-  }, [courseId, user]);
+  }, [numericCourseId, user]);
   
   const handleChapterClick = (chapterId: string) => {
-    navigate(`/course/${courseId}/chapter/${chapterId}`);
+    navigate(`/course/${numericCourseId}/chapter/${chapterId}`);
   };
   
   const handleLessonClick = (chapterId: string, lessonId: string) => {
-    navigate(`/course/${courseId}/chapter/${chapterId}/lesson/${lessonId}`);
+    navigate(`/course/${numericCourseId}/chapter/${chapterId}/lesson/${lessonId}`);
   };
   
   const handleCourseTestClick = () => {
-    navigate(`/course/${courseId}/test`);
+    navigate(`/course/${numericCourseId}/test`);
   };
   
   const handleTestHistoryClick = () => {
-    navigate(`/course/${courseId}/test-history`);
+    navigate(`/course/${numericCourseId}/test-history`);
   };
   
   if (loading) {
@@ -144,7 +145,7 @@ const StartLearningPage: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center flex-col">
         <h2 className="text-2xl font-bold mb-2">Bạn chưa đăng ký khóa học này</h2>
         <p className="text-muted-foreground mb-4">Vui lòng đăng ký khóa học để bắt đầu học</p>
-        <Button onClick={() => navigate(`/course/${courseId}`)}>Đăng ký khóa học</Button>
+        <Button onClick={() => navigate(`/course/${numericCourseId}`)}>Đăng ký khóa học</Button>
       </div>
     );
   }
@@ -161,7 +162,7 @@ const StartLearningPage: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => navigate(`/course/${courseId}`)}>
+            <Button variant="outline" onClick={() => navigate(`/course/${numericCourseId}`)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Quay lại tổng quan
             </Button>
@@ -339,7 +340,7 @@ const StartLearningPage: React.FC = () => {
                         <div 
                           key={chapter.id}
                           className="border rounded-lg p-4 hover:border-primary/50 transition-all cursor-pointer"
-                          onClick={() => navigate(`/course/${courseId}/chapter/${chapter.id}/test/${testLesson.id}`)}
+                          onClick={() => navigate(`/course/${numericCourseId}/chapter/${chapter.id}/test/${testLesson.id}`)}
                         >
                           <div className="flex justify-between items-start mb-2">
                             <h3 className="font-medium flex items-center">

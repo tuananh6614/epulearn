@@ -58,7 +58,13 @@ const ChapterTest: React.FC<ChapterTestProps> = ({
       try {
         setLoading(true);
         const testQuestions = await fetchTestQuestions(chapterId);
-        setQuestions(testQuestions);
+        const formattedQuestions = testQuestions.map(q => ({
+          ...q,
+          options: Array.isArray(q.options) 
+            ? q.options.map(opt => typeof opt === 'string' ? opt : String(opt))
+            : []
+        }));
+        setQuestions(formattedQuestions);
       } catch (error) {
         console.error('Error loading test questions:', error);
         toast.error('Không thể tải câu hỏi kiểm tra');
@@ -75,7 +81,6 @@ const ChapterTest: React.FC<ChapterTestProps> = ({
       if (!user || !chapterId) return;
       
       try {
-        // Get highest score for this test
         const { data, error } = await supabase
           .from('user_test_results')
           .select('score')
@@ -90,7 +95,6 @@ const ChapterTest: React.FC<ChapterTestProps> = ({
           setHighestScore(data[0].score);
         }
         
-        // Get attempt count
         const { count, error: countError } = await supabase
           .from('user_test_results')
           .select('id', { count: 'exact', head: true })
@@ -134,7 +138,6 @@ const ChapterTest: React.FC<ChapterTestProps> = ({
         setTestCompleted(true);
         
         if (onComplete) {
-          // Calculate final score after the last question
           const finalScore = score + (isAnswerCorrect ? 1 : 0);
           onComplete(finalScore, questions.length);
         }
@@ -183,7 +186,6 @@ const ChapterTest: React.FC<ChapterTestProps> = ({
     const percentageScore = Math.round((finalScore / questions.length) * 100);
     const isPassed = percentageScore >= 70;
     
-    // Determine if this is a new high score
     const isNewHighScore = highestScore === null || percentageScore > highestScore;
     if (isNewHighScore) {
       setHighestScore(percentageScore);

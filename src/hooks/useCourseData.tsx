@@ -11,7 +11,7 @@ const courseCache = new Map<string, {data: any, timestamp: number}>();
 const CACHE_DURATION = 120000; // 2 minutes
 
 // Helper hook to get course content with progress for the current user
-export const useCourseData = (courseId: number | undefined) => {
+export const useCourseData = (courseId: number | string | undefined) => {
   const [courseData, setCourseData] = useState<any>(null);
   const [userProgress, setUserProgress] = useState<number>(0);
   const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
@@ -51,7 +51,7 @@ export const useCourseData = (courseId: number | undefined) => {
       const { data: course, error: courseError } = await supabase
         .from('courses')
         .select('*')
-        .eq('id', courseId)
+        .eq('id', courseId.toString())
         .single();
 
       if (courseError) {
@@ -65,7 +65,7 @@ export const useCourseData = (courseId: number | undefined) => {
       const { data: chapters, error: chaptersError } = await supabase
         .from('chapters')
         .select('*')
-        .eq('course_id', courseId)
+        .eq('course_id', courseId.toString())
         .order('order_index', { ascending: true });
 
       if (chaptersError) {
@@ -77,7 +77,7 @@ export const useCourseData = (courseId: number | undefined) => {
       const { data: lessons, error: lessonsError } = await supabase
         .from('lessons')
         .select('*')
-        .eq('course_id', courseId)
+        .eq('course_id', courseId.toString())
         .order('order_index', { ascending: true });
 
       if (lessonsError) {
@@ -125,14 +125,14 @@ export const useCourseData = (courseId: number | undefined) => {
     }
   }, [courseId, user, currentUser]);
   
-  const fetchUserProgress = async (courseId: number, userId: string) => {
+  const fetchUserProgress = async (courseId: number | string, userId: string) => {
     try {
       console.log('[CourseData] Checking enrollment for user:', userId, 'course:', courseId);
       const { data: enrollment, error: enrollmentError } = await supabase
         .from('user_courses')
         .select('*')
         .eq('user_id', userId)
-        .eq('course_id', courseId)
+        .eq('course_id', courseId.toString())
         .maybeSingle();
 
       if (enrollmentError && enrollmentError.code !== 'PGRST116') {
@@ -154,10 +154,10 @@ export const useCourseData = (courseId: number | undefined) => {
   useRealtimeSubscription({
     table: 'courses',
     event: 'UPDATE',
-    filter: courseId ? `id=eq.${courseId}` : undefined,
+    filter: courseId ? `id=eq.${courseId.toString()}` : undefined,
     onDataChange: (payload) => {
       console.log('[CourseData] Realtime course update detected:', payload);
-      if (payload.new && Number(payload.new.id) === courseId) {
+      if (payload.new && payload.new.id === courseId?.toString()) {
         // Only update specific fields from the course object
         if (courseData) {
           setCourseData(prev => ({
@@ -180,10 +180,10 @@ export const useCourseData = (courseId: number | undefined) => {
   useRealtimeSubscription({
     table: 'user_courses',
     userId: user?.id,
-    filter: user?.id && courseId ? `user_id=eq.${user.id}&course_id=eq.${courseId}` : undefined,
+    filter: user?.id && courseId ? `user_id=eq.${user.id}&course_id=eq.${courseId.toString()}` : undefined,
     onDataChange: (payload) => {
       console.log('[CourseData] Realtime user progress update detected:', payload);
-      if (payload.new && payload.new.user_id === user?.id && Number(payload.new.course_id) === courseId) {
+      if (payload.new && payload.new.user_id === user?.id && payload.new.course_id === courseId?.toString()) {
         setIsEnrolled(true);
         setUserProgress(payload.new.progress_percentage || 0);
       }

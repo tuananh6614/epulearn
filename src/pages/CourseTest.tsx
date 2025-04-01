@@ -85,7 +85,9 @@ const CourseTest: React.FC = () => {
             questions: testsData.questions.map((q: any) => ({
               id: q.id,
               question: q.question,
-              options: Array.isArray(q.options) ? q.options : [],
+              options: Array.isArray(q.options) 
+                ? q.options.map((opt: any) => typeof opt === 'string' ? opt : String(opt)) 
+                : [],
               correct_answer: q.correct_answer,
               points: q.points || 1
             })),
@@ -97,7 +99,19 @@ const CourseTest: React.FC = () => {
           setTests([formattedTest]);
         } else if (testsData && testsData.tests) {
           // Handle the case where we get an array of tests
-          setTests(testsData.tests);
+          const formattedTests = testsData.tests.map((test: any) => ({
+            id: test.id,
+            title: test.title,
+            description: test.description,
+            time_limit: test.time_limit || 30,
+            passing_score: test.passing_score || 70,
+            questions: [],
+            course_id: test.course_id,
+            created_at: test.created_at,
+            updated_at: test.updated_at
+          }));
+          
+          setTests(formattedTests);
         }
 
         if (user) {

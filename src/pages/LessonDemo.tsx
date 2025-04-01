@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -56,7 +55,6 @@ const LessonDemo = () => {
           id: "demo-lesson",
           title: "Bài Học Demo",
           content: "<h2>Đây là nội dung bài học demo</h2><p>Nội dung bài học sẽ hiển thị ở đây.</p>",
-          course: "Khóa học demo",
           courseId: "demo-course",
           duration: "15 phút",
           description: "Bài học demo để giới thiệu giao diện học tập",
@@ -210,7 +208,7 @@ const LessonDemo = () => {
               <div>
                 <Link to="/courses" className="text-blue-500 hover:text-blue-700 flex items-center text-sm mb-1">
                   <ArrowLeft className="h-3 w-3 mr-1" />
-                  Quay lại {lessonData.course}
+                  Quay lại {lessonData.courseId}
                 </Link>
                 <h1 className="text-2xl font-bold">{lessonData.title}</h1>
                 <p className="text-gray-500 dark:text-gray-400 text-sm flex items-center mt-1">

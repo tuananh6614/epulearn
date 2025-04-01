@@ -20,7 +20,7 @@ export const fetchCourseTests = async (courseId: string | number) => {
           points
         )
       `)
-      .eq('course_id', courseId);
+      .eq('course_id', courseId.toString());
 
     if (error) {
       console.error('Error fetching course tests:', error);
@@ -55,7 +55,7 @@ export const fetchTestQuestions = async (chapterId: string | number) => {
     const { data, error } = await supabase
       .from('chapter_tests')
       .select('*')
-      .eq('chapter_id', chapterId);
+      .eq('chapter_id', chapterId.toString());
 
     if (error) {
       console.error('Error fetching chapter test questions:', error);
@@ -66,7 +66,9 @@ export const fetchTestQuestions = async (chapterId: string | number) => {
     return (data || []).map(question => ({
       id: question.id,
       question: question.question,
-      options: Array.isArray(question.options) ? question.options : [],
+      options: Array.isArray(question.options) 
+        ? question.options.map(opt => typeof opt === 'string' ? opt : String(opt)) 
+        : [],
       answer: question.correct_answer
     }));
 
@@ -109,7 +111,7 @@ export const getChapterTestProgress = async (userId: string, chapterId: string |
       .from('user_test_results')
       .select('score, passed')
       .eq('user_id', userId)
-      .eq('chapter_id', chapterId);
+      .eq('chapter_id', chapterId.toString());
 
     if (error) {
       console.error('Error fetching chapter test progress:', error);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -10,11 +9,13 @@ import { Link } from 'react-router-dom';
 import { EnrolledCourse } from '@/models/lesson';
 import { fetchUserEnrolledCourses } from '@/services/apiUtils';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 const MyCourses = () => {
   const { currentUser } = useAuth();
   const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch user's enrolled courses from Supabase
@@ -64,6 +65,10 @@ const MyCourses = () => {
     );
   }
 
+  const handleCourseClick = (courseId: string | number) => {
+    navigate(`/course/${courseId}/start`);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -78,7 +83,11 @@ const MyCourses = () => {
           {enrolledCourses.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {enrolledCourses.map((course) => (
-                <div key={course.id} className="flex flex-col h-full">
+                <div
+                  key={String(course.id)}
+                  className="col-span-1"
+                  onClick={() => handleCourseClick(course.id)}
+                >
                   <CourseCard 
                     key={course.id} 
                     id={course.id}

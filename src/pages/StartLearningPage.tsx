@@ -14,7 +14,7 @@ import Navbar from '@/components/Navbar';
 import { useCourseData } from '@/hooks/useCourseData';
 import { getCourseProgress } from '@/integrations/supabase/userProgressServices';
 import { fetchCourseTests } from '@/integrations/supabase/courseServices';
-import { toNumberId } from '@/utils/idConverter';
+import { toNumberId, supabaseId } from '@/utils/idConverter';
 
 interface Lesson {
   id: string;
@@ -55,17 +55,49 @@ interface CourseTest {
 }
 
 const StartLearningPage: React.FC = () => {
-  const { courseId } = useParams<{ courseId: string }>();
+  const { courseId } = useParams<{ courseId: string }>().courseId;
   const numericCourseId = toNumberId(courseId);
   const navigate = useNavigate();
   const { user } = useAuth();
   
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(true);
   const [lessonProgress, setLessonProgress] = useState<Record<string, LessonProgress>>({});
   const [activeTab, setActiveTab] = useState<'chapters' | 'all-lessons' | 'tests'>('chapters');
   const [courseTests, setCourseTests] = useState<CourseTest[]>([]);
+  const [userProgress, setUserProgress] = useState(0);
   
-  const { courseData, userProgress, isEnrolled, error } = useCourseData(numericCourseId);
+  const { courseData, userProgress: userProgressData, isEnrolled, error } = useCourseData(numericCourseId);
+  
+  useEffect(() => {
+    if (courseData && user) {
+      // Fetch user's progress in this course
+      const fetchCourseProgress = async () => {
+        try {
+          setLoadingProgress(true);
+          const { data, error } = await supabase
+            .from('user_courses')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('course_id', supabaseId(courseId))
+            .maybeSingle();
+          
+          if (error) {
+            console.error('Error fetching course progress:', error);
+            toast.error('Không thể kiểm tra tiến độ khóa học');
+          } else if (data) {
+            setUserProgress(data.progress_percentage || 0);
+          }
+        } catch (err) {
+          console.error('Error:', err);
+        } finally {
+          setLoadingProgress(false);
+        }
+      };
+      
+      fetchCourseProgress();
+    }
+  }, [courseData, user, courseId]);
   
   useEffect(() => {
     if (!numericCourseId || !user) return;

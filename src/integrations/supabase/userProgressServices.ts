@@ -1,15 +1,16 @@
 
 import { supabase } from './client';
 import { toast } from 'sonner';
+import { supabaseId } from '@/utils/idConverter';
 
 // Add function to update course progress
-export const updateCourseProgress = async (userId: string, courseId: number | string) => {
+export const updateCourseProgress = async (userId: string, courseId: string | number) => {
   try {
     // First get total lesson count for this course
     const { data: lessons, error: lessonError } = await supabase
       .from('lessons')
       .select('id')
-      .eq('course_id', courseId.toString());
+      .eq('course_id', supabaseId(courseId));
       
     if (lessonError) throw lessonError;
     const totalLessons = lessons?.length || 0;
@@ -21,7 +22,7 @@ export const updateCourseProgress = async (userId: string, courseId: number | st
       .from('user_lesson_progress')
       .select('id')
       .eq('user_id', userId)
-      .eq('course_id', courseId.toString())
+      .eq('course_id', supabaseId(courseId))
       .eq('completed', true);
       
     if (progressError) throw progressError;
@@ -35,7 +36,7 @@ export const updateCourseProgress = async (userId: string, courseId: number | st
       .from('user_courses')
       .upsert({
         user_id: userId,
-        course_id: courseId.toString(),
+        course_id: supabaseId(courseId),
         progress_percentage: progressPercentage,
         last_accessed: new Date().toISOString()
       });
@@ -52,12 +53,12 @@ export const updateCourseProgress = async (userId: string, courseId: number | st
 // Function to track user position in a lesson
 export const saveLessonProgress = async (
   userId: string,
-  courseId: number | string,
-  lessonId: number | string,
-  chapterId: number | string,
+  courseId: string | number,
+  lessonId: string | number,
+  chapterId: string | number,
   position: any, // Could be time position for video, or scroll position, etc.
   completed: boolean = false,
-  currentPageId?: number // Page ID is already an integer
+  currentPageId?: number | string // Page ID
 ) => {
   try {
     console.log('[UserProgress] Saving lesson progress:', { 
@@ -69,9 +70,9 @@ export const saveLessonProgress = async (
       .from('user_lesson_progress')
       .upsert({
         user_id: userId,
-        lesson_id: lessonId.toString(),
-        course_id: courseId.toString(),
-        chapter_id: chapterId.toString(),
+        lesson_id: supabaseId(lessonId),
+        course_id: supabaseId(courseId),
+        chapter_id: supabaseId(chapterId),
         completed,
         last_position: JSON.stringify(position),
         completed_at: completed ? new Date().toISOString() : null,
@@ -98,13 +99,13 @@ export const saveLessonProgress = async (
 };
 
 // Function to get the user's progress in a course
-export const getCourseProgress = async (userId: string, courseId: number | string) => {
+export const getCourseProgress = async (userId: string, courseId: string | number) => {
   try {
     const { data, error } = await supabase
       .from('user_courses')
       .select('progress_percentage, last_accessed')
       .eq('user_id', userId)
-      .eq('course_id', courseId.toString())
+      .eq('course_id', supabaseId(courseId))
       .maybeSingle(); // Using maybeSingle instead of single to avoid errors if no data
       
     if (error) throw error;
@@ -121,13 +122,13 @@ export const getCourseProgress = async (userId: string, courseId: number | strin
 };
 
 // Lấy tiến độ của tất cả các bài học trong một khóa học
-export const getLessonProgressInCourse = async (userId: string, courseId: number | string) => {
+export const getLessonProgressInCourse = async (userId: string, courseId: string | number) => {
   try {
     const { data, error } = await supabase
       .from('user_lesson_progress')
       .select('*')
       .eq('user_id', userId)
-      .eq('course_id', courseId.toString());
+      .eq('course_id', supabaseId(courseId));
       
     if (error) throw error;
     
@@ -144,12 +145,12 @@ export const getLessonProgressInCourse = async (userId: string, courseId: number
 };
 
 // Function to get lesson pages
-export const getLessonPages = async (lessonId: number | string) => {
+export const getLessonPages = async (lessonId: string | number) => {
   try {
     const { data, error } = await supabase
       .from('pages')
       .select('*')
-      .eq('lesson_id', lessonId.toString())
+      .eq('lesson_id', supabaseId(lessonId))
       .order('order_index', { ascending: true });
     
     if (error) {

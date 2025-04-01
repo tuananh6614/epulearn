@@ -94,6 +94,18 @@ export interface TestQuestion {
   points?: number;
 }
 
+export interface CourseTest {
+  id: number | string;
+  title: string;
+  description: string;
+  passing_score: number;
+  time_limit: number;
+  course_id: number | string; 
+  created_at: string;
+  updated_at: string;
+  questions: TestQuestion[];
+}
+
 export interface TestResult {
   id: number | string;
   user_id: string; // This stays as string because it references auth.users

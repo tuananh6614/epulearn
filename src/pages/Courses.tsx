@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -11,9 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { fetchCourses } from '@/services/apiUtils';
 import { Course, SupabaseCourseResponse } from '@/models/lesson';
 
-// Component trang khóa học
 const Courses = () => {
-  // State quản lý tìm kiếm và lọc
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [levelFilter, setLevelFilter] = useState('all');
@@ -24,63 +21,34 @@ const Courses = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  
-  // Fetch courses from database
+
   useEffect(() => {
-    const loadCourses = async () => {
+    const fetchCoursesData = async () => {
       try {
         setIsLoading(true);
-        console.log('Fetching courses from Supabase');
+        const coursesData = await fetchCourses();
         
-        const data = await fetchCourses();
-        console.log('Fetched courses data:', data);
-        
-        if (data.length === 0) {
-          setError('Không tìm thấy khóa học nào trong cơ sở dữ liệu');
-          setIsLoading(false);
-          return;
-        }
-        
-        // Transform data to match Course interface
-        const formattedCourses: Course[] = data.map((course) => ({
-          id: course.id,
-          title: course.title,
-          description: course.description,
-          level: course.level,
-          duration: course.duration,
-          category: course.category,
-          image: course.thumbnail_url || '/placeholder.svg',
-          color: course.is_premium ? '#ffd700' : '#4f46e5', // Gold for premium, blue for regular
-          isPremium: course.is_premium,
-          price: course.price || undefined,
-          discountPrice: course.discount_price || undefined,
-          isFeatured: course.is_featured,
-          instructor: course.instructor,
-          chapters: [],  // Chapters will be loaded separately when viewing course details
+        const transformedCourses = coursesData.map(course => ({
+          ...course,
+          is_premium: course.is_premium || false,
+          is_featured: course.is_featured || false,
+          created_at: course.created_at || new Date().toISOString(),
+          updated_at: course.updated_at || new Date().toISOString(),
+          status: course.status || 'published'
         }));
         
-        console.log('Formatted courses:', formattedCourses);
-        
-        setCoursesData(formattedCourses);
-        setFilteredCourses(formattedCourses);
+        setCourses(transformedCourses);
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+        toast.error('Failed to load courses');
+      } finally {
         setIsLoading(false);
-      } catch (err) {
-        console.error('Lỗi khi tải khóa học:', err);
-        setError((err as Error).message);
-        setIsLoading(false);
-        
-        toast({
-          title: "Không thể kết nối đến máy chủ",
-          description: "Vui lòng kiểm tra kết nối của bạn hoặc thử lại sau.",
-          variant: "destructive",
-        });
       }
     };
 
-    loadCourses();
-  }, [toast]);
-  
-  // Effect áp dụng bộ lọc khi các điều kiện thay đổi
+    fetchCoursesData();
+  }, []);
+
   useEffect(() => {
     if (coursesData.length === 0) return;
     
@@ -98,50 +66,38 @@ const Courses = () => {
     
     setFilteredCourses(filtered);
   }, [searchTerm, categoryFilter, levelFilter, premiumFilter, coursesData]);
-  
-  // Lấy danh sách các danh mục và cấp độ độc nhất
+
   const categories = coursesData.length > 0 ? [...new Set(coursesData.map(course => course.category))] : [];
   const levels = coursesData.length > 0 ? [...new Set(coursesData.map(course => course.level))] : [];
-  
-  // Xử lý xóa bộ lọc
+
   const handleClearFilters = () => {
     setSearchTerm('');
     setCategoryFilter('all');
     setLevelFilter('all');
     setPremiumFilter('all');
   };
-  
-  // Thử lại khi gặp lỗi
+
   const handleRetry = () => {
     setError(null);
     setIsLoading(true);
     
-    const loadCourses = async () => {
+    const fetchCoursesData = async () => {
       try {
         console.log('Retrying fetch courses from Supabase');
         
-        const data = await fetchCourses();
+        const coursesData = await fetchCourses();
         
-        // Transform data to match Course interface
-        const formattedCourses: Course[] = data.map((course) => ({
-          id: course.id,
-          title: course.title,
-          description: course.description,
-          level: course.level,
-          duration: course.duration,
-          category: course.category,
-          image: course.thumbnail_url || '/placeholder.svg',
-          color: course.is_premium ? '#ffd700' : '#4f46e5', // Gold for premium, blue for regular
-          isPremium: course.is_premium,
-          price: course.price || undefined,
-          discountPrice: course.discount_price || undefined,
-          isFeatured: course.is_featured,
-          instructor: course.instructor,
-          chapters: [],  // Chapters will be loaded separately when viewing course details
+        const transformedCourses = coursesData.map(course => ({
+          ...course,
+          is_premium: course.is_premium || false,
+          is_featured: course.is_featured || false,
+          created_at: course.created_at || new Date().toISOString(),
+          updated_at: course.updated_at || new Date().toISOString(),
+          status: course.status || 'published'
         }));
         
-        setCoursesData(formattedCourses);
-        setFilteredCourses(formattedCourses);
+        setCourses(transformedCourses);
+        setFilteredCourses(transformedCourses);
         setIsLoading(false);
       } catch (err) {
         console.error('Lỗi khi tải khóa học:', err);
@@ -156,14 +112,13 @@ const Courses = () => {
       }
     };
 
-    loadCourses();
+    fetchCoursesData();
   };
-  
-  // Chuyển đổi hiển thị bộ lọc trên điện thoại
+
   const toggleFilters = () => {
     setIsFilterVisible(!isFilterVisible);
   };
-  
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -273,19 +228,19 @@ const Courses = () => {
           ) : filteredCourses.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredCourses.map((course) => (
-                <CourseCard 
-                  key={course.id} 
-                  id={course.id}
+                <CourseCard
+                  key={String(course.id)}
+                  id={String(course.id)}
                   title={course.title}
                   description={course.description}
                   level={course.level}
                   duration={course.duration}
                   category={course.category}
-                  image={course.image}
-                  color={course.color}
+                  image={course.image || course.thumbnail_url || '/placeholder.svg'}
+                  color={course.color || '#4f46e5'}
                   isPremium={course.isPremium}
-                  price={course.price}
-                  discountPrice={course.discountPrice}
+                  price={course.price?.toString()}
+                  discountPrice={course.discount_price?.toString()}
                 />
               ))}
             </div>

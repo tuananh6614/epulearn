@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -33,13 +32,13 @@ interface CourseTestQuestion {
 interface CourseTestType {
   id: string;
   title: string;
-  description?: string;
-  time_limit: number;
+  description: string;
   passing_score: number;
-  questions: CourseTestQuestion[];
-  course_id?: string;
-  created_at?: string;
-  updated_at?: string;
+  time_limit: number;
+  course_id: string;
+  created_at: string;
+  updated_at: string;
+  questions: TestQuestion[];
 }
 
 interface UserTestResultType {
@@ -61,82 +60,85 @@ const CourseTest: React.FC = () => {
   const [selectedTest, setSelectedTest] = useState<CourseTestType | null>(null);
   const [loading, setLoading] = useState(true);
   const [previousResults, setPreviousResults] = useState<UserTestResultType[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const { user } = useAuth();
 
   useEffect(() => {
-    const loadTests = async () => {
-      if (!courseId) return;
-
+    const loadTest = async () => {
       try {
-        setLoading(true);
-
-        const testsData = await fetchCourseTests(courseId);
-        console.log('Tests data:', testsData);
+        setIsLoading(true);
         
-        if (testsData && testsData.success && testsData.questions && testsData.test) {
-          // Properly format test data to match CourseTestType structure
+        if (!courseId) {
+          toast.error("Không có thông tin khóa học");
+          navigate("/courses");
+          return;
+        }
+        
+        console.log("Fetching course test for course ID:", courseId);
+        const { success, test, tests, error } = await fetchCourseTests(courseId);
+        
+        if (!success) {
+          console.error('Error fetching course test:', error);
+          toast.error("Không thể tải bài kiểm tra");
+          setError("Không thể tải bài kiểm tra cho khóa học này");
+          setIsLoading(false);
+          return;
+        }
+        
+        if (test) {
+          // Map the response to match our CourseTestType
           const formattedTest: CourseTestType = {
-            id: testsData.test.id,
-            title: testsData.test.title,
-            description: testsData.test.description || undefined,
-            time_limit: testsData.test.time_limit || 30,
-            passing_score: testsData.test.passing_score || 70,
-            questions: testsData.questions.map((q: any) => ({
-              id: q.id,
-              question: q.question,
-              options: Array.isArray(q.options) 
-                ? q.options.map((opt: any) => typeof opt === 'string' ? opt : String(opt)) 
-                : [],
-              correct_answer: q.correct_answer,
-              points: q.points || 1
-            })),
-            course_id: testsData.test.course_id,
-            created_at: testsData.test.created_at,
-            updated_at: testsData.test.updated_at
-          };
-          
-          setTests([formattedTest]);
-        } else if (testsData && testsData.tests) {
-          // Handle the case where we get an array of tests
-          const formattedTests = testsData.tests.map((test: any) => ({
             id: test.id,
             title: test.title,
             description: test.description,
-            time_limit: test.time_limit || 30,
-            passing_score: test.passing_score || 70,
-            questions: [],
-            course_id: test.course_id,
-            created_at: test.created_at,
-            updated_at: test.updated_at
+            passing_score: test.passing_score,
+            time_limit: test.time_limit,
+            course_id: courseId.toString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            questions: test.course_test_questions?.map((q: any) => ({
+              id: q.id,
+              question: q.question,
+              options: Array.isArray(q.options) ? q.options.map((opt: any) => String(opt)) : [],
+              correct_answer: q.correct_answer,
+              points: q.points || 1
+            })) || []
+          };
+          
+          setTests([formattedTest]);
+          console.log("Test loaded:", formattedTest);
+        } else if (tests) {
+          // Map each test in the array
+          const formattedTests = tests.map(t => ({
+            id: t.id,
+            title: t.title,
+            description: t.description,
+            passing_score: t.passing_score,
+            time_limit: t.time_limit,
+            course_id: courseId.toString(),
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            questions: []
           }));
           
           setTests(formattedTests);
+          console.log("Tests loaded:", formattedTests.length);
+        } else {
+          setError("Không tìm thấy bài kiểm tra cho khóa học này");
         }
-
-        if (user) {
-          const { data: resultsData, error: resultsError } = await supabase
-            .from('user_test_results')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('course_id', courseId);
-
-          if (resultsError) {
-            console.error('Error fetching test results:', resultsError);
-          } else {
-            setPreviousResults(resultsData as UserTestResultType[] || []);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load tests:', error);
-        toast.error('Không thể tải bài kiểm tra');
-      } finally {
-        setLoading(false);
+        
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Error loading test:", err);
+        toast.error("Đã xảy ra lỗi khi tải bài kiểm tra");
+        setError("Đã xảy ra l��i khi tải bài kiểm tra");
+        setIsLoading(false);
       }
     };
-
-    loadTests();
-  }, [courseId, user]);
+    
+    loadTest();
+  }, [courseId, navigate]);
 
   const handleTestSelect = (test: CourseTestType) => {
     setSelectedTest(test);

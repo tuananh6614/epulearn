@@ -11,37 +11,13 @@ import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
 import GreenButton from '@/components/GreenButton';
 import { saveLessonProgress, getLessonPages } from '@/integrations/supabase/userProgressServices';
-import { toNumberId, toStringId, idsAreEqual } from '@/utils/idConverter';
-
-interface Lesson {
-  id: number;
-  title: string;
-  content: string;
-  type: string;
-  order_index: number;
-  chapter_id: number;
-}
-
-interface Chapter {
-  id: number;
-  title: string;
-  course_id: number;
-  order_index: number;
-}
+import { toNumberId, toStringId, idsAreEqual, supabaseId } from '@/utils/idConverter';
+import { Chapter, Lesson, Page } from '@/models/lesson';
 
 interface LessonProgress {
   completed: boolean;
   position: number | { scrollPosition: number };
-  current_page_id?: number;
-}
-
-interface Page {
-  id: number;
-  lesson_id: number;
-  content: string;
-  order_index: number;
-  created_at?: string;
-  updated_at?: string;
+  current_page_id?: number | string;
 }
 
 const LessonContentPage = () => {
@@ -53,7 +29,7 @@ const LessonContentPage = () => {
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [nextLesson, setNextLesson] = useState<Lesson | { id: number; title: string; isTest: boolean } | null>(null);
+  const [nextLesson, setNextLesson] = useState<Lesson | { id: number | string; title: string; isTest: boolean } | null>(null);
   const [prevLesson, setPrevLesson] = useState<Lesson | null>(null);
   const [lessonProgress, setLessonProgress] = useState<LessonProgress>({
     completed: false,
@@ -73,22 +49,22 @@ const LessonContentPage = () => {
         const { data: chapterData, error: chapterError } = await supabase
           .from('chapters')
           .select('*')
-          .eq('id', parseInt(chapterId))
+          .eq('id', supabaseId(chapterId))
           .single();
           
         if (chapterError) throw chapterError;
-        setChapter(chapterData as Chapter);
+        setChapter(chapterData as unknown as Chapter);
         
         const { data: lessonData, error: lessonError } = await supabase
           .from('lessons')
           .select('*')
-          .eq('id', parseInt(lessonId))
+          .eq('id', supabaseId(lessonId))
           .single();
           
         if (lessonError) throw lessonError;
-        setLesson(lessonData as Lesson);
+        setLesson(lessonData as unknown as Lesson);
         
-        const { success, pages: pagesData, error: pagesError } = await getLessonPages(parseInt(lessonId));
+        const { success, pages: pagesData, error: pagesError } = await getLessonPages(lessonId);
         
         if (pagesError) throw pagesError;
         
@@ -98,40 +74,44 @@ const LessonContentPage = () => {
           setPages([
             {
               id: 0,
-              lesson_id: parseInt(lessonId),
+              lesson_id: lessonId,
               content: lessonData.content,
               order_index: 1
-            }
+            } as Page
           ]);
         }
         
         const { data: chapterLessons, error: chapterLessonsError } = await supabase
           .from('lessons')
           .select('id, title, order_index')
-          .eq('chapter_id', parseInt(chapterId))
+          .eq('chapter_id', supabaseId(chapterId))
           .order('order_index', { ascending: true });
           
         if (chapterLessonsError) throw chapterLessonsError;
         
         if (chapterLessons && chapterLessons.length > 0) {
-          const currentIndex = chapterLessons.findIndex(l => l.id === parseInt(lessonId));
+          const currentIndex = chapterLessons.findIndex(l => String(l.id) === String(lessonId));
           
           if (currentIndex > 0) {
-            setPrevLesson(chapterLessons[currentIndex - 1] as Lesson);
+            setPrevLesson(chapterLessons[currentIndex - 1] as unknown as Lesson);
           }
           
           if (currentIndex < chapterLessons.length - 1) {
-            setNextLesson(chapterLessons[currentIndex + 1] as Lesson);
+            setNextLesson(chapterLessons[currentIndex + 1] as unknown as Lesson);
           } else {
             const { data: testLesson, error: testError } = await supabase
               .from('lessons')
               .select('*')
-              .eq('chapter_id', parseInt(chapterId))
+              .eq('chapter_id', supabaseId(chapterId))
               .eq('type', 'test')
               .maybeSingle();
               
             if (!testError && testLesson) {
-              setNextLesson({ ...testLesson, isTest: true } as { id: number; title: string; isTest: boolean });
+              setNextLesson({ 
+                ...testLesson, 
+                id: testLesson.id, 
+                isTest: true 
+              } as { id: number | string; title: string; isTest: boolean });
             }
           }
         }
@@ -140,13 +120,13 @@ const LessonContentPage = () => {
           .from('user_lesson_progress')
           .select('*')
           .eq('user_id', user.id)
-          .eq('lesson_id', parseInt(lessonId))
+          .eq('lesson_id', supabaseId(lessonId))
           .maybeSingle();
           
         if (!progressError && progressData) {
           const currentPageId = progressData.current_page_id;
           if (currentPageId) {
-            const pageIndex = pagesData?.findIndex((p: Page) => p.id === currentPageId) || 0;
+            const pageIndex = pagesData?.findIndex((p: Page) => String(p.id) === String(currentPageId)) || 0;
             if (pageIndex >= 0) {
               setCurrentPageIndex(pageIndex);
             }
@@ -180,9 +160,9 @@ const LessonContentPage = () => {
       try {
         await saveLessonProgress(
           user.id,
-          toStringId(courseId),
-          toStringId(lessonId),
-          toStringId(chapterId || "0"),
+          courseId,
+          lessonId,
+          chapterId || "0",
           { scrollPosition: 0 },
           false,
           pages[newIndex].id
@@ -199,9 +179,9 @@ const LessonContentPage = () => {
     try {
       await saveLessonProgress(
         user.id,
-        toStringId(courseId),
-        toStringId(lessonId),
-        toStringId(chapterId),
+        courseId,
+        lessonId,
+        chapterId,
         { scrollPosition: window.scrollY },
         true,
         pages[currentPageIndex]?.id
@@ -220,11 +200,11 @@ const LessonContentPage = () => {
         const { data: chapters, error: chaptersError } = await supabase
           .from('chapters')
           .select('id, order_index')
-          .eq('course_id', parseInt(courseId))
+          .eq('course_id', supabaseId(courseId))
           .order('order_index', { ascending: true });
           
         if (!chaptersError && chapters) {
-          const currentChapterIndex = chapters.findIndex(c => c.id === parseInt(chapterId));
+          const currentChapterIndex = chapters.findIndex(c => String(c.id) === String(chapterId));
           if (currentChapterIndex < chapters.length - 1) {
             navigate(`/course/${courseId}/chapter/${chapters[currentChapterIndex + 1].id}`);
           } else {
@@ -282,7 +262,7 @@ const LessonContentPage = () => {
               <BookOpen className="h-4 w-4 mr-1" />
               <span>{chapter?.title}</span>
             </div>
-            <h1 className="text-2xl font-bold">{lesson.title}</h1>
+            <h1 className="text-2xl font-bold">{lesson?.title}</h1>
           </div>
           
           <Badge variant={lessonProgress.completed ? "secondary" : "outline"} className={lessonProgress.completed ? "bg-green-500 hover:bg-green-600 text-white" : ""}>

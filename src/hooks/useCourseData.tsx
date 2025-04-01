@@ -1,10 +1,10 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { enrollUserInCourse } from '@/integrations/supabase/apiUtils';
 import { useRealtimeSubscription } from './useRealtimeSubscription';
+import { supabaseId } from '@/utils/idConverter';
 
 // Cache for courses to reduce unnecessary fetches
 const courseCache = new Map<string, {data: any, timestamp: number}>();
@@ -51,7 +51,7 @@ export const useCourseData = (courseId: number | string | undefined) => {
       const { data: course, error: courseError } = await supabase
         .from('courses')
         .select('*')
-        .eq('id', courseId.toString())
+        .eq('id', supabaseId(courseId))
         .single();
 
       if (courseError) {
@@ -65,7 +65,7 @@ export const useCourseData = (courseId: number | string | undefined) => {
       const { data: chapters, error: chaptersError } = await supabase
         .from('chapters')
         .select('*')
-        .eq('course_id', courseId.toString())
+        .eq('course_id', supabaseId(courseId))
         .order('order_index', { ascending: true });
 
       if (chaptersError) {
@@ -77,7 +77,7 @@ export const useCourseData = (courseId: number | string | undefined) => {
       const { data: lessons, error: lessonsError } = await supabase
         .from('lessons')
         .select('*')
-        .eq('course_id', courseId.toString())
+        .eq('course_id', supabaseId(courseId))
         .order('order_index', { ascending: true });
 
       if (lessonsError) {
@@ -132,7 +132,7 @@ export const useCourseData = (courseId: number | string | undefined) => {
         .from('user_courses')
         .select('*')
         .eq('user_id', userId)
-        .eq('course_id', courseId.toString())
+        .eq('course_id', supabaseId(courseId))
         .maybeSingle();
 
       if (enrollmentError && enrollmentError.code !== 'PGRST116') {
@@ -154,10 +154,10 @@ export const useCourseData = (courseId: number | string | undefined) => {
   useRealtimeSubscription({
     table: 'courses',
     event: 'UPDATE',
-    filter: courseId ? `id=eq.${courseId.toString()}` : undefined,
+    filter: courseId ? `id=eq.${supabaseId(courseId)}` : undefined,
     onDataChange: (payload) => {
       console.log('[CourseData] Realtime course update detected:', payload);
-      if (payload.new && payload.new.id === courseId?.toString()) {
+      if (payload.new && payload.new.id === supabaseId(courseId)) {
         // Only update specific fields from the course object
         if (courseData) {
           setCourseData(prev => ({
@@ -180,10 +180,10 @@ export const useCourseData = (courseId: number | string | undefined) => {
   useRealtimeSubscription({
     table: 'user_courses',
     userId: user?.id,
-    filter: user?.id && courseId ? `user_id=eq.${user.id}&course_id=eq.${courseId.toString()}` : undefined,
+    filter: user?.id && courseId ? `user_id=eq.${user.id}&course_id=eq.${supabaseId(courseId)}` : undefined,
     onDataChange: (payload) => {
       console.log('[CourseData] Realtime user progress update detected:', payload);
-      if (payload.new && payload.new.user_id === user?.id && payload.new.course_id === courseId?.toString()) {
+      if (payload.new && payload.new.user_id === user?.id && payload.new.course_id === supabaseId(courseId)) {
         setIsEnrolled(true);
         setUserProgress(payload.new.progress_percentage || 0);
       }

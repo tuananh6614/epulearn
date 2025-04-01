@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, RefreshCw } from "lucide-react";
@@ -8,6 +7,7 @@ import { toast } from 'sonner';
 import { fetchFeaturedCourses } from '@/integrations/supabase/apiUtils';
 import { Course } from '@/models/lesson';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseId } from '@/utils/idConverter';
 
 const FeaturedCourses = () => {
   const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
@@ -56,7 +56,7 @@ const FeaturedCourses = () => {
       
       // Transform data to match Course interface
       const formattedCourses: Course[] = coursesData.map((course) => ({
-        id: course.id, // Keep as string for now - will be cast to number when needed
+        id: course.id, 
         title: course.title,
         description: course.description,
         level: course.level,
@@ -65,8 +65,8 @@ const FeaturedCourses = () => {
         image: course.thumbnail_url || '/placeholder.svg',
         color: course.is_premium ? '#ffd700' : '#4f46e5', // Gold for premium, blue for regular
         isPremium: course.is_premium,
-        price: course.price || undefined,
-        discountPrice: course.discount_price || undefined,
+        price: course.price?.toString() || undefined,
+        discountPrice: course.discount_price?.toString() || undefined,
         isFeatured: course.is_featured,
         instructor: course.instructor,
         chapters: [],  // Chapters will be loaded separately when viewing course details
@@ -163,16 +163,16 @@ const FeaturedCourses = () => {
           {featuredCourses.length > 0 ? (
             featuredCourses.map((course) => (
               <CourseCard 
-                key={course.id.toString()} 
-                id={course.id.toString()}
+                key={supabaseId(course.id)} 
+                id={supabaseId(course.id)}
                 title={course.title}
                 description={course.description}
                 level={course.level}
                 duration={course.duration}
                 category={course.category}
-                image={course.image}
-                color={course.color}
-                isPremium={course.isPremium}
+                image={course.image || ''}
+                color={course.color || ''}
+                isPremium={course.isPremium || false}
                 price={course.price}
                 discountPrice={course.discountPrice}
               />

@@ -56,3 +56,37 @@ export const idsAreEqual = (
   if (id1 === undefined || id2 === undefined) return false;
   return String(id1) === String(id2);
 };
+
+/**
+ * Returns a type-safe ID for use in Supabase queries
+ * Always returns a string, which is what Supabase expects
+ * @param id ID to use in Supabase query
+ * @returns String ID guaranteed to work with Supabase
+ */
+export const supabaseId = (id: string | number | undefined): string => {
+  if (id === undefined || id === null) return '';
+  return String(id);
+};
+
+/**
+ * Converts a database object with string IDs to a format with number IDs
+ * Useful for frontend components that expect number IDs
+ * @param object Object with string IDs from database
+ * @returns Same object with number IDs where possible
+ */
+export const convertObjectIds = <T extends Record<string, any>>(
+  object: T, 
+  idFields: string[] = ['id']
+): T => {
+  if (!object) return object;
+  
+  const result = { ...object };
+  
+  for (const field of idFields) {
+    if (field in result) {
+      result[field] = toNumberId(result[field]);
+    }
+  }
+  
+  return result;
+};

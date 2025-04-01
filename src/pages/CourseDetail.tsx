@@ -23,7 +23,7 @@ const CourseDetail: React.FC = () => {
   const navigate = useNavigate();
   const { user, currentUser } = useAuth();
   
-  const { courseData, isEnrolled, loading, error, enrollInCourse } = useCourseData(numericCourseId);
+  const { courseData, isEnrolled, loading, error, enrollInCourse, userProgress = 0 } = useCourseData(numericCourseId);
   const course = courseData;
   
   useEffect(() => {

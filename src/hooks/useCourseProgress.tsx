@@ -1,9 +1,9 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { useRealtimeSubscription } from './useRealtimeSubscription';
+import { supabaseId } from '@/utils/idConverter';
 
 interface UseCourseProgressProps {
   courseId?: number | string;
@@ -71,7 +71,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         .from('user_courses')
         .select('progress_percentage, last_accessed')
         .eq('user_id', user.id)
-        .eq('course_id', courseId.toString())
+        .eq('course_id', supabaseId(courseId))
         .maybeSingle();
 
       if (enrollmentError) {
@@ -119,10 +119,10 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
   useRealtimeSubscription({
     table: 'user_courses',
     userId: user?.id,
-    filter: user?.id && courseId ? `user_id=eq.${user.id}&course_id=eq.${courseId.toString()}` : undefined,
+    filter: user?.id && courseId ? `user_id=eq.${user.id}&course_id=eq.${supabaseId(courseId)}` : undefined,
     onDataChange: (payload) => {
       console.log('[CourseProgress] Realtime update detected:', payload);
-      if (payload.new && payload.new.user_id === user?.id && payload.new.course_id === courseId?.toString()) {
+      if (payload.new && payload.new.user_id === user?.id && payload.new.course_id === supabaseId(courseId)) {
         setEnrolled(true);
         setProgress(payload.new.progress_percentage || 0);
         setLastAccessed(payload.new.last_accessed);
@@ -159,7 +159,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         .from('user_courses')
         .upsert({
           user_id: user.id,
-          course_id: courseId.toString(),
+          course_id: supabaseId(courseId),
           progress_percentage: 0,
           enrolled_at: new Date().toISOString(),
           last_accessed: new Date().toISOString()
@@ -188,8 +188,8 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
 
       toast.success('Đã đăng ký khóa học thành công!');
       return true;
-    } catch (err) {
-      console.error('[CourseProgress] Error enrolling in course:', err);
+    } catch (error) {
+      console.error('[CourseProgress] Error enrolling in course:', error);
       toast.error('Đã xảy ra lỗi khi đăng ký khóa học');
       return false;
     }

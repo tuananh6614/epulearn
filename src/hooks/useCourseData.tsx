@@ -11,7 +11,7 @@ const courseCache = new Map<string, {data: any, timestamp: number}>();
 const CACHE_DURATION = 120000; // 2 minutes
 
 // Helper hook to get course content with progress for the current user
-export const useCourseData = (courseId: string | undefined) => {
+export const useCourseData = (courseId: number | undefined) => {
   const [courseData, setCourseData] = useState<any>(null);
   const [userProgress, setUserProgress] = useState<number>(0);
   const [isEnrolled, setIsEnrolled] = useState<boolean>(false);
@@ -31,7 +31,7 @@ export const useCourseData = (courseId: string | undefined) => {
       
       // Check cache first
       const now = Date.now();
-      const cached = courseCache.get(courseId);
+      const cached = courseCache.get(courseId.toString());
       if (!skipCache && cached && now - cached.timestamp < CACHE_DURATION) {
         console.log('[CourseData] Using cached course data for', courseId);
         setCourseData(cached.data);
@@ -103,7 +103,7 @@ export const useCourseData = (courseId: string | undefined) => {
       };
 
       // Cache the course data
-      courseCache.set(courseId, {
+      courseCache.set(courseId.toString(), {
         data: structuredData,
         timestamp: now
       });
@@ -125,7 +125,7 @@ export const useCourseData = (courseId: string | undefined) => {
     }
   }, [courseId, user, currentUser]);
   
-  const fetchUserProgress = async (courseId: string, userId: string) => {
+  const fetchUserProgress = async (courseId: number, userId: string) => {
     try {
       console.log('[CourseData] Checking enrollment for user:', userId, 'course:', courseId);
       const { data: enrollment, error: enrollmentError } = await supabase
@@ -235,7 +235,7 @@ export const useCourseData = (courseId: string | undefined) => {
 
   // Clear course cache
   const clearCourseCache = () => {
-    courseCache.delete(courseId || '');
+    courseCache.delete(courseId?.toString() || '');
     console.log('[CourseData] Course cache cleared for:', courseId);
   };
 

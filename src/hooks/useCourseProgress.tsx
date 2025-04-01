@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useRealtimeSubscription } from './useRealtimeSubscription';
 
 interface UseCourseProgressProps {
-  courseId?: string;
+  courseId?: number;
 }
 
 interface CourseProgressData {

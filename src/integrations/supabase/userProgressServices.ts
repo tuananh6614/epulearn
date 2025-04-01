@@ -3,7 +3,7 @@ import { supabase } from './client';
 import { toast } from 'sonner';
 
 // Add function to update course progress
-export const updateCourseProgress = async (userId: string, courseId: string) => {
+export const updateCourseProgress = async (userId: string, courseId: number) => {
   try {
     // First get total lesson count for this course
     const { data: lessons, error: lessonError } = await supabase
@@ -52,12 +52,12 @@ export const updateCourseProgress = async (userId: string, courseId: string) => 
 // Function to track user position in a lesson
 export const saveLessonProgress = async (
   userId: string,
-  courseId: string,
-  lessonId: string,
-  chapterId: string,
+  courseId: number,
+  lessonId: number,
+  chapterId: number,
   position: any, // Could be time position for video, or scroll position, etc.
   completed: boolean = false,
-  currentPageId?: number // Added parameter for current page ID
+  currentPageId?: number // Page ID is already an integer
 ) => {
   try {
     console.log('[UserProgress] Saving lesson progress:', { 
@@ -98,7 +98,7 @@ export const saveLessonProgress = async (
 };
 
 // Function to get the user's progress in a course
-export const getCourseProgress = async (userId: string, courseId: string) => {
+export const getCourseProgress = async (userId: string, courseId: number) => {
   try {
     const { data, error } = await supabase
       .from('user_courses')
@@ -121,7 +121,7 @@ export const getCourseProgress = async (userId: string, courseId: string) => {
 };
 
 // Lấy tiến độ của tất cả các bài học trong một khóa học
-export const getLessonProgressInCourse = async (userId: string, courseId: string) => {
+export const getLessonProgressInCourse = async (userId: string, courseId: number) => {
   try {
     const { data, error } = await supabase
       .from('user_lesson_progress')
@@ -143,25 +143,19 @@ export const getLessonProgressInCourse = async (userId: string, courseId: string
   }
 };
 
-// Function to get lesson pages - add this new function
-export const getLessonPages = async (lessonId: string) => {
+// Function to get lesson pages
+export const getLessonPages = async (lessonId: number) => {
   try {
-    // Use the REST API directly since the types don't include the pages table yet
-    const response = await fetch(
-      `https://zrpmghqlhxjwxceqihfg.supabase.co/rest/v1/pages?lesson_id=eq.${lessonId}&order=order_index.asc`,
-      {
-        headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpycG1naHFsaHhqd3hjZXFpaGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3NDQwNDAsImV4cCI6MjA1NzMyMDA0MH0.ZKf1u7-l6oqHCQ-J-U_FG34YcXCEYD0wlyMTQakTmnQ',
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    const { data, error } = await supabase
+      .from('pages')
+      .select('*')
+      .eq('lesson_id', lessonId)
+      .order('order_index', { ascending: true });
     
-    if (!response.ok) {
-      throw new Error('Failed to fetch lesson pages');
+    if (error) {
+      throw error;
     }
     
-    const data = await response.json();
     return { success: true, pages: data };
   } catch (error) {
     console.error('[UserProgress] Error getting lesson pages:', error);

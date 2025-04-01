@@ -5,16 +5,16 @@ import { SupabaseCourseResponse } from '@/models/lesson';
 export type { SupabaseCourseResponse } from '@/models/lesson';
 
 export interface UserCertificate {
-  id: string;
+  id: number;
   userId: string;
-  courseId: string;
+  courseId: number;
   certificateId: string;
   issueDate: string;
   courseName: string;
 }
 
 export interface EnrolledCourse {
-  id: string;
+  id: number;
   title: string;
   description: string;
   image: string;
@@ -122,7 +122,7 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
           };
           
           return {
-            id: item.course_id,
+            id: parseInt(item.course_id.replace('vip-', '')) || 0,
             title: `Gói VIP ${durationMap[duration] || duration}`,
             description: `Gói VIP đăng ký ${durationMap[duration] || duration}`,
             image: '/public/vip-badge.png',
@@ -493,4 +493,29 @@ export const clearCache = () => {
   cache.certificates.clear();
   cache.pendingRequests.clear();
   console.log('Cache cleared');
+};
+
+// Update this function to support integer-based course IDs
+export const enrollUserInCourse = async (userId: string, courseId: number): Promise<{ success: boolean, error?: any }> => {
+  try {
+    const { error } = await supabase
+      .from('user_courses')
+      .upsert({
+        user_id: userId,
+        course_id: courseId,
+        progress_percentage: 0,
+        enrolled_at: new Date().toISOString(),
+        last_accessed: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('Error enrolling user in course:', error);
+      return { success: false, error };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Exception enrolling user in course:', error);
+    return { success: false, error };
+  }
 };

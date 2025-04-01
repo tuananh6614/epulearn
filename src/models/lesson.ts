@@ -1,496 +1,131 @@
-// Lesson data structures for our application
 
 export interface Lesson {
-  id: string;
+  id: number;
   title: string;
   content: string;
-  type: 'lesson' | 'test' | 'video';
   duration: string;
-  chapterId: string;
-  courseId: string;
-  orderIndex: number;
-  isPremium: boolean;
-  completed?: boolean;
-  current?: boolean;
+  type: string; // video, text, etc.
+  order_index: number;
+  chapter_id: number;
+  course_id: number;
+  is_premium: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Chapter {
-  id: string;
+  id: number;
   title: string;
   description?: string;
-  courseId: string;
-  orderIndex: number;
-  lessons: Lesson[];
+  order_index: number;
+  course_id: number;
+  lessons?: Lesson[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Course {
-  id: string;
+  id: number;
   title: string;
   description: string;
-  fullDescription?: string;
+  thumbnail_url?: string;
+  category: string;
+  duration: string;
   level: string;
-  duration: string;
-  category: string;
-  image: string;
-  color: string;
-  isPremium?: boolean;
-  price?: string | number;
-  discountPrice?: string | number;
-  isFeatured?: boolean;
-  instructor?: string;
-  chapters: Chapter[];
-  requirements?: string[];
-  objectives?: string[];
-}
-
-export interface Quiz {
-  question: string;
-  options: string[];
-  correctAnswer: number;
-}
-
-export interface LessonData {
-  id: string;
-  title: string;
-  content: string;
-  course: string;
-  courseId: string;
-  duration: string;
-  description: string;
-  isPremium?: boolean;
-  courseStructure: {
-    id: string;
-    title: string;
-    lessons: {
-      id: string;
-      title: string;
-      type: string;
-      completed: boolean;
-      current?: boolean;
-      isPremium?: boolean;
-    }[];
-  }[];
-  quiz?: Quiz[];
-  videoUrl?: string;
-}
-
-export interface UserProgress {
-  userId: string;
-  courseId: string;
-  lessonId: string;
-  completed: boolean;
-  lastPosition?: string;
-  completedAt?: string;
-}
-
-export interface UserCertificate {
-  id: string;
-  userId: string;
-  courseId: string;
-  certificateId: string;
-  issueDate: string;
-  courseName: string;
-}
-
-export interface EnrolledCourse {
-  id: string;
-  title: string;
-  description: string;
-  progress: number;
-  image: string;
-  color: string;
-  isPremium?: boolean;
-  price?: string | number;
-  discountPrice?: string | number;
-  level?: string;
-  duration?: string;
-  category?: string;
-  isCompleted?: boolean;
-  status?: string;
-}
-
-export interface SupabaseCourseResponse {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  thumbnail_url: string | null;
-  category: string;
-  created_at: string;
-  updated_at: string;
+  is_premium: boolean;
   is_featured: boolean;
   instructor: string;
-  duration: string;
-  level: string;
-  is_premium: boolean;
-  price: string | number | null;
-  discount_price: string | number | null;
-}
-
-export interface SupabaseChapterResponse {
-  id: string;
-  course_id: string;
-  title: string;
-  description: string | null;
-  order_index: number;
   created_at: string;
   updated_at: string;
-  lessons?: SupabaseLessonResponse[];
+  status: string;
+  price?: string;
+  discount_price?: string;
+  full_description?: string;
+  objectives?: string[];
+  requirements?: string[];
+  chapters?: Chapter[];
+  userCanAccess?: boolean;
 }
 
-export interface SupabaseLessonResponse {
-  id: string;
-  chapter_id: string;
-  course_id: string;
-  title: string;
+export interface Page {
+  id: number;
+  lesson_id: number;
   content: string;
-  type: 'lesson' | 'video' | 'test';
-  duration: string;
   order_index: number;
-  is_premium: boolean;
-  created_at: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Progress interfaces
+export interface LessonProgress {
+  id: number;
+  user_id: string;
+  lesson_id: number;
+  course_id: number;
+  chapter_id: number;
+  completed: boolean;
+  completed_at: string | null;
+  last_position: string | null; // JSON stringified position data
   updated_at: string;
+  created_at: string;
+  current_page_id?: number;
 }
 
-export interface PaymentDetails {
-  paymentId: string;
-  amount: number;
-  status: 'succeeded' | 'pending' | 'failed';
-  date: string;
+export interface CourseProgress {
+  progress_percentage: number;
+  last_accessed: string | null;
 }
 
-// Add database types to fix Supabase typing errors
-export type Database = {
-  public: {
-    Tables: {
-      courses: {
-        Row: {
-          id: string;
-          title: string;
-          description: string;
-          thumbnail_url: string | null;
-          instructor: string;
-          duration: string;
-          level: string;
-          category: string;
-          price: number | null;
-          discount_price: number | null;
-          is_premium: boolean;
-          is_featured: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          title: string;
-          description: string;
-          thumbnail_url?: string | null;
-          instructor: string;
-          duration: string;
-          level: string;
-          category: string;
-          price?: number | null;
-          discount_price?: number | null;
-          is_premium?: boolean;
-          is_featured?: boolean;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          title?: string;
-          description?: string;
-          thumbnail_url?: string | null;
-          instructor?: string;
-          duration?: string;
-          level?: string;
-          category?: string;
-          price?: number | null;
-          discount_price?: number | null;
-          is_premium?: boolean;
-          is_featured?: boolean;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      chapters: {
-        Row: {
-          id: string;
-          course_id: string;
-          title: string;
-          description: string | null;
-          order_index: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          course_id: string;
-          title: string;
-          description?: string | null;
-          order_index: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          course_id?: string;
-          title?: string;
-          description?: string | null;
-          order_index?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      lessons: {
-        Row: {
-          id: string;
-          chapter_id: string;
-          course_id: string;
-          title: string;
-          content: string;
-          type: 'lesson' | 'video' | 'test';
-          duration: string;
-          order_index: number;
-          is_premium: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          chapter_id: string;
-          course_id: string;
-          title: string;
-          content: string;
-          type: 'lesson' | 'video' | 'test';
-          duration: string;
-          order_index: number;
-          is_premium?: boolean;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          chapter_id?: string;
-          course_id?: string;
-          title?: string;
-          content?: string;
-          type?: 'lesson' | 'video' | 'test';
-          duration?: string;
-          order_index?: number;
-          is_premium?: boolean;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      user_courses: {
-        Row: {
-          id: string;
-          user_id: string;
-          course_id: string;
-          progress_percentage: number;
-          has_paid: boolean;
-          payment_id: string | null;
-          payment_amount: number | null;
-          payment_date: string | null;
-          last_accessed: string | null;
-          enrolled_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          course_id: string;
-          progress_percentage?: number;
-          has_paid?: boolean;
-          payment_id?: string | null;
-          payment_amount?: number | null;
-          payment_date?: string | null;
-          last_accessed?: string | null;
-          enrolled_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          course_id?: string;
-          progress_percentage?: number;
-          has_paid?: boolean;
-          payment_id?: string | null;
-          payment_amount?: number | null;
-          payment_date?: string | null;
-          last_accessed?: string | null;
-          enrolled_at?: string;
-        };
-      };
-      user_lesson_progress: {
-        Row: {
-          id: string;
-          user_id: string;
-          lesson_id: string;
-          course_id: string;
-          completed: boolean;
-          last_position: string | null;
-          completed_at: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          lesson_id: string;
-          course_id: string;
-          completed?: boolean;
-          last_position?: string | null;
-          completed_at?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          lesson_id?: string;
-          course_id?: string;
-          completed?: boolean;
-          last_position?: string | null;
-          completed_at?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      certificates: {
-        Row: {
-          id: string;
-          user_id: string;
-          course_id: string;
-          certificate_id: string;
-          issue_date: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          course_id: string;
-          certificate_id: string;
-          issue_date?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          course_id?: string;
-          certificate_id?: string;
-          issue_date?: string;
-        };
-      };
-      profiles: {
-        Row: {
-          id: string;
-          email: string;
-          first_name: string | null;
-          last_name: string | null;
-          avatar_url: string | null;
-          bio: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id: string;
-          email: string;
-          first_name?: string | null;
-          last_name?: string | null;
-          avatar_url?: string | null;
-          bio?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          email?: string;
-          first_name?: string | null;
-          last_name?: string | null;
-          avatar_url?: string | null;
-          bio?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-    };
-    Views: {};
-    Functions: {};
-    Enums: {};
-    CompositeTypes: {};
+// Test related interfaces
+export interface TestQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correct_answer: number;
+  course_test_id?: number;
+  chapter_id?: number;
+  points?: number;
+}
+
+export interface TestResult {
+  id: number;
+  user_id: string;
+  course_id?: number;
+  course_test_id?: number;
+  chapter_id?: number;
+  score: number;
+  passed: boolean;
+  time_taken?: number;
+  answers?: Record<string, number>;
+  created_at?: string;
+}
+
+// Certificate interface
+export interface Certificate {
+  id: number;
+  user_id: string;
+  course_id: number;
+  certificate_id: string;
+  issue_date: string;
+  course?: {
+    title: string;
   };
-  storage: {
-    Tables: {
-      buckets: {
-        Row: {
-          id: string;
-          name: string;
-          owner: string | null;
-          created_at: string | null;
-          updated_at: string | null;
-          public: boolean | null;
-        };
-        Insert: {
-          id: string;
-          name: string;
-          owner?: string | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-          public?: boolean | null;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          owner?: string | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-          public?: boolean | null;
-        };
-      };
-      objects: {
-        Row: {
-          id: string;
-          bucket_id: string;
-          name: string;
-          owner: string | null;
-          created_at: string | null;
-          updated_at: string | null;
-          last_accessed_at: string | null;
-          metadata: Record<string, any> | null;
-        };
-        Insert: {
-          id?: string;
-          bucket_id: string;
-          name: string;
-          owner?: string | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-          last_accessed_at?: string | null;
-          metadata?: Record<string, any> | null;
-        };
-        Update: {
-          id?: string;
-          bucket_id?: string;
-          name?: string;
-          owner?: string | null;
-          created_at?: string | null;
-          updated_at?: string | null;
-          last_accessed_at?: string | null;
-          metadata?: Record<string, any> | null;
-        };
-      };
-    };
-    Views: {};
-    Functions: {};
-    Enums: {};
-    CompositeTypes: {};
-  };
-  auth: {
-    Tables: {
-      users: {
-        Row: {
-          id: string;
-          email: string;
-        };
-      };
-    };
-  };
-};
+}
+
+// Response types for Supabase
+export interface SupabaseLessonResponse extends Lesson {}
+export interface SupabaseChapterResponse extends Chapter {}
+
+export interface SupabaseCourseResponse extends Course {
+  // Add any specific fields from Supabase that don't match the Course interface
+}
+
+export interface SupabasePageResponse extends Page {}
+
+export interface SupabaseLessonProgressResponse extends LessonProgress {}
+export interface SupabseCourseProgressResponse extends CourseProgress {}
+
+export interface SupabaseTestQuestionResponse extends TestQuestion {}
+export interface SupabaseTestResultResponse extends TestResult {}
+
+export interface SupabaseCertificateResponse extends Certificate {}

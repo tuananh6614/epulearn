@@ -1,5 +1,8 @@
+
+// Cập nhật chỉ các hàm bị lỗi và phần giao diện EnrolledCourse
+
 import { supabase } from '@/integrations/supabase/client';
-import { SupabaseCourseResponse } from '@/models/lesson';
+import { SupabaseCourseResponse, EnrolledCourse } from '@/models/lesson';
 
 // Re-export the interface from models/lesson to avoid duplication
 export type { SupabaseCourseResponse } from '@/models/lesson';
@@ -11,19 +14,6 @@ export interface UserCertificate {
   certificateId: string;
   issueDate: string;
   courseName: string;
-}
-
-export interface EnrolledCourse {
-  id: number;
-  title: string;
-  description: string;
-  image: string;
-  color: string;
-  progress: number;
-  isCompleted: boolean;
-  lastAccessed: string;
-  enrolledAt: string;
-  status: string;
 }
 
 // Enhanced cache structure with improved performance
@@ -138,7 +128,7 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
         // Handle regular courses
         if (item.course) {
           return {
-            id: item.course_id,
+            id: Number(item.course_id),
             title: item.course.title,
             description: item.course.description || '',
             image: item.course.thumbnail_url || '/placeholder.svg',
@@ -155,7 +145,7 @@ export const fetchUserEnrolledCourses = async (userId: string): Promise<Enrolled
         
         // Fallback for undefined courses
         return {
-          id: item.course_id,
+          id: Number(item.course_id),
           title: 'Khóa học không xác định',
           description: 'Khóa học này không còn tồn tại',
           image: '/placeholder.svg',
@@ -213,7 +203,7 @@ export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
 
       // Transform the data to match SupabaseCourseResponse
       const formattedCourses = data.map(course => ({
-        id: course.id,
+        id: Number(course.id),
         title: course.title,
         description: course.description || '',
         thumbnail_url: course.thumbnail_url || null,
@@ -230,7 +220,15 @@ export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
         discount_price: course.is_premium ? '149.000₫' : null,
         full_description: course.full_description || '',
         objectives: course.objectives || [],
-        requirements: course.requirements || []
+        requirements: course.requirements || [],
+        // Add compatibility properties
+        image: course.thumbnail_url || '/placeholder.svg',
+        color: course.category === 'JavaScript' ? 'yellow' : 
+              course.category === 'React' ? 'blue' : 
+              course.category === 'Node' ? 'green' : 'gray',
+        isPremium: course.is_premium || false,
+        discountPrice: course.is_premium ? '149.000₫' : null,
+        isFeatured: course.is_featured || false
       }));
       
       // Lưu cache
@@ -247,7 +245,7 @@ export const fetchCourses = async (): Promise<SupabaseCourseResponse[]> => {
   }
 };
 
-// Optimized function to fetch VIP courses
+// Optimized function to fetch VIP courses - chỉ cập nhật logic type chuyển đổi
 export const fetchVipCourses = async (): Promise<SupabaseCourseResponse[]> => {
   try {
     // Kiểm tra cache
@@ -277,9 +275,9 @@ export const fetchVipCourses = async (): Promise<SupabaseCourseResponse[]> => {
         return [];
       }
 
-      // Transform the data to match SupabaseCourseResponse
+      // Transform the data to match SupabaseCourseResponse with Number type conversion
       const formattedCourses = data.map(course => ({
-        id: course.id,
+        id: Number(course.id),
         title: course.title,
         description: course.description || '',
         thumbnail_url: course.thumbnail_url || null,
@@ -296,7 +294,15 @@ export const fetchVipCourses = async (): Promise<SupabaseCourseResponse[]> => {
         discount_price: '149.000₫',
         full_description: course.full_description || '',
         objectives: course.objectives || [],
-        requirements: course.requirements || []
+        requirements: course.requirements || [],
+        // Add compatibility properties
+        image: course.thumbnail_url || '/placeholder.svg',
+        color: course.category === 'JavaScript' ? 'yellow' : 
+              course.category === 'React' ? 'blue' : 
+              course.category === 'Node' ? 'green' : 'gray',
+        isPremium: true,
+        discountPrice: '149.000₫',
+        isFeatured: course.is_featured || false
       }));
       
       // Lưu cache
@@ -314,7 +320,7 @@ export const fetchVipCourses = async (): Promise<SupabaseCourseResponse[]> => {
   }
 };
 
-// Function to fetch featured courses - optimized with only needed fields
+// Function to fetch featured courses - cập nhật chuyển đổi ID
 export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> => {
   try {
     // Kiểm tra cache
@@ -347,7 +353,7 @@ export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> 
 
       // Transform the data to match SupabaseCourseResponse
       const formattedCourses = data.map(course => ({
-        id: course.id,
+        id: Number(course.id),
         title: course.title,
         description: course.description || '',
         thumbnail_url: course.thumbnail_url || null,
@@ -364,7 +370,15 @@ export const fetchFeaturedCourses = async (): Promise<SupabaseCourseResponse[]> 
         discount_price: course.is_premium ? '149.000₫' : null,
         full_description: course.full_description || '',
         objectives: course.objectives || [],
-        requirements: course.requirements || []
+        requirements: course.requirements || [],
+        // Add compatibility properties
+        image: course.thumbnail_url || '/placeholder.svg',
+        color: course.category === 'JavaScript' ? 'yellow' : 
+              course.category === 'React' ? 'blue' : 
+              course.category === 'Node' ? 'green' : 'gray',
+        isPremium: course.is_premium || false,
+        discountPrice: course.is_premium ? '149.000₫' : null,
+        isFeatured: true
       }));
       
       // Lưu cache
@@ -410,9 +424,9 @@ export const fetchUserCertificates = async (userId: string): Promise<UserCertifi
       }
 
       const certificates = data?.map(cert => ({
-        id: cert.id,
+        id: Number(cert.id),
         userId: cert.user_id,
-        courseId: cert.course_id,
+        courseId: Number(cert.course_id),
         certificateId: cert.certificate_id,
         issueDate: cert.issue_date,
         courseName: cert.courses?.title || 'Unknown Course'

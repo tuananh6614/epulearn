@@ -45,6 +45,13 @@ export interface Course {
   requirements?: string[];
   chapters?: Chapter[];
   userCanAccess?: boolean;
+  
+  // Compatibility properties for older code
+  image?: string;
+  color?: string;
+  isPremium?: boolean;
+  discountPrice?: string;
+  isFeatured?: boolean;
 }
 
 export interface Page {
@@ -59,7 +66,7 @@ export interface Page {
 // Progress interfaces
 export interface LessonProgress {
   id: number;
-  user_id: string;
+  user_id: string; // This stays as string because it references auth.users
   lesson_id: number;
   course_id: number;
   chapter_id: number;
@@ -89,7 +96,7 @@ export interface TestQuestion {
 
 export interface TestResult {
   id: number;
-  user_id: string;
+  user_id: string; // This stays as string because it references auth.users
   course_id?: number;
   course_test_id?: number;
   chapter_id?: number;
@@ -103,7 +110,7 @@ export interface TestResult {
 // Certificate interface
 export interface Certificate {
   id: number;
-  user_id: string;
+  user_id: string; // This stays as string because it references auth.users
   course_id: number;
   certificate_id: string;
   issue_date: string;
@@ -129,3 +136,27 @@ export interface SupabaseTestQuestionResponse extends TestQuestion {}
 export interface SupabaseTestResultResponse extends TestResult {}
 
 export interface SupabaseCertificateResponse extends Certificate {}
+
+// Add EnrolledCourse interface that was previously missing
+export interface EnrolledCourse {
+  id: number;
+  title: string;
+  description: string;
+  image: string;
+  color: string;
+  progress: number;
+  isCompleted: boolean;
+  lastAccessed: string;
+  enrolledAt: string;
+  status: string;
+}
+
+// Add LessonData interface that was previously missing
+export interface LessonData {
+  id: number;
+  title: string;
+  content: string;
+  type: string;
+  chapterId: number;
+  courseId: number;
+}

@@ -122,7 +122,7 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
     filter: user?.id && courseId ? `user_id=eq.${user.id}&course_id=eq.${courseId}` : undefined,
     onDataChange: (payload) => {
       console.log('[CourseProgress] Realtime update detected:', payload);
-      if (payload.new && payload.new.user_id === user?.id && payload.new.course_id === courseId) {
+      if (payload.new && payload.new.user_id === user?.id && Number(payload.new.course_id) === courseId) {
         setEnrolled(true);
         setProgress(payload.new.progress_percentage || 0);
         setLastAccessed(payload.new.last_accessed);

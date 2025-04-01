@@ -154,10 +154,10 @@ export const useCourseData = (courseId: number | undefined) => {
   useRealtimeSubscription({
     table: 'courses',
     event: 'UPDATE',
-    filter: `id=eq.${courseId}`,
+    filter: courseId ? `id=eq.${courseId}` : undefined,
     onDataChange: (payload) => {
       console.log('[CourseData] Realtime course update detected:', payload);
-      if (payload.new && payload.new.id === courseId) {
+      if (payload.new && Number(payload.new.id) === courseId) {
         // Only update specific fields from the course object
         if (courseData) {
           setCourseData(prev => ({
@@ -183,7 +183,7 @@ export const useCourseData = (courseId: number | undefined) => {
     filter: user?.id && courseId ? `user_id=eq.${user.id}&course_id=eq.${courseId}` : undefined,
     onDataChange: (payload) => {
       console.log('[CourseData] Realtime user progress update detected:', payload);
-      if (payload.new && payload.new.user_id === user?.id && payload.new.course_id === courseId) {
+      if (payload.new && payload.new.user_id === user?.id && Number(payload.new.course_id) === courseId) {
         setIsEnrolled(true);
         setUserProgress(payload.new.progress_percentage || 0);
       }

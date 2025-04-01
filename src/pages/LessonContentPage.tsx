@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ChevronLeft, ChevronRight, BookOpen, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -13,20 +12,19 @@ import Navbar from '@/components/Navbar';
 import GreenButton from '@/components/GreenButton';
 import { saveLessonProgress, getLessonPages } from '@/integrations/supabase/userProgressServices';
 
-// Định nghĩa kiểu dữ liệu
 interface Lesson {
-  id: string;
+  id: number;
   title: string;
   content: string;
   type: string;
   order_index: number;
-  chapter_id: string;
+  chapter_id: number;
 }
 
 interface Chapter {
-  id: string;
+  id: number;
   title: string;
-  course_id: string;
+  course_id: number;
   order_index: number;
 }
 
@@ -38,7 +36,7 @@ interface LessonProgress {
 
 interface Page {
   id: number;
-  lesson_id: string;
+  lesson_id: number;
   content: string;
   order_index: number;
   created_at?: string;
@@ -54,14 +52,13 @@ const LessonContentPage = () => {
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [nextLesson, setNextLesson] = useState<Lesson | { id: string; title: string; isTest: boolean } | null>(null);
+  const [nextLesson, setNextLesson] = useState<Lesson | { id: number; title: string; isTest: boolean } | null>(null);
   const [prevLesson, setPrevLesson] = useState<Lesson | null>(null);
   const [lessonProgress, setLessonProgress] = useState<LessonProgress>({
     completed: false,
     position: 0
   });
   
-  // Thêm state cho pages
   const [pages, setPages] = useState<Page[]>([]);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   
@@ -72,56 +69,51 @@ const LessonContentPage = () => {
       try {
         setLoading(true);
         
-        // Get chapter info
         const { data: chapterData, error: chapterError } = await supabase
           .from('chapters')
           .select('*')
-          .eq('id', chapterId)
+          .eq('id', parseInt(chapterId))
           .single();
           
         if (chapterError) throw chapterError;
         setChapter(chapterData as Chapter);
         
-        // Get current lesson
         const { data: lessonData, error: lessonError } = await supabase
           .from('lessons')
           .select('*')
-          .eq('id', lessonId)
+          .eq('id', parseInt(lessonId))
           .single();
           
         if (lessonError) throw lessonError;
         setLesson(lessonData as Lesson);
         
-        // Get lesson pages using our new function
-        const { success, pages: pagesData, error: pagesError } = await getLessonPages(lessonId);
+        const { success, pages: pagesData, error: pagesError } = await getLessonPages(parseInt(lessonId));
         
         if (pagesError) throw pagesError;
         
         if (success && pagesData && pagesData.length > 0) {
           setPages(pagesData as Page[]);
         } else {
-          // If no pages exist yet, create a single page with the lesson content
           setPages([
             {
-              id: 0, // Temporary ID
-              lesson_id: lessonId,
+              id: 0,
+              lesson_id: parseInt(lessonId),
               content: lessonData.content,
               order_index: 1
             }
           ]);
         }
         
-        // Get all lessons in this chapter for navigation
         const { data: chapterLessons, error: chapterLessonsError } = await supabase
           .from('lessons')
           .select('id, title, order_index')
-          .eq('chapter_id', chapterId)
+          .eq('chapter_id', parseInt(chapterId))
           .order('order_index', { ascending: true });
           
         if (chapterLessonsError) throw chapterLessonsError;
         
         if (chapterLessons && chapterLessons.length > 0) {
-          const currentIndex = chapterLessons.findIndex(l => l.id === lessonId);
+          const currentIndex = chapterLessons.findIndex(l => l.id === parseInt(lessonId));
           
           if (currentIndex > 0) {
             setPrevLesson(chapterLessons[currentIndex - 1] as Lesson);
@@ -130,33 +122,29 @@ const LessonContentPage = () => {
           if (currentIndex < chapterLessons.length - 1) {
             setNextLesson(chapterLessons[currentIndex + 1] as Lesson);
           } else {
-            // If this is the last lesson, check if there's a chapter test
             const { data: testLesson, error: testError } = await supabase
               .from('lessons')
               .select('*')
-              .eq('chapter_id', chapterId)
+              .eq('chapter_id', parseInt(chapterId))
               .eq('type', 'test')
               .maybeSingle();
               
             if (!testError && testLesson) {
-              setNextLesson({ ...testLesson, isTest: true } as { id: string; title: string; isTest: boolean });
+              setNextLesson({ ...testLesson, isTest: true } as { id: number; title: string; isTest: boolean });
             }
           }
         }
         
-        // Get lesson progress
         const { data: progressData, error: progressError } = await supabase
           .from('user_lesson_progress')
           .select('*')
           .eq('user_id', user.id)
-          .eq('lesson_id', lessonId)
+          .eq('lesson_id', parseInt(lessonId))
           .maybeSingle();
           
         if (!progressError && progressData) {
-          // If we have progress data with current_page_id, set the current page
           const currentPageId = progressData.current_page_id;
           if (currentPageId) {
-            // Find the page in our pages array
             const pageIndex = pagesData?.findIndex((p: Page) => p.id === currentPageId) || 0;
             if (pageIndex >= 0) {
               setCurrentPageIndex(pageIndex);
@@ -187,17 +175,16 @@ const LessonContentPage = () => {
     
     setCurrentPageIndex(newIndex);
     
-    // Save progress with current page
     if (user && courseId && lessonId && pages[newIndex]) {
       try {
         await saveLessonProgress(
           user.id,
-          courseId,
-          lessonId,
-          chapterId || "",
-          { scrollPosition: 0 }, // Reset scroll position for new page
-          false, // Not completed yet
-          pages[newIndex].id // Save current page ID
+          parseInt(courseId),
+          parseInt(lessonId),
+          parseInt(chapterId || "0"),
+          { scrollPosition: 0 },
+          false,
+          pages[newIndex].id
         );
       } catch (err) {
         console.error('Error saving page progress:', err);
@@ -211,9 +198,9 @@ const LessonContentPage = () => {
     try {
       await saveLessonProgress(
         user.id,
-        courseId,
-        lessonId,
-        chapterId,
+        parseInt(courseId),
+        parseInt(lessonId),
+        parseInt(chapterId),
         { scrollPosition: window.scrollY },
         true,
         pages[currentPageIndex]?.id
@@ -222,7 +209,6 @@ const LessonContentPage = () => {
       setLessonProgress({ ...lessonProgress, completed: true });
       toast.success('Đã đánh dấu bài học là đã hoàn thành');
       
-      // Navigate to next lesson if available
       if (nextLesson) {
         if ('isTest' in nextLesson) {
           navigate(`/course/${courseId}/chapter/${chapterId}/test/${nextLesson.id}`);
@@ -230,20 +216,17 @@ const LessonContentPage = () => {
           navigate(`/course/${courseId}/chapter/${chapterId}/lesson/${nextLesson.id}`);
         }
       } else {
-        // If no next lesson, check if there's another chapter
         const { data: chapters, error: chaptersError } = await supabase
           .from('chapters')
           .select('id, order_index')
-          .eq('course_id', courseId)
+          .eq('course_id', parseInt(courseId))
           .order('order_index', { ascending: true });
           
         if (!chaptersError && chapters) {
-          const currentChapterIndex = chapters.findIndex(c => c.id === chapterId);
+          const currentChapterIndex = chapters.findIndex(c => c.id === parseInt(chapterId));
           if (currentChapterIndex < chapters.length - 1) {
-            // Navigate to next chapter
             navigate(`/course/${courseId}/chapter/${chapters[currentChapterIndex + 1].id}`);
           } else {
-            // Back to course overview
             navigate(`/course/${courseId}/start`);
           }
         }
@@ -308,7 +291,6 @@ const LessonContentPage = () => {
         
         <Card className="mb-8">
           <CardContent className="p-6">
-            {/* Hiển thị page pagination nếu có nhiều trang */}
             {pages.length > 1 && (
               <div className="flex justify-between items-center mb-6 pb-4 border-b">
                 <Button 
@@ -340,7 +322,6 @@ const LessonContentPage = () => {
               dangerouslySetInnerHTML={{ __html: currentPage?.content || lesson.content }}
             />
 
-            {/* Page navigation footer if multiple pages */}
             {pages.length > 1 && (
               <div className="flex justify-between items-center mt-6 pt-4 border-t">
                 <Button 

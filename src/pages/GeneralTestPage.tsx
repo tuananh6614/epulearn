@@ -14,6 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { fetchCourseTests } from '@/integrations/supabase/testServices';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { CourseTest } from '@/models/lesson';
 
 interface GeneralTestPageProps {}
 
@@ -55,23 +56,27 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
       try {
         setLoading(true);
         
-        const testData = await fetchCourseTests(courseId);
+        const response = await fetchCourseTests(courseId);
         
-        if (!testData || !testData.success) {
+        if (!response || !response.success) {
           toast.error("Không tìm thấy bài kiểm tra cho khóa học này");
           navigate(`/course/${courseId}`);
           return;
         }
         
-        if (testData.test && testData.questions) {
-          setCourseTest(testData.test);
-          setQuestions(testData.questions);
-          setTimeRemaining(testData.test.time_limit * 60);
-        } else if (testData.tests && testData.tests.length > 0) {
-          const firstTest = testData.tests[0];
+        if (response.test) {
+          setCourseTest(response.test);
+          // Make sure we're handling the questions correctly
+          const testQuestions = response.test.questions || [];
+          setQuestions(testQuestions);
+          setTimeRemaining((response.test.time_limit || 30) * 60);
+        } else if (response.tests && response.tests.length > 0) {
+          const firstTest = response.tests[0];
           setCourseTest(firstTest);
-          setQuestions(firstTest.course_test_questions || []);
-          setTimeRemaining(firstTest.time_limit * 60);
+          // Check if the test has questions property or course_test_questions
+          const testQuestions = firstTest.questions || [];
+          setQuestions(testQuestions);
+          setTimeRemaining((firstTest.time_limit || 30) * 60);
         }
         
         if (user) {

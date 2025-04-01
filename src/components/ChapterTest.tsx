@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,10 +14,10 @@ import { useAuth } from '@/context/AuthContext';
 import { fetchTestQuestions } from '@/integrations/supabase/testServices';
 
 export interface TestQuestion {
-  id: string;
+  id: string | number;
   question: string;
   options: string[];
-  answer: number;
+  answer: number;  // This matches correct_answer in API responses
 }
 
 export interface ChapterTestProps {
@@ -58,11 +59,14 @@ const ChapterTest: React.FC<ChapterTestProps> = ({
       try {
         setLoading(true);
         const testQuestions = await fetchTestQuestions(chapterId);
-        const formattedQuestions = testQuestions.map(q => ({
-          ...q,
+        // Map the API response fields to match our TestQuestion interface
+        const formattedQuestions: TestQuestion[] = testQuestions.map(q => ({
+          id: q.id,
+          question: q.question,
           options: Array.isArray(q.options) 
-            ? q.options.map(opt => typeof opt === 'string' ? opt : String(opt))
-            : []
+            ? q.options.map(opt => String(opt))
+            : [],
+          answer: q.correct_answer // Map correct_answer from API to answer in our interface
         }));
         setQuestions(formattedQuestions);
       } catch (error) {

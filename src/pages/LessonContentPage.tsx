@@ -40,30 +40,54 @@ const LessonContentPage = () => {
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchLessonContent = async () => {
       if (!courseId || !chapterId || !lessonId || !user) return;
       
       try {
         setLoading(true);
         
+        // First, fetch chapter info
         const { data: chapterData, error: chapterError } = await supabase
           .from('chapters')
           .select('*')
           .eq('id', supabaseId(chapterId))
           .single();
           
-        if (chapterError) throw chapterError;
-        setChapter(chapterData as unknown as Chapter);
+        if (chapterError) {
+          console.error('Error fetching chapter:', chapterError);
+          toast.error('Không thể tải thông tin chương học');
+          setLoading(false);
+          return;
+        }
         
+        // Cast the chapter data to work with our Chapter type
+        const chapter = {
+          ...chapterData,
+          id: chapterData.id // Keep as string from DB
+        } as unknown as Chapter;
+        setChapter(chapter);
+        
+        // Then fetch the lesson
         const { data: lessonData, error: lessonError } = await supabase
           .from('lessons')
           .select('*')
           .eq('id', supabaseId(lessonId))
           .single();
           
-        if (lessonError) throw lessonError;
-        setLesson(lessonData as unknown as Lesson);
-        
+        if (lessonError) {
+          console.error('Error fetching lesson:', lessonError);
+          toast.error('Không thể tải bài học');
+          setLoading(false);
+          return;
+        }
+
+        // Cast the lesson data to our Lesson type
+        const lesson = {
+          ...lessonData,
+          id: lessonData.id // Keep as string from DB
+        } as unknown as Lesson;
+        setLesson(lesson);
+
         const { success, pages: pagesData, error: pagesError } = await getLessonPages(lessonId);
         
         if (pagesError) throw pagesError;
@@ -81,23 +105,39 @@ const LessonContentPage = () => {
           ]);
         }
         
-        const { data: chapterLessons, error: chapterLessonsError } = await supabase
+        // For lesson navigation, ensure proper type comparison with id
+        const { data: navigationData, error: navigationError } = await supabase
           .from('lessons')
           .select('id, title, order_index')
           .eq('chapter_id', supabaseId(chapterId))
           .order('order_index', { ascending: true });
           
-        if (chapterLessonsError) throw chapterLessonsError;
-        
-        if (chapterLessons && chapterLessons.length > 0) {
-          const currentIndex = chapterLessons.findIndex(l => String(l.id) === String(lessonId));
+        if (navigationError) {
+          console.error('Error fetching navigation data:', navigationError);
+        } else {
+          // Find current lesson index
+          const currentIndex = navigationData.findIndex(item => 
+            String(item.id) === String(lessonId) // Compare as strings
+          );
           
           if (currentIndex > 0) {
-            setPrevLesson(chapterLessons[currentIndex - 1] as unknown as Lesson);
+            setPrevLesson({
+              ...navigationData[currentIndex - 1],
+              // Add required properties for the Lesson type
+              content: '',
+              type: 'unknown',
+              chapter_id: chapterId
+            } as unknown as Lesson);
           }
           
-          if (currentIndex < chapterLessons.length - 1) {
-            setNextLesson(chapterLessons[currentIndex + 1] as unknown as Lesson);
+          if (currentIndex < navigationData.length - 1) {
+            setNextLesson({
+              ...navigationData[currentIndex + 1],
+              // Add required properties for the Lesson type
+              content: '',
+              type: 'unknown',
+              chapter_id: chapterId
+            } as unknown as Lesson);
           } else {
             const { data: testLesson, error: testError } = await supabase
               .from('lessons')
@@ -148,8 +188,8 @@ const LessonContentPage = () => {
       }
     };
     
-    fetchData();
-  }, [courseId, chapterId, lessonId, user]);
+    fetchLessonContent();
+  }, [courseId, chapterId, lessonId, user, navigate]);
   
   const handlePageChange = async (newIndex: number) => {
     if (newIndex < 0 || newIndex >= pages.length) return;

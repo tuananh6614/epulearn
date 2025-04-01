@@ -84,7 +84,9 @@ export const convertObjectIds = <T extends Record<string, any>>(
   
   for (const field of idFields) {
     if (field in result) {
-      result[field] = toNumberId(result[field]);
+      // Fix the generic type indexing issue by using safer access
+      const value = result[field];
+      result[field] = toNumberId(value);
     }
   }
   

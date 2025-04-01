@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -17,33 +18,34 @@ import {
 import { Clock, FileText, Book, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { TestQuestion } from '@/models/lesson';
 
 interface CourseTestQuestion {
-  id: string;
+  id: string | number;
   question: string;
   options: string[];
   correct_answer: number;
   points?: number;
-  course_test_id?: string;
+  course_test_id?: string | number;
   created_at?: string;
   updated_at?: string;
 }
 
 interface CourseTestType {
-  id: string;
+  id: string | number;
   title: string;
   description: string;
   passing_score: number;
   time_limit: number;
-  course_id: string;
+  course_id: string | number;
   created_at: string;
   updated_at: string;
-  questions: TestQuestion[];
+  questions: CourseTestQuestion[];
 }
 
 interface UserTestResultType {
-  id: string;
-  course_test_id: string;
+  id: string | number;
+  course_test_id: string | number;
   user_id: string;
   score: number;
   passed: boolean;
@@ -67,7 +69,7 @@ const CourseTest: React.FC = () => {
   useEffect(() => {
     const loadTest = async () => {
       try {
-        setIsLoading(true);
+        setLoading(true);
         
         if (!courseId) {
           toast.error("Không có thông tin khóa học");
@@ -76,13 +78,13 @@ const CourseTest: React.FC = () => {
         }
         
         console.log("Fetching course test for course ID:", courseId);
-        const { success, test, tests, error } = await fetchCourseTests(courseId);
+        const { success, test, tests: testsList, error: fetchError } = await fetchCourseTests(courseId);
         
         if (!success) {
-          console.error('Error fetching course test:', error);
+          console.error('Error fetching course test:', fetchError);
           toast.error("Không thể tải bài kiểm tra");
           setError("Không thể tải bài kiểm tra cho khóa học này");
-          setIsLoading(false);
+          setLoading(false);
           return;
         }
         
@@ -94,10 +96,10 @@ const CourseTest: React.FC = () => {
             description: test.description,
             passing_score: test.passing_score,
             time_limit: test.time_limit,
-            course_id: courseId.toString(),
+            course_id: courseId,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            questions: test.course_test_questions?.map((q: any) => ({
+            questions: test.questions?.map((q: any) => ({
               id: q.id,
               question: q.question,
               options: Array.isArray(q.options) ? q.options.map((opt: any) => String(opt)) : [],
@@ -108,18 +110,18 @@ const CourseTest: React.FC = () => {
           
           setTests([formattedTest]);
           console.log("Test loaded:", formattedTest);
-        } else if (tests) {
+        } else if (testsList) {
           // Map each test in the array
-          const formattedTests = tests.map(t => ({
+          const formattedTests = testsList.map(t => ({
             id: t.id,
             title: t.title,
             description: t.description,
             passing_score: t.passing_score,
             time_limit: t.time_limit,
-            course_id: courseId.toString(),
+            course_id: courseId,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            questions: []
+            questions: t.questions || []
           }));
           
           setTests(formattedTests);
@@ -128,12 +130,12 @@ const CourseTest: React.FC = () => {
           setError("Không tìm thấy bài kiểm tra cho khóa học này");
         }
         
-        setIsLoading(false);
+        setLoading(false);
       } catch (err) {
         console.error("Error loading test:", err);
         toast.error("Đã xảy ra lỗi khi tải bài kiểm tra");
         setError("Đã xảy ra l��i khi tải bài kiểm tra");
-        setIsLoading(false);
+        setLoading(false);
       }
     };
     

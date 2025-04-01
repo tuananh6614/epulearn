@@ -65,7 +65,7 @@ export const saveLessonProgress = async (
       userId, courseId, lessonId, chapterId, completed, currentPageId
     });
     
-    // Update the lesson progress
+    // Update the lesson progress - ensure all IDs are strings for Supabase
     const { error } = await supabase
       .from('user_lesson_progress')
       .upsert({
@@ -77,7 +77,7 @@ export const saveLessonProgress = async (
         last_position: JSON.stringify(position),
         completed_at: completed ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
-        current_page_id: currentPageId // Store the current page ID
+        current_page_id: currentPageId !== undefined ? Number(currentPageId) : undefined
       });
       
     if (error) {

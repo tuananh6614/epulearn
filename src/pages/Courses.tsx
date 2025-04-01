@@ -1,259 +1,190 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import CourseCard from '@/components/CourseCard';
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, X, RefreshCw, Crown } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
-import { fetchCourses } from '@/services/apiUtils';
-import { Course, SupabaseCourseResponse } from '@/models/lesson';
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Course } from '@/models/lesson';
+import { Loader2 } from "lucide-react";
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import Navbar from '@/components/Navbar';
+
+// Function to generate a random color
+const getRandomColor = () => {
+  const colors = ['#4F46E5', '#10B981', '#3B82F6', '#D946EF', '#F59E0B'];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
 
 const Courses = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [levelFilter, setLevelFilter] = useState('all');
-  const [premiumFilter, setPremiumFilter] = useState('all');
-  const [coursesData, setCoursesData] = useState<Course[]>([]);
+  const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
-
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  
   useEffect(() => {
-    const fetchCoursesData = async () => {
+    const fetchCourses = async () => {
+      setLoading(true);
       try {
-        setIsLoading(true);
-        const coursesData = await fetchCourses();
+        const { data, error } = await supabase
+          .from('courses')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          console.error('Error fetching courses:', error);
+          toast("Không thể tải khóa học", {
+            description: "Đã xảy ra lỗi khi tải dữ liệu.",
+            action: {
+              label: "Thử lại",
+              onClick: () => fetchCourses()
+            },
+          });
+          return;
+        }
         
-        const transformedCourses = coursesData.map(course => ({
-          ...course,
-          is_premium: course.is_premium || false,
-          is_featured: course.is_featured || false,
-          created_at: course.created_at || new Date().toISOString(),
-          updated_at: course.updated_at || new Date().toISOString(),
-          status: course.status || 'published'
+        // Transform the data to match our Course model
+        const formattedCourses: Course[] = data.map(course => ({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          thumbnail_url: course.thumbnail_url,
+          image: course.thumbnail_url || '/placeholder.jpg',
+          category: course.category,
+          duration: course.duration,
+          level: course.level,
+          is_premium: course.is_premium,
+          isPremium: course.is_premium,
+          is_featured: course.is_featured,
+          isFeatured: course.is_featured,
+          instructor: course.instructor,
+          created_at: course.created_at,
+          updated_at: course.updated_at,
+          status: course.status || 'published',
+          price: course.price?.toString() || '',
+          discount_price: course.discount_price?.toString() || '',
+          discountPrice: course.discount_price?.toString() || '',
+          color: getRandomColor(),
+          chapters: []
         }));
         
-        setCourses(transformedCourses);
-      } catch (error) {
-        console.error('Error fetching courses:', error);
-        toast.error('Failed to load courses');
+        setAllCourses(formattedCourses);
+        setFilteredCourses(formattedCourses);
+      } catch (err) {
+        console.error("Error fetching courses:", err);
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-
-    fetchCoursesData();
-  }, []);
-
-  useEffect(() => {
-    if (coursesData.length === 0) return;
     
-    const filtered = coursesData.filter(course => {
-      const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          course.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === 'all' || course.category === categoryFilter;
-      const matchesLevel = levelFilter === 'all' || course.level === levelFilter;
-      const matchesPremium = premiumFilter === 'all' 
-                          || (premiumFilter === 'premium' && course.isPremium) 
-                          || (premiumFilter === 'free' && !course.isPremium);
-      
-      return matchesSearch && matchesCategory && matchesLevel && matchesPremium;
-    });
+    fetchCourses();
+  }, []);
+  
+  const filterCourses = () => {
+    let filtered = [...allCourses];
+    
+    if (searchTerm) {
+      filtered = filtered.filter(course =>
+        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    if (selectedCategory) {
+      filtered = filtered.filter(course => course.category === selectedCategory);
+    }
+    
+    if (selectedLevel) {
+      filtered = filtered.filter(course => course.level === selectedLevel);
+    }
     
     setFilteredCourses(filtered);
-  }, [searchTerm, categoryFilter, levelFilter, premiumFilter, coursesData]);
-
-  const categories = coursesData.length > 0 ? [...new Set(coursesData.map(course => course.category))] : [];
-  const levels = coursesData.length > 0 ? [...new Set(coursesData.map(course => course.level))] : [];
-
-  const handleClearFilters = () => {
-    setSearchTerm('');
-    setCategoryFilter('all');
-    setLevelFilter('all');
-    setPremiumFilter('all');
   };
-
-  const handleRetry = () => {
-    setError(null);
-    setIsLoading(true);
-    
-    const fetchCoursesData = async () => {
-      try {
-        console.log('Retrying fetch courses from Supabase');
-        
-        const coursesData = await fetchCourses();
-        
-        const transformedCourses = coursesData.map(course => ({
-          ...course,
-          is_premium: course.is_premium || false,
-          is_featured: course.is_featured || false,
-          created_at: course.created_at || new Date().toISOString(),
-          updated_at: course.updated_at || new Date().toISOString(),
-          status: course.status || 'published'
-        }));
-        
-        setCourses(transformedCourses);
-        setFilteredCourses(transformedCourses);
-        setIsLoading(false);
-      } catch (err) {
-        console.error('Lỗi khi tải khóa học:', err);
-        setError((err as Error).message);
-        setIsLoading(false);
-        
-        toast({
-          title: "Không thể kết nối đến máy chủ",
-          description: "Vui lòng kiểm tra kết nối của bạn hoặc thử lại sau.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchCoursesData();
-  };
-
-  const toggleFilters = () => {
-    setIsFilterVisible(!isFilterVisible);
-  };
-
+  
+  useEffect(() => {
+    filterCourses();
+  }, [searchTerm, selectedCategory, selectedLevel, allCourses]);
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-background pt-20">
       <Navbar />
-      
-      <main className="flex-grow bg-gray-50 dark:bg-gray-900 py-16">
-        <div className="bg-epu-dark text-white py-12">
-          <div className="container mx-auto px-4">
-            <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Khám Phá Các Khóa Học</h1>
-            <p className="text-gray-700 dark:text-gray-300 max-w-3xl">
-              Khám phá nhiều khóa học lập trình được thiết kế để đưa bạn từ người mới đến chuyên gia. Mỗi khóa học bao gồm các bài học tương tác và bài kiểm tra sau mỗi chương.
-            </p>
-          </div>
+      <div className="container max-w-6xl py-8">
+        <h1 className="text-3xl font-bold mb-6">Khóa Học</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Input
+            type="text"
+            placeholder="Tìm kiếm khóa học..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          
+          <Select onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Chọn thể loại" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả thể loại</SelectItem>
+              <SelectItem value="Development">Development</SelectItem>
+              <SelectItem value="Design">Design</SelectItem>
+              <SelectItem value="Marketing">Marketing</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select onValueChange={(value) => setSelectedLevel(value === "all" ? null : value)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Chọn trình độ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trình độ</SelectItem>
+              <SelectItem value="Beginner">Beginner</SelectItem>
+              <SelectItem value="Intermediate">Intermediate</SelectItem>
+              <SelectItem value="Advanced">Advanced</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         
-        <div className="container mx-auto px-4 py-10">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-10">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-grow relative">
-                <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <Input
-                  placeholder="Tìm kiếm khóa học..."
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              
-              <div className="md:hidden">
-                <Button variant="outline" onClick={toggleFilters} className="w-full flex items-center justify-center">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Bộ Lọc
-                </Button>
-              </div>
-              
-              <div className={`md:flex gap-4 ${isFilterVisible ? 'flex flex-col' : 'hidden'}`}>
-                <div className="w-full md:w-48">
-                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Danh Mục" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tất Cả Danh Mục</SelectItem>
-                      {categories.map(category => (
-                        <SelectItem key={category} value={category}>{category}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="w-full md:w-48">
-                  <Select value={levelFilter} onValueChange={setLevelFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Cấp Độ" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tất Cả Cấp Độ</SelectItem>
-                      {levels.map(level => (
-                        <SelectItem key={level} value={level}>{level}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="w-full md:w-48">
-                  <Select value={premiumFilter} onValueChange={setPremiumFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Loại Khóa Học" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tất Cả Khóa Học</SelectItem>
-                      <SelectItem value="free">Khóa Học Thường</SelectItem>
-                      <SelectItem value="premium">
-                        <div className="flex items-center gap-1">
-                          <Crown className="h-4 w-4 text-yellow-500" />
-                          Khóa Học VIP
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {(categoryFilter !== 'all' || levelFilter !== 'all' || premiumFilter !== 'all' || searchTerm) && (
-                  <Button variant="outline" onClick={handleClearFilters} className="flex items-center justify-center">
-                    <X className="h-4 w-4 mr-2" />
-                    Xóa Bộ Lọc
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((_, index) => (
-                <div key={index} className="bg-gray-200 dark:bg-gray-700 animate-pulse h-80 rounded-lg"></div>
-              ))}
-            </div>
-          ) : error ? (
-            <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-              <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-4">Lỗi tải khóa học</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6">{error}</p>
-              <Button onClick={handleRetry} variant="outline" className="flex items-center gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Thử lại
-              </Button>
-            </div>
-          ) : filteredCourses.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredCourses.map((course) => (
-                <CourseCard
-                  key={String(course.id)}
-                  id={String(course.id)}
-                  title={course.title}
-                  description={course.description}
-                  level={course.level}
-                  duration={course.duration}
-                  category={course.category}
-                  image={course.image || course.thumbnail_url || '/placeholder.svg'}
-                  color={course.color || '#4f46e5'}
-                  isPremium={course.isPremium}
-                  price={course.price?.toString()}
-                  discountPrice={course.discount_price?.toString()}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-              <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">Không tìm thấy khóa học</h3>
-              <p className="text-gray-500 dark:text-gray-400">Hãy thử điều chỉnh tiêu chí tìm kiếm hoặc bộ lọc của bạn</p>
-            </div>
-          )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredCourses.map((course) => (
+            <CourseCard
+              key={String(course.id)}
+              id={String(course.id)}
+              title={course.title}
+              description={course.description}
+              image={course.image || course.thumbnail_url || '/placeholder.svg'}
+              level={course.level}
+              duration={course.duration}
+              category={course.category}
+              isPremium={course.isPremium || course.is_premium}
+              price={course.price}
+              discountPrice={course.discountPrice || course.discount_price}
+            />
+          ))}
         </div>
-      </main>
-      
-      <Footer />
+      </div>
     </div>
   );
 };

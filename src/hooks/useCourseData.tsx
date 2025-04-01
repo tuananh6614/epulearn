@@ -47,7 +47,7 @@ export const useCourseData = (courseId: number | string | undefined) => {
       
       console.log('[CourseData] Fetching course details for', courseId);
       
-      // Fetch course details
+      // Fetch course details - always use supabaseId for Supabase queries
       const { data: course, error: courseError } = await supabase
         .from('courses')
         .select('*')
@@ -73,7 +73,7 @@ export const useCourseData = (courseId: number | string | undefined) => {
         throw chaptersError;
       }
 
-      // Fetch lessons with full content from Supabase
+      // Fetch lessons
       const { data: lessons, error: lessonsError } = await supabase
         .from('lessons')
         .select('*')
@@ -150,7 +150,7 @@ export const useCourseData = (courseId: number | string | undefined) => {
     }
   };
   
-  // Subscribe to realtime updates for the current course
+  // Subscribe to realtime updates for the current course - convert courseId to string
   useRealtimeSubscription({
     table: 'courses',
     event: 'UPDATE',

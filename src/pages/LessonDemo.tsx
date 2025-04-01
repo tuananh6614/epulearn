@@ -1,119 +1,111 @@
-import React from 'react';
-import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import Breadcrumbs from '@/components/Breadcrumbs';
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
+import { ArrowLeft } from 'lucide-react';
 import { LessonData } from '@/models/lesson';
 
-const lessonContent = `
-  <h1>Chào mừng đến với JavaScript!</h1>
-  <p>JavaScript là một ngôn ngữ lập trình mạnh mẽ, được sử dụng rộng rãi để phát triển các ứng dụng web động và tương tác.</p>
-  <h2>Tại sao nên học JavaScript?</h2>
-  <ul>
-    <li><strong>Tính phổ biến:</strong> JavaScript chạy trên mọi trình duyệt và được hỗ trợ bởi cộng đồng lớn mạnh.</li>
-    <li><strong>Tính linh hoạt:</strong> JavaScript có thể được sử dụng để phát triển cả frontend và backend (với Node.js).</li>
-    <li><strong>Cơ hội nghề nghiệp:</strong> Nhu cầu tuyển dụng lập trình viên JavaScript luôn ở mức cao.</li>
-  </ul>
-  <h2>Bắt đầu thôi!</h2>
-  <p>Trong bài học này, chúng ta sẽ cùng nhau khám phá những khái niệm cơ bản nhất của JavaScript. Hãy cùng nhau bắt đầu hành trình thú vị này!</p>
-`;
-
-// In the component where you're using LessonData
-const demoLesson: LessonData = {
-  id: "demo-lesson",
-  title: "Giới thiệu về JavaScript",
-  content: lessonContent,
-  type: "text", // Add missing required property
-  chapterId: "demo-chapter", // Add missing required property
-  courseId: "demo-course",
-  duration: "10 phút",
-  description: "Bài học giới thiệu JavaScript cơ bản",
-  courseStructure: [
-    {
-      id: "chapter-1",
-      title: "Giới thiệu",
-      lessons: [
-        {
-          id: "lesson-1",
-          title: "Giới thiệu về JavaScript",
-          type: "text",
-          completed: false,
-          current: true
-        },
-        {
-          id: "lesson-2",
-          title: "Cài đặt môi trường",
-          type: "video",
-          completed: false,
-          current: false
-        }
-      ]
-    }
-  ],
-  videoUrl: "https://example.com/lesson-video.mp4"
-};
-
 const LessonDemo = () => {
-    const lesson = demoLesson;
+  const lessonData: LessonData = {
+    id: "demo-123",
+    title: "Giới thiệu về JavaScript",
+    content: "# JavaScript Cơ bản\n\nJavaScript là ngôn ngữ lập trình phổ biến nhất trên thế giới...",
+    type: "video", // Add missing required property
+    chapterId: "chapter-1", // Add missing required property
+    courseId: "course-123",
+    duration: "15 phút",
+    description: "Bài học giới thiệu về JavaScript, ngôn ngữ lập trình phổ biến nhất thế giới.",
+    courseStructure: [
+      {
+        id: "chapter-1",
+        title: "Nhập môn JavaScript",
+        lessons: [
+          {
+            id: "demo-123",
+            title: "Giới thiệu về JavaScript",
+            type: "video",
+            completed: false,
+            current: true
+          },
+          {
+            id: "lesson-2",
+            title: "Biến và kiểu dữ liệu",
+            type: "text",
+            completed: false,
+            current: false
+          }
+        ]
+      }
+    ],
+    videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  };
 
-    // Replace any references to lesson.course with lesson.courseId
-    const breadcrumbs = [
-        { label: "Tất cả khóa học", href: "/courses" },
-        { label: "Khóa học JavaScript", href: `/course/${lesson.courseId}` },
-        { label: "Giới thiệu", href: `/course/${lesson.courseId}/chapter/1` },
-        { label: lesson.title, href: "#" }
-    ];
+  useEffect(() => {
+    console.log("Lesson loaded:", lessonData.title);
+  }, [lessonData]);
+  
+  useEffect(() => {
+    // Example fix:
+    console.log("Course ID:", lessonData.courseId);
+    // NOT lessonData.course
+  }, []);
 
-    return (
-        <div className="container mx-auto py-8">
-            <Breadcrumbs items={breadcrumbs} />
+  return (
+    <div className="container mx-auto py-8">
+      <Breadcrumbs
+        items={[
+          { label: 'Khóa học', link: '/courses' },
+          { label: 'Nhập môn JavaScript', link: `/course/${lessonData.courseId}` },
+          { label: lessonData.title },
+        ]}
+        className="mb-4"
+      />
 
-            <Card className="mb-8">
-                <CardContent>
-                    <h1 className="text-2xl font-bold mb-4">{lesson.title}</h1>
-                    <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
-                </CardContent>
-            </Card>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">{lessonData.title}</h1>
+        <p className="text-gray-600">{lessonData.description}</p>
+      </div>
 
-            <Card className="mb-8">
-                <CardContent>
-                    <h2 className="text-xl font-bold mb-4">Cấu trúc khóa học</h2>
-                    <Accordion type="single" collapsible>
-                        {lesson.courseStructure?.map((chapter) => (
-                            <AccordionItem key={chapter.id} value={chapter.id}>
-                                <AccordionTrigger>{chapter.title}</AccordionTrigger>
-                                <AccordionContent>
-                                    <ul>
-                                        {chapter.lessons.map((lessonItem) => (
-                                            <li key={lessonItem.id} className="flex items-center justify-between">
-                                                {lessonItem.title}
-                                                {lessonItem.current && <span>(Hiện tại)</span>}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </AccordionContent>
-                            </AccordionItem>
-                        ))}
-                    </Accordion>
-                </CardContent>
-            </Card>
+      <div className="mb-8">
+        {lessonData.type === 'video' ? (
+          <iframe
+            width="100%"
+            height="400"
+            src={lessonData.videoUrl}
+            title="YouTube video player"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          ></iframe>
+        ) : (
+          <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: lessonData.content }} />
+        )}
+      </div>
 
-            <div className="text-right">
-                <Button asChild>
-                    <Link to={`/course/${lesson.courseId}`} className="flex items-center">
-                        Tiếp tục khóa học <ArrowRight className="ml-2" />
-                    </Link>
-                </Button>
-            </div>
+      <div className="flex justify-between items-center">
+        <Button asChild variant="outline">
+          <Link to={`/course/${lessonData.courseId}`} className="flex items-center">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Quay lại khóa học
+          </Link>
+        </Button>
+        <div>
+          {lessonData.courseStructure && lessonData.courseStructure.length > 0 && (
+            <select className="border p-2 rounded">
+              {lessonData.courseStructure.map(chapter => (
+                <optgroup key={chapter.id} label={chapter.title}>
+                  {chapter.lessons && chapter.lessons.map(lesson => (
+                    <option key={lesson.id} value={lesson.id}>
+                      {lesson.title} {lesson.current ? '(Hiện tại)' : ''} {lesson.completed ? '(Đã hoàn thành)' : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          )}
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default LessonDemo;

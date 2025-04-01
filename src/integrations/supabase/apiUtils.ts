@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 
 // Function to enroll a user in a course
@@ -89,6 +88,53 @@ export const fetchFeaturedCourses = async () => {
     return data || [];
   } catch (error) {
     console.error('Error in fetchFeaturedCourses:', error);
+    return [];
+  }
+};
+
+/**
+ * Fetches VIP courses from Supabase
+ * @returns Array of VIP courses
+ */
+export const fetchVipCourses = async (): Promise<Course[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('is_premium', true);
+
+    if (error) {
+      console.error('Error fetching VIP courses:', error);
+      return [];
+    }
+
+    // Transform to match our Course model
+    return data.map(course => ({
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      thumbnail_url: course.thumbnail_url,
+      image: course.thumbnail_url, // For compatibility
+      category: course.category,
+      duration: course.duration,
+      level: course.level,
+      is_premium: course.is_premium,
+      isPremium: course.is_premium, // For compatibility
+      is_featured: course.is_featured,
+      isFeatured: course.is_featured, // For compatibility
+      instructor: course.instructor,
+      created_at: course.created_at,
+      updated_at: course.updated_at,
+      status: course.status || 'published',
+      price: course.price?.toString() || '',
+      discount_price: course.discount_price?.toString() || '',
+      discountPrice: course.discount_price?.toString() || '', // For compatibility
+      objectives: course.objectives,
+      requirements: course.requirements,
+      color: '#4F46E5' // Default color for compatibility
+    }));
+  } catch (error) {
+    console.error('Error fetching VIP courses:', error);
     return [];
   }
 };

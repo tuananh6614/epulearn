@@ -13,11 +13,11 @@ import { toast } from 'sonner';
 import Navbar from '@/components/Navbar';
 import { useCourseData } from '@/hooks/useCourseData';
 import { getCourseProgress } from '@/integrations/supabase/userProgressServices';
-import { fetchCourseTests } from '@/integrations/supabase/courseServices';
+import { fetchCourseTests } from '@/integrations/supabase/testServices';
 import { toNumberId, supabaseId } from '@/utils/idConverter';
 
 interface Lesson {
-  id: string;
+  id: string | number;
   title: string;
   type?: string;
   duration?: string;
@@ -25,37 +25,38 @@ interface Lesson {
 }
 
 interface Chapter {
-  id: string;
+  id: string | number;
   title: string;
   lessons?: Lesson[];
 }
 
 interface Course {
-  id: string;
+  id: string | number;
   title: string;
   duration: string;
   chapters?: Chapter[];
 }
 
 interface LessonProgress {
-  id?: string;
+  id?: string | number;
   user_id?: string;
-  lesson_id: string;
-  course_id?: string;
+  lesson_id: string | number;
+  course_id?: string | number;
   completed: boolean;
   last_position?: string; // Có thể là JSON string
 }
 
 interface CourseTest {
-  id?: string;
-  course_id?: string;
+  id?: string | number;
+  course_id?: string | number;
   passing_score?: number;
   time_limit?: number;
-  questions?: { id: string; question: string }[];
+  questions?: { id: string | number; question: string }[];
 }
 
 const StartLearningPage: React.FC = () => {
-  const { courseId } = useParams<{ courseId: string }>().courseId;
+  const params = useParams<{ courseId: string }>();
+  const courseId = params.courseId;
   const numericCourseId = toNumberId(courseId);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -70,7 +71,7 @@ const StartLearningPage: React.FC = () => {
   const { courseData, userProgress: userProgressData, isEnrolled, error } = useCourseData(numericCourseId);
   
   useEffect(() => {
-    if (courseData && user) {
+    if (courseData && user && courseId) {
       // Fetch user's progress in this course
       const fetchCourseProgress = async () => {
         try {
@@ -111,21 +112,25 @@ const StartLearningPage: React.FC = () => {
           .from('user_lesson_progress')
           .select('*')
           .eq('user_id', user.id)
-          .eq('course_id', numericCourseId);
+          .eq('course_id', supabaseId(numericCourseId));
           
         if (progressError) throw progressError;
         
         // Convert to a map for easier lookup
         const progressMap: Record<string, LessonProgress> = {};
         progressData?.forEach((item) => {
-          progressMap[item.lesson_id] = item;
+          progressMap[String(item.lesson_id)] = item;
         });
         
         setLessonProgress(progressMap);
         
         // Fetch course tests
         const tests = await fetchCourseTests(numericCourseId);
-        setCourseTests(tests || []);
+        if (tests && tests.success && tests.test) {
+          setCourseTests([tests.test]);
+        } else if (tests && tests.success && tests.tests) {
+          setCourseTests(tests.tests);
+        }
         
       } catch (error) {
         console.error('Error fetching course data:', error);
@@ -156,9 +161,7 @@ const StartLearningPage: React.FC = () => {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <div>Loading...</div>
     );
   }
   

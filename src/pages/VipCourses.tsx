@@ -8,6 +8,7 @@ import { Course } from '@/models/lesson';
 import { Loader2 } from "lucide-react";
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
+import { supabaseId } from '@/utils/idConverter';
 
 const VipCourses = () => {
   const [vipCourses, setVipCourses] = useState<Course[]>([]);
@@ -52,7 +53,7 @@ const VipCourses = () => {
       </div>
     );
   }
-
+  
   return (
     <div className="min-h-screen bg-background pt-20">
       <Navbar />
@@ -65,9 +66,9 @@ const VipCourses = () => {
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {vipCourses.map((course) => (
-                <div key={String(course.id)} className="relative group">
+                <div key={supabaseId(course.id)} className="relative group">
                   <CourseCard
-                    id={String(course.id)}
+                    id={supabaseId(course.id)}
                     title={course.title}
                     description={course.description}
                     image={course.image || course.thumbnail_url || '/placeholder.svg'}

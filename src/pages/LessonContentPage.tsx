@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, BookOpen, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -32,6 +33,14 @@ interface Chapter {
 interface LessonProgress {
   completed: boolean;
   position: number | { scrollPosition: number };
+  current_page_id?: number;
+}
+
+interface Page {
+  id: number;
+  lesson_id: string;
+  content: string;
+  order_index: number;
 }
 
 const LessonContentPage = () => {
@@ -49,6 +58,10 @@ const LessonContentPage = () => {
     completed: false,
     position: 0
   });
+  
+  // Thêm state cho pages
+  const [pages, setPages] = useState<Page[]>([]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -76,6 +89,29 @@ const LessonContentPage = () => {
           
         if (lessonError) throw lessonError;
         setLesson(lessonData as Lesson);
+        
+        // Get lesson pages
+        const { data: pagesData, error: pagesError } = await supabase
+          .from('pages')
+          .select('*')
+          .eq('lesson_id', lessonId)
+          .order('order_index', { ascending: true });
+          
+        if (pagesError) throw pagesError;
+        
+        if (pagesData && pagesData.length > 0) {
+          setPages(pagesData);
+        } else {
+          // If no pages exist yet, create a single page with the lesson content
+          setPages([
+            {
+              id: 0, // Temporary ID
+              lesson_id: lessonId,
+              content: lessonData.content,
+              order_index: 1
+            }
+          ]);
+        }
         
         // Get all lessons in this chapter for navigation
         const { data: chapterLessons, error: chapterLessonsError } = await supabase
@@ -119,9 +155,18 @@ const LessonContentPage = () => {
           .maybeSingle();
           
         if (!progressError && progressData) {
+          // If we have progress data with current_page_id, set the current page
+          if (progressData.current_page_id) {
+            const pageIndex = pagesData?.findIndex(p => p.id === progressData.current_page_id) || 0;
+            if (pageIndex >= 0) {
+              setCurrentPageIndex(pageIndex);
+            }
+          }
+          
           setLessonProgress({
             completed: progressData.completed,
-            position: progressData.last_position ? JSON.parse(progressData.last_position) : 0
+            position: progressData.last_position ? JSON.parse(progressData.last_position) : 0,
+            current_page_id: progressData.current_page_id
           });
         }
         
@@ -137,6 +182,29 @@ const LessonContentPage = () => {
     fetchData();
   }, [courseId, chapterId, lessonId, user]);
   
+  const handlePageChange = async (newIndex: number) => {
+    if (newIndex < 0 || newIndex >= pages.length) return;
+    
+    setCurrentPageIndex(newIndex);
+    
+    // Save progress with current page
+    if (user && courseId && lessonId && pages[newIndex]) {
+      try {
+        await saveLessonProgress(
+          user.id,
+          courseId,
+          lessonId,
+          chapterId || "",
+          { scrollPosition: 0 }, // Reset scroll position for new page
+          false, // Not completed yet
+          pages[newIndex].id // Save current page ID
+        );
+      } catch (err) {
+        console.error('Error saving page progress:', err);
+      }
+    }
+  };
+  
   const markAsCompleted = async () => {
     if (!user || !courseId || !chapterId || !lessonId) return;
     
@@ -147,7 +215,8 @@ const LessonContentPage = () => {
         lessonId,
         chapterId,
         { scrollPosition: window.scrollY },
-        true
+        true,
+        pages[currentPageIndex]?.id
       );
       
       setLessonProgress({ ...lessonProgress, completed: true });
@@ -210,9 +279,11 @@ const LessonContentPage = () => {
       </div>
     );
   }
+
+  const currentPage = pages[currentPageIndex];
   
   return (
-    <div className="min-h-screen pt-20"> {/* Thêm pt-20 */}
+    <div className="min-h-screen pt-20">
       <Navbar />
       
       <div className="container max-w-4xl py-8">
@@ -237,10 +308,65 @@ const LessonContentPage = () => {
         
         <Card className="mb-8">
           <CardContent className="p-6">
+            {/* Hiển thị page pagination nếu có nhiều trang */}
+            {pages.length > 1 && (
+              <div className="flex justify-between items-center mb-6 pb-4 border-b">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handlePageChange(currentPageIndex - 1)}
+                  disabled={currentPageIndex === 0}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Trang trước
+                </Button>
+                
+                <div className="text-sm">
+                  Trang {currentPageIndex + 1} / {pages.length}
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => handlePageChange(currentPageIndex + 1)}
+                  disabled={currentPageIndex === pages.length - 1}
+                >
+                  Trang sau
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            )}
+
             <div 
               className="prose dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: lesson.content }}
+              dangerouslySetInnerHTML={{ __html: currentPage?.content || lesson.content }}
             />
+
+            {/* Page navigation footer if multiple pages */}
+            {pages.length > 1 && (
+              <div className="flex justify-between items-center mt-6 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handlePageChange(currentPageIndex - 1)}
+                  disabled={currentPageIndex === 0}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Trang trước
+                </Button>
+                
+                <Progress
+                  value={(currentPageIndex + 1) / pages.length * 100}
+                  className="w-full max-w-[200px] mx-4 h-2"
+                />
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => handlePageChange(currentPageIndex + 1)}
+                  disabled={currentPageIndex === pages.length - 1}
+                >
+                  Trang sau
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
         

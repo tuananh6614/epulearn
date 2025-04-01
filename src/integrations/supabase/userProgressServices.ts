@@ -54,13 +54,14 @@ export const saveLessonProgress = async (
   userId: string,
   courseId: string,
   lessonId: string,
-  chapterId: string, // Added chapterId parameter
+  chapterId: string,
   position: any, // Could be time position for video, or scroll position, etc.
-  completed: boolean = false
+  completed: boolean = false,
+  currentPageId?: number // Added parameter for current page ID
 ) => {
   try {
     console.log('[UserProgress] Saving lesson progress:', { 
-      userId, courseId, lessonId, chapterId, completed
+      userId, courseId, lessonId, chapterId, completed, currentPageId
     });
     
     // Update the lesson progress
@@ -70,11 +71,12 @@ export const saveLessonProgress = async (
         user_id: userId,
         lesson_id: lessonId,
         course_id: courseId,
-        chapter_id: chapterId, // Save the chapter_id
+        chapter_id: chapterId,
         completed,
         last_position: JSON.stringify(position),
         completed_at: completed ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        current_page_id: currentPageId // Store the current page ID
       });
       
     if (error) {

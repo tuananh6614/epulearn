@@ -316,6 +316,41 @@ export type Database = {
           },
         ]
       }
+      pages: {
+        Row: {
+          content: string
+          created_at: string
+          id: number
+          lesson_id: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: number
+          lesson_id: string
+          order_index: number
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: number
+          lesson_id?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pages_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -409,6 +444,7 @@ export type Database = {
           completed_at: string | null
           course_id: string
           created_at: string
+          current_page_id: number | null
           id: string
           last_position: string | null
           lesson_id: string
@@ -421,6 +457,7 @@ export type Database = {
           completed_at?: string | null
           course_id: string
           created_at?: string
+          current_page_id?: number | null
           id?: string
           last_position?: string | null
           lesson_id: string
@@ -433,6 +470,7 @@ export type Database = {
           completed_at?: string | null
           course_id?: string
           created_at?: string
+          current_page_id?: number | null
           id?: string
           last_position?: string | null
           lesson_id?: string
@@ -452,6 +490,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_lesson_progress_current_page_id_fkey"
+            columns: ["current_page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
             referencedColumns: ["id"]
           },
           {

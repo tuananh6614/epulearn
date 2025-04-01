@@ -142,3 +142,29 @@ export const getLessonProgressInCourse = async (userId: string, courseId: string
     return { success: false, progressMap: {}, error };
   }
 };
+
+// Function to get lesson pages - add this new function
+export const getLessonPages = async (lessonId: string) => {
+  try {
+    // Use the REST API directly since the types don't include the pages table yet
+    const response = await fetch(
+      `https://zrpmghqlhxjwxceqihfg.supabase.co/rest/v1/pages?lesson_id=eq.${lessonId}&order=order_index.asc`,
+      {
+        headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpycG1naHFsaHhqd3hjZXFpaGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3NDQwNDAsImV4cCI6MjA1NzMyMDA0MH0.ZKf1u7-l6oqHCQ-J-U_FG34YcXCEYD0wlyMTQakTmnQ',
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch lesson pages');
+    }
+    
+    const data = await response.json();
+    return { success: true, pages: data };
+  } catch (error) {
+    console.error('[UserProgress] Error getting lesson pages:', error);
+    return { success: false, pages: [], error };
+  }
+};

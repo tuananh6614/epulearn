@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
 import GreenButton from '@/components/GreenButton';
-import { saveLessonProgress } from '@/integrations/supabase/userProgressServices';
+import { saveLessonProgress, getLessonPages } from '@/integrations/supabase/userProgressServices';
 
 // Định nghĩa kiểu dữ liệu
 interface Lesson {
@@ -41,6 +41,8 @@ interface Page {
   lesson_id: string;
   content: string;
   order_index: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const LessonContentPage = () => {
@@ -90,17 +92,13 @@ const LessonContentPage = () => {
         if (lessonError) throw lessonError;
         setLesson(lessonData as Lesson);
         
-        // Get lesson pages
-        const { data: pagesData, error: pagesError } = await supabase
-          .from('pages')
-          .select('*')
-          .eq('lesson_id', lessonId)
-          .order('order_index', { ascending: true });
-          
+        // Get lesson pages using our new function
+        const { success, pages: pagesData, error: pagesError } = await getLessonPages(lessonId);
+        
         if (pagesError) throw pagesError;
         
-        if (pagesData && pagesData.length > 0) {
-          setPages(pagesData);
+        if (success && pagesData && pagesData.length > 0) {
+          setPages(pagesData as Page[]);
         } else {
           // If no pages exist yet, create a single page with the lesson content
           setPages([
@@ -156,8 +154,10 @@ const LessonContentPage = () => {
           
         if (!progressError && progressData) {
           // If we have progress data with current_page_id, set the current page
-          if (progressData.current_page_id) {
-            const pageIndex = pagesData?.findIndex(p => p.id === progressData.current_page_id) || 0;
+          const currentPageId = progressData.current_page_id;
+          if (currentPageId) {
+            // Find the page in our pages array
+            const pageIndex = pagesData?.findIndex((p: Page) => p.id === currentPageId) || 0;
             if (pageIndex >= 0) {
               setCurrentPageIndex(pageIndex);
             }

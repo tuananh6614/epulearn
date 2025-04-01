@@ -57,15 +57,22 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
         
         const testData = await fetchCourseTests(courseId);
         
-        if (!testData) {
+        if (!testData || !testData.success) {
           toast.error("Không tìm thấy bài kiểm tra cho khóa học này");
           navigate(`/course/${courseId}`);
           return;
         }
         
-        setCourseTest(testData.test);
-        setQuestions(testData.questions);
-        setTimeRemaining(testData.test.time_limit * 60);
+        if (testData.test && testData.questions) {
+          setCourseTest(testData.test);
+          setQuestions(testData.questions);
+          setTimeRemaining(testData.test.time_limit * 60);
+        } else if (testData.tests && testData.tests.length > 0) {
+          const firstTest = testData.tests[0];
+          setCourseTest(firstTest);
+          setQuestions(firstTest.course_test_questions || []);
+          setTimeRemaining(firstTest.time_limit * 60);
+        }
         
         if (user) {
           const { data: previousTests, error } = await supabase

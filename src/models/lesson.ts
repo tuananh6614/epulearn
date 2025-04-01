@@ -1,31 +1,31 @@
 
 export interface Lesson {
-  id: number;
+  id: number | string;
   title: string;
   content: string;
   duration: string;
   type: string; // video, text, etc.
   order_index: number;
-  chapter_id: number;
-  course_id: number;
+  chapter_id: number | string;
+  course_id: number | string;
   is_premium: boolean;
   created_at: string;
   updated_at: string;
 }
 
 export interface Chapter {
-  id: number;
+  id: number | string;
   title: string;
   description?: string;
   order_index: number;
-  course_id: number;
+  course_id: number | string;
   lessons?: Lesson[];
   created_at: string;
   updated_at: string;
 }
 
 export interface Course {
-  id: number;
+  id: number | string;
   title: string;
   description: string;
   thumbnail_url?: string;
@@ -55,8 +55,8 @@ export interface Course {
 }
 
 export interface Page {
-  id: number;
-  lesson_id: number;
+  id: number | string;
+  lesson_id: number | string;
   content: string;
   order_index: number;
   created_at?: string;
@@ -65,17 +65,17 @@ export interface Page {
 
 // Progress interfaces
 export interface LessonProgress {
-  id: number;
+  id: number | string;
   user_id: string; // This stays as string because it references auth.users
-  lesson_id: number;
-  course_id: number;
-  chapter_id: number;
+  lesson_id: number | string;
+  course_id: number | string;
+  chapter_id: number | string;
   completed: boolean;
   completed_at: string | null;
   last_position: string | null; // JSON stringified position data
   updated_at: string;
   created_at: string;
-  current_page_id?: number;
+  current_page_id?: number | string;
 }
 
 export interface CourseProgress {
@@ -85,21 +85,21 @@ export interface CourseProgress {
 
 // Test related interfaces
 export interface TestQuestion {
-  id: number;
+  id: number | string;
   question: string;
   options: string[];
   correct_answer: number;
-  course_test_id?: number;
-  chapter_id?: number;
+  course_test_id?: number | string;
+  chapter_id?: number | string;
   points?: number;
 }
 
 export interface TestResult {
-  id: number;
+  id: number | string;
   user_id: string; // This stays as string because it references auth.users
-  course_id?: number;
-  course_test_id?: number;
-  chapter_id?: number;
+  course_id?: number | string;
+  course_test_id?: number | string;
+  chapter_id?: number | string;
   score: number;
   passed: boolean;
   time_taken?: number;
@@ -109,9 +109,9 @@ export interface TestResult {
 
 // Certificate interface
 export interface Certificate {
-  id: number;
+  id: number | string;
   user_id: string; // This stays as string because it references auth.users
-  course_id: number;
+  course_id: number | string;
   certificate_id: string;
   issue_date: string;
   course?: {
@@ -139,7 +139,7 @@ export interface SupabaseCertificateResponse extends Certificate {}
 
 // Add EnrolledCourse interface that was previously missing
 export interface EnrolledCourse {
-  id: number;
+  id: number | string;
   title: string;
   description: string;
   image: string;
@@ -149,14 +149,26 @@ export interface EnrolledCourse {
   lastAccessed: string;
   enrolledAt: string;
   status: string;
+  level?: string;
+  duration?: string;
+  category?: string;
+  isPremium?: boolean;
+  price?: string;
+  discountPrice?: string;
 }
 
 // Add LessonData interface that was previously missing
 export interface LessonData {
-  id: number;
+  id: number | string;
   title: string;
   content: string;
   type: string;
-  chapterId: number;
-  courseId: number;
+  chapterId: number | string;
+  courseId: number | string;
+  // Additional fields needed by LessonDemo.tsx
+  duration?: string;
+  quiz?: any;
+  videoUrl?: string;
+  description?: string;
+  courseStructure?: any[];
 }

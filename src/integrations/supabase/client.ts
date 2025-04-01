@@ -48,6 +48,7 @@ export * from './courseServices';
 // Remove the duplicate export of 'fetchCourseTests' from testServices
 // and explicitly export the other functions from testServices
 export { 
+  fetchCourseTests,
   fetchTestQuestions, 
   saveTestResult, 
   getChapterTestProgress 

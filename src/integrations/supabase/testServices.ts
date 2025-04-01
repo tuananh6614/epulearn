@@ -1,7 +1,8 @@
+
 import { supabase } from './client';
 
 // Function to fetch test questions for a course
-export const fetchCourseTests = async (courseId: number) => {
+export const fetchCourseTests = async (courseId: string | number) => {
   try {
     const { data, error } = await supabase
       .from('course_tests')
@@ -25,6 +26,17 @@ export const fetchCourseTests = async (courseId: number) => {
       console.error('Error fetching course tests:', error);
       return { success: false, error };
     }
+    
+    if (data && data.length > 0) {
+      const testData = data[0]; // Use the first test
+      const questions = testData.course_test_questions || [];
+      
+      return { 
+        success: true, 
+        test: testData,
+        questions: questions
+      };
+    }
 
     return { 
       success: true, 
@@ -37,15 +49,42 @@ export const fetchCourseTests = async (courseId: number) => {
   }
 };
 
+// Function to fetch test questions for a chapter
+export const fetchTestQuestions = async (chapterId: string | number) => {
+  try {
+    const { data, error } = await supabase
+      .from('chapter_tests')
+      .select('*')
+      .eq('chapter_id', chapterId);
+
+    if (error) {
+      console.error('Error fetching chapter test questions:', error);
+      return [];
+    }
+
+    // Transform the data to match the TestQuestion interface
+    return (data || []).map(question => ({
+      id: question.id,
+      question: question.question,
+      options: Array.isArray(question.options) ? question.options : [],
+      answer: question.correct_answer
+    }));
+
+  } catch (error) {
+    console.error('Error fetching chapter test questions:', error);
+    return [];
+  }
+};
+
 // Function to save a test result
-export const saveTestResult = async (userId: string, courseId: number, testId: number, score: number, passed: boolean) => {
+export const saveTestResult = async (userId: string, courseId: string | number, testId: string | number, score: number, passed: boolean) => {
   try {
     const { error } = await supabase
       .from('user_test_results')
       .upsert({
         user_id: userId,
-        course_id: courseId,
-        test_id: testId,
+        course_id: courseId.toString(),
+        course_test_id: testId.toString(),
         score,
         passed,
         created_at: new Date().toISOString(),
@@ -64,7 +103,7 @@ export const saveTestResult = async (userId: string, courseId: number, testId: n
 };
 
 // Function to get chapter test progress
-export const getChapterTestProgress = async (userId: string, chapterId: number) => {
+export const getChapterTestProgress = async (userId: string, chapterId: string | number) => {
   try {
     const { data, error } = await supabase
       .from('user_test_results')

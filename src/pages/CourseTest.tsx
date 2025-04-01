@@ -74,7 +74,7 @@ const CourseTest: React.FC = () => {
         const testsData = await fetchCourseTests(courseId);
         console.log('Tests data:', testsData);
         
-        if (testsData && testsData.test) {
+        if (testsData && testsData.success && testsData.questions && testsData.test) {
           // Properly format test data to match CourseTestType structure
           const formattedTest: CourseTestType = {
             id: testsData.test.id,
@@ -95,6 +95,9 @@ const CourseTest: React.FC = () => {
           };
           
           setTests([formattedTest]);
+        } else if (testsData && testsData.tests) {
+          // Handle the case where we get an array of tests
+          setTests(testsData.tests);
         }
 
         if (user) {

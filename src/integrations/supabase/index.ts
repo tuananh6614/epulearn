@@ -12,8 +12,8 @@ export * from './courseServices';
 
 // Export functions from testServices
 export { 
-  fetchTestQuestions, 
   fetchCourseTests,
+  fetchTestQuestions,
   saveTestResult, 
   getChapterTestProgress 
 } from './testServices';

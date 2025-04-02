@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -85,9 +86,8 @@ const StartLearningPage: React.FC = () => {
           if (error) {
             console.error('Error fetching course progress:', error);
             toast.error('Không thể kiểm tra tiến độ khóa học');
-          } else if (data) {
-            setUserProgress(data.progress_percentage || 0);
           }
+          // Note: userProgress is now handled by useCourseData
         } catch (err) {
           console.error('Error:', err);
         } finally {
@@ -142,20 +142,20 @@ const StartLearningPage: React.FC = () => {
     fetchData();
   }, [numericCourseId, user]);
   
-  const handleChapterClick = (chapterId: string) => {
-    navigate(`/course/${numericCourseId}/chapter/${chapterId}`);
+  const handleChapterClick = (chapterId: string | number) => {
+    navigate(`/course/${courseId}/chapter/${supabaseId(chapterId)}`);
   };
   
-  const handleLessonClick = (chapterId: string, lessonId: string) => {
-    navigate(`/course/${numericCourseId}/chapter/${chapterId}/lesson/${lessonId}`);
+  const handleLessonClick = (chapterId: string | number, lessonId: string | number) => {
+    navigate(`/course/${courseId}/chapter/${supabaseId(chapterId)}/lesson/${supabaseId(lessonId)}`);
   };
   
   const handleCourseTestClick = () => {
-    navigate(`/course/${numericCourseId}/test`);
+    navigate(`/course/${courseId}/test`);
   };
   
   const handleTestHistoryClick = () => {
-    navigate(`/course/${numericCourseId}/test-history`);
+    navigate(`/course/${courseId}/test-history`);
   };
   
   if (loading) {
@@ -179,7 +179,7 @@ const StartLearningPage: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center flex-col">
         <h2 className="text-2xl font-bold mb-2">Bạn chưa đăng ký khóa học này</h2>
         <p className="text-muted-foreground mb-4">Vui lòng đăng ký khóa học để bắt đầu học</p>
-        <Button onClick={() => navigate(`/course/${numericCourseId}`)}>Đăng ký khóa học</Button>
+        <Button onClick={() => navigate(`/course/${courseId}`)}>Đăng ký khóa học</Button>
       </div>
     );
   }
@@ -196,7 +196,7 @@ const StartLearningPage: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => navigate(`/course/${numericCourseId}`)}>
+            <Button variant="outline" onClick={() => navigate(`/course/${courseId}`)}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Quay lại tổng quan
             </Button>
@@ -374,7 +374,7 @@ const StartLearningPage: React.FC = () => {
                         <div 
                           key={chapter.id}
                           className="border rounded-lg p-4 hover:border-primary/50 transition-all cursor-pointer"
-                          onClick={() => navigate(`/course/${numericCourseId}/chapter/${chapter.id}/test/${testLesson.id}`)}
+                          onClick={() => navigate(`/course/${courseId}/chapter/${supabaseId(chapter.id)}/test/${supabaseId(testLesson.id)}`)}
                         >
                           <div className="flex justify-between items-start mb-2">
                             <h3 className="font-medium flex items-center">

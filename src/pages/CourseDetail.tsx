@@ -1,6 +1,6 @@
+
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { Loader2, BookOpen, PlayCircle, File, FileQuestion, Play, LockIcon } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,10 +12,8 @@ import { toast } from 'sonner';
 
 import { useAuth } from '@/context/AuthContext';
 import { useCourseData } from '@/hooks/useCourseData';
-import { fetchCourseContent } from '@/integrations/supabase/courseServices';
-import { enrollUserInCourse } from '@/integrations/supabase/apiUtils';
 import Navbar from '@/components/Navbar';
-import { toNumberId } from '@/utils/idConverter';
+import { toNumberId, supabaseId } from '@/utils/idConverter';
 
 const CourseDetail: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -101,7 +99,7 @@ const CourseDetail: React.FC = () => {
                   <TabsContent value="overview" className="mt-4">
                     <div className="space-y-4">
                       <h3 className="text-xl font-semibold">Mô tả khóa học</h3>
-                      <p>{course.fullDescription || course.description}</p>
+                      <p>{course.full_description || course.description}</p>
                       
                       <h3 className="text-xl font-semibold">Yêu cầu</h3>
                       <ul>
@@ -148,7 +146,7 @@ const CourseDetail: React.FC = () => {
                                   className="ml-auto mr-2"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleChapterClick(chapter.id);
+                                    handleChapterClick(supabaseId(chapter.id));
                                   }}
                                 >
                                   <BookOpen className="h-4 w-4 mr-2" />

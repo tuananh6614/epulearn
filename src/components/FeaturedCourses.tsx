@@ -63,7 +63,6 @@ const FeaturedCourses = () => {
         duration: course.duration,
         category: course.category,
         image: course.thumbnail_url || '/placeholder.svg',
-        color: course.is_premium ? '#ffd700' : '#4f46e5', // Gold for premium, blue for regular
         isPremium: course.is_premium,
         price: course.price?.toString() || undefined,
         discountPrice: course.discount_price?.toString() || undefined,

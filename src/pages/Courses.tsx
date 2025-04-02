@@ -76,7 +76,7 @@ const Courses = () => {
           instructor: course.instructor,
           created_at: course.created_at,
           updated_at: course.updated_at,
-          status: 'published',
+          status: 'published', // Setting default status
           price: course.price?.toString() || '',
           discount_price: course.discount_price?.toString() || '',
           discountPrice: course.discount_price?.toString() || '',

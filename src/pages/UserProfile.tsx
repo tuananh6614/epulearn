@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import ProfileForm from "@/components/ProfileForm";
 import { SecurityForm } from "@/components/SecurityForm";
-import { UserProfile as UserIcon, ShieldAlert } from 'lucide-react';
+import { User as UserIcon, ShieldAlert } from 'lucide-react';
 
 // Update to use default export
 const UserProfile: React.FC = () => {

@@ -35,10 +35,24 @@ export function UserAvatar({
     lg: "h-20 w-20",
   };
   
-  // Create a typed user object
+  // Create a typed user object and handle possible missing email
   const user = userId ? { id: userId, avatarUrl: userImage } : currentUser;
   const avatarUrl = user?.avatarUrl || currentUser?.avatarUrl || filePreview;
-  const initials = user?.email?.substring(0, 2).toUpperCase() || currentUser?.email?.substring(0, 2).toUpperCase() || "U";
+  
+  // Safely get initials, checking if email exists
+  const getInitials = (): string => {
+    if (currentUser?.email) {
+      return currentUser.email.substring(0, 2).toUpperCase();
+    }
+    
+    if (user && 'email' in user && user.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+    
+    return "U";
+  };
+  
+  const initials = getInitials();
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

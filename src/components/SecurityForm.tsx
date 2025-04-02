@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,14 +53,11 @@ export function SecurityForm() {
         return;
       }
       
-      // Update password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      // Update password - removing the arguments that were causing errors
+      const success = await changePassword(currentPassword, newPassword);
       
-      if (updateError) {
+      if (!success) {
         toast.error("Không thể cập nhật mật khẩu");
-        console.error("Password update error:", updateError);
       } else {
         toast.success("Mật khẩu đã được cập nhật thành công");
         setCurrentPassword("");
@@ -80,7 +76,7 @@ export function SecurityForm() {
     setIsLoading(true);
     
     try {
-      // Add the deleteRequested property to User type in auth.ts
+      // Update user with deleteRequested flag
       const success = await updateCurrentUser({
         deleteRequested: true
       });

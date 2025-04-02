@@ -50,11 +50,8 @@ const Courses = () => {
         if (error) {
           console.error('Error fetching courses:', error);
           toast({
-            description: "Đã xảy ra lỗi khi tải dữ liệu.",
-            action: {
-              label: "Thử lại",
-              onClick: () => fetchCourses()
-            },
+            title: "Error",
+            description: "Đã xảy ra lỗi khi tải dữ liệu."
           });
           return;
         }
@@ -182,6 +179,7 @@ const Courses = () => {
               isPremium={course.isPremium || course.is_premium}
               price={course.price}
               discountPrice={course.discountPrice || course.discount_price}
+              color={course.color}
             />
           ))}
         </div>

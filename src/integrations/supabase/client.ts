@@ -33,7 +33,12 @@ export const supabaseStorage = {
   })
 };
 
-// Mock Supabase client with improved methods to handle various argument patterns
+// Helper function to create a promise result
+const createMockPromiseResult = (data: any = {}, error: any = null) => {
+  return Promise.resolve({ data, error });
+};
+
+// Mock Supabase client with improved and fixed methods
 export const supabase = {
   auth: {
     getSession: async () => ({ data: { session: null }, error: null }),
@@ -46,74 +51,113 @@ export const supabase = {
   from: (table: string) => ({
     select: (...args: any[]) => {
       console.log(`[MOCK] select from ${table}`, args);
-      return {
+      
+      // Return an object with full chain methods
+      const returnObj = {
         eq: (field: string, value: any) => {
           console.log(`[MOCK] eq ${field}=${value}`);
           return {
-            single: async () => ({ data: null, error: null }),
-            order: (...args: any[]) => ({
-              limit: (limit: number) => ({
-                data: [],
-                error: null
-              })
-            })
+            single: () => createMockPromiseResult(),
+            maybeSingle: () => createMockPromiseResult(),
+            order: (...orderArgs: any[]) => ({
+              limit: (limit: number) => createMockPromiseResult([]),
+              data: [],
+              error: null
+            }),
+            limit: (limit: number) => createMockPromiseResult([]),
+            eq: (field2: string, value2: any) => returnObj.eq(field2, value2),
+            data: [],
+            error: null
           };
         },
         in: (field: string, values: any[]) => {
           console.log(`[MOCK] in ${field}`, values);
           return {
-            order: (...args: any[]) => ({
+            order: (...orderArgs: any[]) => ({
               data: [],
-              error: null
-            })
+              error: null,
+              limit: (limit: number) => createMockPromiseResult([])
+            }),
+            limit: (limit: number) => createMockPromiseResult([]),
+            data: [],
+            error: null
           };
         },
         match: (conditions: any) => {
           console.log(`[MOCK] match`, conditions);
           return {
-            order: (...args: any[]) => ({
+            order: (...orderArgs: any[]) => ({
               data: [],
-              error: null
-            })
+              error: null,
+              limit: (limit: number) => createMockPromiseResult([])
+            }),
+            limit: (limit: number) => createMockPromiseResult([]),
+            data: [],
+            error: null
           };
         },
-        order: (...args: any[]) => {
-          console.log(`[MOCK] order`, args);
+        order: (...orderArgs: any[]) => {
+          console.log(`[MOCK] order`, orderArgs);
           return {
-            limit: (limit: number) => ({
-              data: [],
-              error: null
-            }),
+            limit: (limit: number) => createMockPromiseResult([]),
+            eq: (field: string, value: any) => returnObj.eq(field, value),
             data: [],
             error: null
           };
         },
         limit: (limit: number) => {
           console.log(`[MOCK] limit ${limit}`);
-          return {
-            data: [],
-            error: null
-          };
+          return createMockPromiseResult([]);
         },
+        single: () => createMockPromiseResult(),
+        maybeSingle: () => createMockPromiseResult(),
         data: [],
         error: null
       };
+      
+      return returnObj;
     },
-    insert: async (...args: any[]) => {
-      console.log(`[MOCK] insert into ${table}`, args);
-      return { data: {}, error: null };
+    insert: (data: any) => {
+      console.log(`[MOCK] insert into ${table}`, data);
+      const returnObj = {
+        select: (...selectArgs: any[]) => createMockPromiseResult({}),
+        eq: (field: string, value: any) => returnObj,
+      };
+      return returnObj;
     },
-    update: async (...args: any[]) => {
-      console.log(`[MOCK] update ${table}`, args);
-      return { data: {}, error: null };
+    update: (data: any) => {
+      console.log(`[MOCK] update ${table}`, data);
+      const returnObj = {
+        eq: (field: string, value: any) => {
+          console.log(`[MOCK] eq ${field}=${value}`);
+          return returnObj;
+        },
+        match: (conditions: any) => returnObj,
+        select: (...args: any[]) => createMockPromiseResult({})
+      };
+      return returnObj;
     },
-    upsert: async (...args: any[]) => {
-      console.log(`[MOCK] upsert ${table}`, args);
-      return { data: {}, error: null };
+    upsert: (data: any) => {
+      console.log(`[MOCK] upsert ${table}`, data);
+      const returnObj = {
+        eq: (field: string, value: any) => {
+          console.log(`[MOCK] eq ${field}=${value}`);
+          return returnObj;
+        },
+        select: (...args: any[]) => createMockPromiseResult({})
+      };
+      return returnObj;
     },
-    delete: async (...args: any[]) => {
-      console.log(`[MOCK] delete from ${table}`, args);
-      return { data: {}, error: null };
+    delete: () => {
+      console.log(`[MOCK] delete from ${table}`);
+      const returnObj = {
+        eq: (field: string, value: any) => {
+          console.log(`[MOCK] eq ${field}=${value}`);
+          return returnObj;
+        },
+        match: (conditions: any) => returnObj
+      };
+      return returnObj;
     }
   }),
   storage: supabaseStorage,

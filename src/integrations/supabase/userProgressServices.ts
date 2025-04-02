@@ -122,10 +122,41 @@ export const getAllLessonProgressForCourse = async (
   return progressList;
 };
 
+// Add missing functions
+export const saveLessonProgress = async (
+  userId: string,
+  courseId: string | number,
+  chapterId: string | number,
+  lessonId: string | number,
+  completed: boolean = false
+): Promise<boolean> => {
+  return updateLessonProgress(userId, courseId, chapterId, lessonId, completed);
+};
+
+export const getLessonPages = async (lessonId: string | number): Promise<any[]> => {
+  console.log(`[MOCK] Getting pages for lesson ID: ${lessonId}`);
+  return [
+    {
+      id: 1,
+      lesson_id: lessonId,
+      content: "<h1>Nội dung bài học</h1><p>Đây là nội dung của trang 1</p>",
+      order_index: 1
+    },
+    {
+      id: 2,
+      lesson_id: lessonId,
+      content: "<h1>Tiếp tục</h1><p>Đây là nội dung của trang 2</p>",
+      order_index: 2
+    }
+  ];
+};
+
 export default {
   updateLessonProgress,
   getLessonProgress,
   updateCourseProgress,
   getCourseProgress,
-  getAllLessonProgressForCourse
+  getAllLessonProgressForCourse,
+  saveLessonProgress,
+  getLessonPages
 };

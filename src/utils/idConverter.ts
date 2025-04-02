@@ -24,8 +24,24 @@ export const supabaseId = (id: string | number): string => {
   return String(id);
 };
 
+// Chuyển đổi ID thành số
+export const toNumberId = (id: string | number | undefined | null): number => {
+  if (id === undefined || id === null) {
+    return 0;
+  }
+  const num = Number(id);
+  return isNaN(num) ? 0 : num;
+};
+
+// Hàm convertId đã được tham chiếu
+export const convertId = (id: string | number): string => {
+  return String(id);
+};
+
 export default {
   toStringId,
   idsAreEqual,
-  supabaseId
+  supabaseId,
+  toNumberId,
+  convertId
 };

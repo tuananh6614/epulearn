@@ -85,9 +85,26 @@ export const fetchTestHistory = async (userId: string, courseId?: string | numbe
   return mockTestResults.filter(result => result.user_id === userId);
 };
 
+// Added missing functions referenced in the error messages
+export const fetchTestQuestions = async (chapterId: string | number): Promise<any[]> => {
+  console.log(`[MOCK] Fetching test questions for chapter ID: ${chapterId}`);
+  return mockTestQuestions;
+};
+
+export const fetchCourseTests = async (courseId: string | number): Promise<any> => {
+  console.log(`[MOCK] Fetching all tests for course ID: ${courseId}`);
+  return {
+    success: true,
+    test: { ...mockCourseTest, course_id: Number(courseId) },
+    tests: [{ ...mockCourseTest, course_id: Number(courseId) }]
+  };
+};
+
 export default {
   fetchCourseTest,
   fetchChapterTest,
   saveTestResult,
-  fetchTestHistory
+  fetchTestHistory,
+  fetchTestQuestions,
+  fetchCourseTests
 };

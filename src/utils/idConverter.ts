@@ -1,26 +1,31 @@
 
 /**
- * Convert various ID types to string format
- * This replaces the previous supabaseId function
- * @param id The ID to convert (can be string, number, or any other type)
- * @returns The ID as a string
+ * Tiện ích chuyển đổi ID
+ * 
+ * Cung cấp các hàm để xử lý chuyển đổi giữa các kiểu ID khác nhau trong ứng dụng
+ * Phần này chỉ là mock để thay thế cho các hàm đã xóa
  */
-export const convertId = (id: string | number | any): string => {
-  if (id === null || id === undefined) {
-    return '';
-  }
+
+// Chuyển đổi bất kỳ ID nào thành chuỗi
+export const toStringId = (id: string | number): string => {
   return String(id);
 };
 
-/**
- * Convert string ID to number (legacy function)
- * @param id The ID to convert
- * @returns The ID as a number, or the original ID if conversion fails
- */
-export const toNumberId = (id: string | number | any): number => {
-  if (typeof id === 'number') {
-    return id;
+// So sánh hai ID có bằng nhau không (bỏ qua kiểu dữ liệu)
+export const idsAreEqual = (id1: string | number | undefined | null, id2: string | number | undefined | null): boolean => {
+  if (id1 === undefined || id1 === null || id2 === undefined || id2 === null) {
+    return false;
   }
-  const num = Number(id);
-  return isNaN(num) ? -1 : num;
+  return String(id1) === String(id2);
+};
+
+// Chuyển đổi ID thành định dạng Supabase
+export const supabaseId = (id: string | number): string => {
+  return String(id);
+};
+
+export default {
+  toStringId,
+  idsAreEqual,
+  supabaseId
 };

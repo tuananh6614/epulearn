@@ -119,18 +119,6 @@ export interface TestResult {
   created_at?: string;
 }
 
-// Certificate interface
-export interface Certificate {
-  id: number | string;
-  user_id: string; // This stays as string because it references auth.users
-  course_id: number | string;
-  certificate_id: string;
-  issue_date: string;
-  course?: {
-    title: string;
-  };
-}
-
 // Response types for Supabase
 export interface SupabaseLessonResponse extends Lesson {}
 export interface SupabaseChapterResponse extends Chapter {}
@@ -146,8 +134,6 @@ export interface SupabseCourseProgressResponse extends CourseProgress {}
 
 export interface SupabaseTestQuestionResponse extends TestQuestion {}
 export interface SupabaseTestResultResponse extends TestResult {}
-
-export interface SupabaseCertificateResponse extends Certificate {}
 
 // Add EnrolledCourse interface that was previously missing
 export interface EnrolledCourse {

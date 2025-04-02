@@ -19,7 +19,6 @@ const LessonContentPage = lazy(() => import("./pages/LessonContentPage"));
 const LessonDemo = lazy(() => import("./pages/LessonDemo"));
 const MyCourses = lazy(() => import("./pages/MyCourses"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
-const Certification = lazy(() => import("./pages/Certification"));
 const VipCourses = lazy(() => import("./pages/VipCourses"));
 const ChapterTestPage = lazy(() => import("./pages/ChapterTestPage"));
 const CourseTest = lazy(() => import("./pages/CourseTest"));
@@ -68,7 +67,6 @@ function App() {
                 
                 {/* Public routes */}
                 <Route path="/courses" element={<Courses />} />
-                <Route path="/certification" element={<Certification />} />
                 
                 {/* Protected routes - require login */}
                 <Route path="/course/:courseId" element={
@@ -128,13 +126,6 @@ function App() {
                 <Route path="/course/:courseId/chapter/:chapterId/test/:lessonId" element={
                   <ProtectedRoute>
                     <ChapterTestPage />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Update route path for certificates */}
-                <Route path="/profile/certificates" element={
-                  <ProtectedRoute>
-                    <Navigate to="/profile" replace />
                   </ProtectedRoute>
                 } />
                 

@@ -4,10 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { fetchUserEnrolledCourses, fetchUserCertificates, checkApiHealth } from '@/services/apiUtils';
+import { fetchUserEnrolledCourses, checkApiHealth } from '@/services/apiUtils';
 import ProfileForm from '@/components/ProfileForm';
 import SecurityForm from '@/components/SecurityForm';
-import CertificatesTab from '@/components/CertificatesTab';
 import VipTab from '@/components/VipTab';
 import UserSidebar from '@/components/UserSidebar';
 import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
@@ -44,11 +43,8 @@ const UserProfile = React.memo(() => {
     setIsRetrying(true);
     // Làm mới danh sách khóa học
     enrolledCoursesRefetch().then(() => {
-      // Làm mới danh sách chứng chỉ
-      certificatesRefetch().then(() => {
-        setIsRetrying(false);
-        toast.success("Đã làm mới dữ liệu");
-      });
+      setIsRetrying(false);
+      toast.success("Đã làm mới dữ liệu");
     });
   };
 
@@ -67,22 +63,7 @@ const UserProfile = React.memo(() => {
     retry: 1, // Giảm số lần thử lại xuống 1
   });
 
-  // Optimized certificates query with proper staleTime
-  const { 
-    data: certificates, 
-    isLoading: certificatesLoading,
-    error: certificatesError,
-    refetch: certificatesRefetch
-  } = useQuery({
-    queryKey: ['certificates', currentUser?.id],
-    queryFn: () => currentUser?.id ? fetchUserCertificates(currentUser.id) : Promise.resolve([]),
-    enabled: !!currentUser?.id && apiHealthy,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000,  // 5 minutes
-    retry: 1, // Giảm số lần thử lại xuống 1
-  });
-
-  const hasError = coursesError || certificatesError;
+  const hasError = coursesError;
 
   if (!currentUser) {
     return (
@@ -123,18 +104,16 @@ const UserProfile = React.memo(() => {
           <div className="w-full lg:w-1/4">
             <UserSidebar 
               enrolledCoursesCount={enrolledCourses?.length || 0}
-              certificatesCount={certificates?.length || 0}
-              isLoading={coursesLoading || certificatesLoading}
+              isLoading={coursesLoading}
             />
           </div>
           
           <div className="w-full lg:w-3/4">
             <Card className="overflow-hidden shadow-sm dark:bg-gray-800">
               <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="profile">Hồ sơ</TabsTrigger>
                   <TabsTrigger value="security">Bảo mật</TabsTrigger>
-                  <TabsTrigger value="certificates">Chứng chỉ</TabsTrigger>
                   <TabsTrigger value="vip">VIP</TabsTrigger>
                 </TabsList>
                 
@@ -144,28 +123,6 @@ const UserProfile = React.memo(() => {
                 
                 <TabsContent value="security" className="p-6">
                   <SecurityForm />
-                </TabsContent>
-                
-                <TabsContent value="certificates" className="p-6">
-                  {certificatesLoading ? (
-                    <div className="flex justify-center py-10">
-                      <Loader2 className="h-8 w-8 animate-spin text-green-500" />
-                    </div>
-                  ) : certificatesError ? (
-                    <div className="text-center py-10">
-                      <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Không thể tải dữ liệu chứng chỉ</h3>
-                      <p className="text-gray-500 dark:text-gray-400 mb-4">
-                        Đã xảy ra lỗi khi tải danh sách chứng chỉ của bạn.
-                      </p>
-                      <Button onClick={() => certificatesRefetch()} variant="outline">
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Thử lại
-                      </Button>
-                    </div>
-                  ) : (
-                    <CertificatesTab certificates={certificates || []} />
-                  )}
                 </TabsContent>
                 
                 <TabsContent value="vip" className="p-6">

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,7 +54,8 @@ export function SecurityForm() {
         return;
       }
       
-      // Update password - removing the arguments that were causing errors
+      // Update password - calling changePassword with the correct number of arguments
+      // The implementation in useAuthProvider expects both passwords
       const success = await changePassword(currentPassword, newPassword);
       
       if (!success) {

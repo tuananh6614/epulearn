@@ -4,7 +4,6 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
-  lastNameChanged?: string;
   avatarUrl?: string;
   bio?: string;
   email_confirmed_at?: string | null;
@@ -12,22 +11,18 @@ export interface User {
   vipExpirationDate?: string | null;
 }
 
-export interface FixedAccount extends User {
-  password: string;
-}
-
 export interface AuthContextType {
   currentUser: User | null;
-  user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<boolean>;
   logout: () => void;
+  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<boolean>;
   isAuthenticated: boolean;
   showLogoutConfirm: boolean;
   setShowLogoutConfirm: (show: boolean) => void;
-  loginWithFixedAccount: () => void;
-  updateCurrentUser: (userData: Partial<User>) => Promise<boolean>;
-  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
+  updateCurrentUser: (data: Partial<User>) => Promise<boolean>;
+  changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
   resendVerificationEmail: () => Promise<boolean>;
+  performLogout: () => Promise<void>;
+  user: User | null;
 }

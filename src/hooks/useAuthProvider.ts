@@ -1,300 +1,233 @@
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { User, AuthContextType } from '@/types/auth';
 import { toast } from 'sonner';
-import { User } from '@/types/auth';
 
-// Mock fixed account for demo purposes
-export const FIXED_ACCOUNT = {
-  id: 'fixed-user-id-123',
-  email: 'demo@example.com',
-  firstName: 'Demo',
-  lastName: 'User',
-  password: 'password123'
+// Mock user data for demo purposes
+const DEMO_USER: User = {
+  id: "demo-user-1",
+  email: "demo@example.com",
+  firstName: "Demo",
+  lastName: "User",
+  avatarUrl: "https://ui-avatars.com/api/?name=Demo+User&background=random",
+  email_confirmed_at: new Date().toISOString(),
+  isVip: false
 };
 
-export const useAuthProvider = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const navigate = useNavigate();
+// Store the password for the demo user - in a real app, passwords would never be stored like this
+const DEMO_PASSWORD = "password123";
 
-  // Initialize from localStorage
+export default function useAuthProvider(): AuthContextType {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
+
+  // Get the user from localStorage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('epu_user');
-    if (storedUser) {
+    const loadUser = () => {
       try {
-        const parsedUser = JSON.parse(storedUser);
-        console.log("Loaded user from localStorage:", parsedUser.email);
-        setCurrentUser(parsedUser);
+        const storedUser = localStorage.getItem('epu_user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser) as User;
+          console.log("Loaded user from localStorage:", user.email);
+          setCurrentUser(user);
+        } else {
+          console.log("No user found in localStorage");
+          setCurrentUser(null);
+        }
       } catch (error) {
-        console.error('Failed to parse user from localStorage', error);
+        console.error("Error loading user:", error);
         localStorage.removeItem('epu_user');
+        setCurrentUser(null);
+      } finally {
+        setLoading(false);
       }
-    } else {
-      console.log("No user found in localStorage");
-    }
-    
-    setLoading(false);
+    };
+
+    loadUser();
   }, []);
 
-  // Update user profile
-  const updateCurrentUser = async (userData: Partial<User>): Promise<boolean> => {
-    if (!currentUser) return false;
-    
-    setLoading(true);
-    
+  // Simulated login function
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
-      if ((userData.firstName !== undefined && userData.firstName !== currentUser.firstName) ||
-          (userData.lastName !== undefined && userData.lastName !== currentUser.lastName)) {
+      setLoading(true);
+      console.log("Login attempt with email:", email);
+
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Check if the email and password match our demo user
+      if (email.toLowerCase() === DEMO_USER.email && password === DEMO_PASSWORD) {
+        console.log("Login successful");
         
-        const lastChanged = currentUser.lastNameChanged ? new Date(currentUser.lastNameChanged) : null;
-        const now = new Date();
-        
-        if (lastChanged) {
-          const diffDays = Math.floor((now.getTime() - lastChanged.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (diffDays < 5) {
-            toast.error(`Bạn chỉ có thể thay đổi tên mỗi 5 ngày. Vui lòng thử lại sau ${5 - diffDays} ngày.`);
-            setLoading(false);
-            return false;
-          }
-        }
-        
-        userData.lastNameChanged = now.toISOString();
+        // Create a new user object with current timestamp
+        const user: User = {
+          ...DEMO_USER,
+          // Add additional properties if needed
+        };
+
+        // Save the user to localStorage
+        localStorage.setItem('epu_user', JSON.stringify(user));
+        setCurrentUser(user);
+        return true;
+      } else {
+        console.log("Login failed: incorrect credentials");
+        return false;
       }
+    } catch (error) {
+      console.error("Login error:", error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Simulated logout function
+  const logout = useCallback(() => {
+    console.log("Logout requested");
+    setShowLogoutConfirm(true);
+  }, []);
+
+  // Actual logout implementation
+  const performLogout = useCallback(async () => {
+    try {
+      console.log("Performing logout");
       
-      const updatedUser = { ...currentUser, ...userData };
-      
-      // Simulate API call
+      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Clear user data
+      localStorage.removeItem('epu_user');
+      setCurrentUser(null);
+      setShowLogoutConfirm(false);
+      
+      toast.success("Đăng xuất thành công!");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Đăng xuất thất bại. Vui lòng thử lại.");
+    }
+  }, []);
+
+  // Simulated signup function
+  const signup = useCallback(async (
+    email: string, 
+    password: string,
+    firstName: string,
+    lastName: string
+  ): Promise<boolean> => {
+    try {
+      setLoading(true);
+      console.log("Sign-up attempt with email:", email);
+
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // In a real app, we would create a new user in the backend
+      // For now, just pretend we created a user and notify that verification is needed
+      console.log("Sign-up successful");
+      toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
+      
+      return true;
+    } catch (error) {
+      console.error("Sign-up error:", error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Simulated update user function
+  const updateCurrentUser = useCallback(async (userData: Partial<User>): Promise<boolean> => {
+    try {
+      if (!currentUser) {
+        console.error("Cannot update user: No user is logged in");
+        return false;
+      }
+
+      console.log("Updating user data:", userData);
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Update the current user with the new data
+      const updatedUser: User = {
+        ...currentUser,
+        ...userData
+      };
       
       localStorage.setItem('epu_user', JSON.stringify(updatedUser));
       setCurrentUser(updatedUser);
       
-      toast.success("Cập nhật thông tin thành công");
+      toast.success("Cập nhật thông tin thành công!");
       return true;
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error("Không thể cập nhật thông tin. Vui lòng thử lại sau.");
+      console.error("Update user error:", error);
       return false;
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [currentUser]);
 
-  // Change password
-  const changePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
-    if (!currentUser) return false;
-    
-    setLoading(true);
-    
+  // Simulated change password function
+  const changePassword = useCallback(async (oldPassword: string, newPassword: string): Promise<boolean> => {
     try {
-      if (!currentPassword || !newPassword) {
-        toast.error("Vui lòng nhập đầy đủ thông tin");
+      if (!currentUser) {
+        console.error("Cannot change password: No user is logged in");
         return false;
       }
       
-      if (newPassword.length < 6) {
-        toast.error("Mật khẩu mới phải có ít nhất 6 ký tự");
-        return false;
-      }
+      console.log("Changing password");
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      toast.success("Mật khẩu đã được thay đổi thành công");
-      return true;
-    } catch (error) {
-      console.error('Error changing password:', error);
-      toast.error("Không thể thay đổi mật khẩu");
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Resend verification email
-  const resendVerificationEmail = async (): Promise<boolean> => {
-    if (!currentUser) {
-      toast.error("Không có người dùng đăng nhập");
-      return false;
-    }
-    
-    setLoading(true);
-    
-    try {
-      // Simulate API call
+      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      toast.success("Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư của bạn.", {
-        duration: 6000,
-      });
-      return true;
-    } catch (error) {
-      console.error('Error resending verification email:', error);
-      toast.error("Không thể gửi lại email xác thực");
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Login with fixed account
-  const loginWithFixedAccount = () => {
-    console.log("Logging in with fixed account");
-    if (!FIXED_ACCOUNT.email || !FIXED_ACCOUNT.password) {
-      toast.error("Không có tài khoản cố định được thiết lập");
-      return;
-    }
-    
-    const user: User = {
-      id: FIXED_ACCOUNT.id,
-      email: FIXED_ACCOUNT.email,
-      firstName: FIXED_ACCOUNT.firstName,
-      lastName: FIXED_ACCOUNT.lastName
-    };
-    
-    localStorage.setItem('epu_user', JSON.stringify(user));
-    setCurrentUser(user);
-    
-    toast.success("Đăng nhập thành công với tài khoản cố định");
-    navigate('/');
-  };
-
-  // Login
-  const login = async (email: string, password: string): Promise<boolean> => {
-    console.log("Login attempt with email:", email);
-    setLoading(true);
-    
-    try {
-      if (!email || !password) {
-        toast.error("Vui lòng nhập email và mật khẩu");
-        return false;
-      }
-      
-      // Check for demo account first
-      if (email === FIXED_ACCOUNT.email && password === FIXED_ACCOUNT.password) {
-        console.log("Using demo account login");
-        const user: User = {
-          id: FIXED_ACCOUNT.id,
-          email: FIXED_ACCOUNT.email,
-          firstName: FIXED_ACCOUNT.firstName,
-          lastName: FIXED_ACCOUNT.lastName
-        };
-        
-        localStorage.setItem('epu_user', JSON.stringify(user));
-        setCurrentUser(user);
-        
-        toast.success("Đăng nhập thành công (Tài khoản demo)");
+      // In a real app, we would verify the old password and update with the new one
+      if (oldPassword === DEMO_PASSWORD) {
+        // For demo purposes, we don't actually change the stored password
+        toast.success("Mật khẩu đã được cập nhật thành công!");
         return true;
+      } else {
+        toast.error("Mật khẩu hiện tại không chính xác");
+        return false;
       }
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Mock successful login for demo purposes
-      // In a real app, this would validate credentials against a backend
-      const mockUser: User = {
-        id: `user-${Date.now()}`,
-        email,
-        firstName: 'User',
-        lastName: email.split('@')[0],
-        isEmailVerified: true
-      };
-      
-      localStorage.setItem('epu_user', JSON.stringify(mockUser));
-      setCurrentUser(mockUser);
-      
-      toast.success("Đăng nhập thành công");
-      return true;
     } catch (error) {
-      console.error('Login error:', error);
-      toast.error("Đăng nhập thất bại");
+      console.error("Change password error:", error);
       return false;
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [currentUser]);
 
-  // Sign up
-  const signup = async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
-    setLoading(true);
-    
+  // Simulated resend verification email function
+  const resendVerificationEmail = useCallback(async (): Promise<boolean> => {
     try {
-      if (!email || !password || !firstName || !lastName) {
-        toast.error("Vui lòng điền đầy đủ thông tin");
+      if (!currentUser) {
+        console.error("Cannot resend verification email: No user is logged in");
         return false;
       }
       
-      if (password.length < 6) {
-        toast.error("Mật khẩu phải có ít nhất 6 ký tự");
-        return false;
-      }
+      console.log("Resending verification email to:", currentUser.email);
       
-      if (email === FIXED_ACCOUNT.email) {
-        toast.error("Email này đã được sử dụng");
-        return false;
-      }
-      
-      // Simulate API call
+      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.", {
-        duration: 5000
-      });
-      
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-      
+      toast.success("Email xác thực đã được gửi lại!");
       return true;
     } catch (error) {
-      console.error('Signup error:', error);
-      toast.error("Đăng ký thất bại");
+      console.error("Resend verification email error:", error);
       return false;
-    } finally {
-      setLoading(false);
     }
-  };
-
-  // Logout
-  const logout = () => {
-    setShowLogoutConfirm(true);
-  };
-
-  // Perform logout
-  const performLogout = async () => {
-    try {
-      setCurrentUser(null);
-      localStorage.removeItem('epu_user');
-      
-      navigate('/login');
-      toast.info("Đã đăng xuất. Hẹn gặp lại bạn!");
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error("Đăng xuất thất bại. Vui lòng thử lại.");
-    } finally {
-      setShowLogoutConfirm(false);
-    }
-  };
+  }, [currentUser]);
 
   return {
     currentUser,
     loading,
     login,
-    signup,
     logout,
+    signup,
     isAuthenticated: !!currentUser,
     showLogoutConfirm,
     setShowLogoutConfirm,
-    loginWithFixedAccount,
     updateCurrentUser,
     changePassword,
     resendVerificationEmail,
     performLogout,
     user: currentUser
   };
-};
-
-export default useAuthProvider;
+}

@@ -17,7 +17,6 @@ import Footer from '@/components/Footer';
 import { Code, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { parseAuthErrorFromURL } from '@/utils/authUtils';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Login = () => {
@@ -30,37 +29,25 @@ const Login = () => {
 
   // Check for authentication errors on load
   useEffect(() => {
-    const { message } = parseAuthErrorFromURL();
-    if (message) {
-      setAuthError(message);
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorMsg = urlParams.get('error');
+    if (errorMsg) {
+      setAuthError(decodeURIComponent(errorMsg));
       // Remove the error from the URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
-  // Improved debugging
+  // Debugging
   useEffect(() => {
     console.log("Login component mounted, isAuthenticated:", isAuthenticated);
     
     try {
       // Check if the token is available in localStorage
-      const session = localStorage.getItem('epu_supabase_auth');
-      console.log("Session in localStorage:", session ? "Available" : "Not available");
-      
-      if (session) {
-        const parsedSession = JSON.parse(session);
-        console.log("Session expires at:", new Date(parsedSession.expires_at * 1000).toLocaleString());
-        console.log("Current time:", new Date().toLocaleString());
-        
-        // Check if session is expired
-        if (parsedSession.expires_at * 1000 < Date.now()) {
-          console.log("Session is expired, clearing localStorage");
-          localStorage.removeItem('epu_supabase_auth');
-          localStorage.removeItem('epu_user');
-        }
-      }
+      const session = localStorage.getItem('epu_user');
+      console.log("User in localStorage:", session ? "Available" : "Not available");
     } catch (error) {
-      console.error("Error parsing session:", error);
+      console.error("Error checking localStorage:", error);
     }
     
     return () => {
@@ -87,7 +74,6 @@ const Login = () => {
     
     try {
       console.log("Attempting login with:", email);
-      // Using plain text password for login
       const success = await login(email, password);
       console.log("Login result:", success);
       

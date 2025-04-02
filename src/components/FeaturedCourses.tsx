@@ -171,7 +171,6 @@ const FeaturedCourses = () => {
                 duration={course.duration}
                 category={course.category}
                 image={course.image || ''}
-                color={course.color || ''}
                 isPremium={course.isPremium || false}
                 price={course.price}
                 discountPrice={course.discountPrice}

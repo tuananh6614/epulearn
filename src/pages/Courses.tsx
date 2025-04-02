@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import CourseCard from '@/components/CourseCard';
 import { Input } from "@/components/ui/input"
@@ -48,7 +49,7 @@ const Courses = () => {
           
         if (error) {
           console.error('Error fetching courses:', error);
-          toast("Không thể tải khóa học", {
+          toast({
             description: "Đã xảy ra lỗi khi tải dữ liệu.",
             action: {
               label: "Thử lại",
@@ -75,7 +76,7 @@ const Courses = () => {
           instructor: course.instructor,
           created_at: course.created_at,
           updated_at: course.updated_at,
-          status: course.status || 'published',
+          status: 'published',
           price: course.price?.toString() || '',
           discount_price: course.discount_price?.toString() || '',
           discountPrice: course.discount_price?.toString() || '',

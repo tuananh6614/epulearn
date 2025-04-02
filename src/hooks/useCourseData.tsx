@@ -1,10 +1,12 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Course, Lesson } from '@/models/lesson';
 import { supabaseId } from '@/utils/idConverter';
+import { useAuth } from '@/context/AuthContext';
 
-interface UseCourseDataProps {
+export interface UseCourseDataProps {
   courseId?: string | number;
 }
 
@@ -13,6 +15,9 @@ export const useCourseData = ({ courseId }: UseCourseDataProps) => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [userProgress, setUserProgress] = useState(0);
+  const { user } = useAuth();
 
   // Fetch course data
   useEffect(() => {
@@ -63,6 +68,19 @@ export const useCourseData = ({ courseId }: UseCourseDataProps) => {
           };
 
           setCourse(courseData);
+          
+          // Check if user is enrolled in this course
+          if (user) {
+            const { data: enrollmentData } = await supabase
+              .from('user_courses')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('course_id', supabaseId(courseId))
+              .maybeSingle();
+              
+            setIsEnrolled(!!enrollmentData);
+            setUserProgress(enrollmentData?.progress_percentage || 0);
+          }
         }
       } catch (err) {
         console.error('Error fetching course:', err);
@@ -74,7 +92,7 @@ export const useCourseData = ({ courseId }: UseCourseDataProps) => {
     };
 
     fetchCourse();
-  }, [courseId]);
+  }, [courseId, user]);
 
   // Fetch lessons
   useEffect(() => {
@@ -122,7 +140,11 @@ export const useCourseData = ({ courseId }: UseCourseDataProps) => {
                 duration: lesson.duration,
                 chapter_id: lesson.chapter_id,
                 chapterTitle: chapter.title,
-                order_index: lesson.order_index
+                order_index: lesson.order_index,
+                course_id: lesson.course_id,
+                is_premium: lesson.is_premium,
+                created_at: lesson.created_at,
+                updated_at: lesson.updated_at
               }));
 
               allLessons.push(...transformedLessons);
@@ -147,13 +169,47 @@ export const useCourseData = ({ courseId }: UseCourseDataProps) => {
     // Implementation details...
     return true;
   };
+  
+  // Function to enroll in course
+  const enrollInCourse = async () => {
+    try {
+      if (!user || !courseId) {
+        toast.error('Bạn cần đăng nhập để đăng ký khóa học');
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('user_courses')
+        .insert({
+          user_id: user.id,
+          course_id: supabaseId(courseId),
+          progress_percentage: 0,
+        });
+        
+      if (error) {
+        console.error('Error enrolling in course:', error);
+        toast.error('Không thể đăng ký khóa học');
+        return;
+      }
+      
+      setIsEnrolled(true);
+      toast.success('Đăng ký khóa học thành công');
+    } catch (err) {
+      console.error('Error enrolling in course:', err);
+      toast.error('Không thể đăng ký khóa học');
+    }
+  };
 
   return {
     course,
     lessons,
     loading,
     error,
-    updateProgress
+    updateProgress,
+    isEnrolled,
+    enrollInCourse,
+    userProgress,
+    courseData: course // alias for backward compatibility
   };
 };
 

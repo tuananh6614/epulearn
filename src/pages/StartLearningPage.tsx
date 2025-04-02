@@ -66,12 +66,11 @@ const StartLearningPage: React.FC = () => {
   const [lessonProgress, setLessonProgress] = useState<Record<string, LessonProgress>>({});
   const [activeTab, setActiveTab] = useState<'chapters' | 'all-lessons' | 'tests'>('chapters');
   const [courseTests, setCourseTests] = useState<CourseTest[]>([]);
-  const [userProgress, setUserProgress] = useState(0);
   
-  const { courseData, userProgress: userProgressData, isEnrolled, error } = useCourseData(numericCourseId);
+  const { course, isEnrolled, error, userProgress } = useCourseData({ courseId: numericCourseId });
   
   useEffect(() => {
-    if (courseData && user && courseId) {
+    if (course && user && courseId) {
       // Fetch user's progress in this course
       const fetchCourseProgress = async () => {
         try {
@@ -98,7 +97,7 @@ const StartLearningPage: React.FC = () => {
       
       fetchCourseProgress();
     }
-  }, [courseData, user, courseId]);
+  }, [course, user, courseId]);
   
   useEffect(() => {
     if (!numericCourseId || !user) return;
@@ -165,7 +164,7 @@ const StartLearningPage: React.FC = () => {
     );
   }
   
-  if (!courseData) {
+  if (!course) {
     return (
       <div className="min-h-screen flex items-center justify-center flex-col">
         <h2 className="text-2xl font-bold mb-2">Không tìm thấy khóa học</h2>
@@ -192,7 +191,7 @@ const StartLearningPage: React.FC = () => {
       <div className="container max-w-6xl py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold">{courseData.title}</h1>
+            <h1 className="text-3xl font-bold">{course.title}</h1>
             <p className="text-muted-foreground mt-1">Tiếp tục học tập từ nơi bạn đã dừng lại</p>
           </div>
           
@@ -231,14 +230,14 @@ const StartLearningPage: React.FC = () => {
                   <CardHeader>
                     <CardTitle>Nội dung khóa học</CardTitle>
                     <CardDescription>
-                      Khóa học gồm {courseData.chapters?.length || 0} chương và {
-                        courseData.chapters?.reduce((total, chapter) => total + (chapter.lessons?.length || 0), 0)
+                      Khóa học gồm {course.chapters?.length || 0} chương và {
+                        course.chapters?.reduce((total, chapter) => total + (chapter.lessons?.length || 0), 0)
                       } bài học
                     </CardDescription>
                   </CardHeader>
                   
                   <CardContent className="space-y-4">
-                    {courseData?.chapters.map((chapter, index) => {
+                    {course?.chapters.map((chapter, index) => {
                       const chapterLessons = chapter.lessons || [];
                       const completedLessons = chapterLessons.filter(lesson => lessonProgress[lesson.id]?.completed).length;
                       const totalLessons = chapterLessons.length;
@@ -286,7 +285,7 @@ const StartLearningPage: React.FC = () => {
                   </CardHeader>
                   
                   <CardContent className="space-y-6">
-                    {courseData?.chapters.map((chapter) => (
+                    {course?.chapters.map((chapter) => (
                       <div key={chapter.id} className="space-y-2">
                         <h3 className="font-medium text-lg">{chapter.title}</h3>
                         <Separator className="my-2" />
@@ -364,7 +363,7 @@ const StartLearningPage: React.FC = () => {
                     )}
                     
                     {/* Chapter tests */}
-                    {courseData?.chapters.map((chapter) => {
+                    {course?.chapters.map((chapter) => {
                       // Find test lesson in this chapter
                       const testLesson = chapter.lessons?.find(lesson => lesson.type === 'test');
                       if (!testLesson) return null;
@@ -428,19 +427,19 @@ const StartLearningPage: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Tổng số chương</span>
-                    <span className="text-sm font-medium">{courseData.chapters?.length || 0}</span>
+                    <span className="text-sm font-medium">{course.chapters?.length || 0}</span>
                   </div>
                   
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Tổng số bài học</span>
                     <span className="text-sm font-medium">
-                      {courseData.chapters?.reduce((total, chapter) => total + (chapter.lessons?.length || 0), 0)}
+                      {course.chapters?.reduce((total, chapter) => total + (chapter.lessons?.length || 0), 0)}
                     </span>
                   </div>
                   
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Thời lượng</span>
-                    <span className="text-sm font-medium">{courseData.duration}</span>
+                    <span className="text-sm font-medium">{course.duration}</span>
                   </div>
                 </div>
               </CardContent>
@@ -448,7 +447,7 @@ const StartLearningPage: React.FC = () => {
               <CardFooter>
                 <Button className="w-full" onClick={() => {
                   // Find first incomplete lesson
-                  for (const chapter of courseData.chapters || []) {
+                  for (const chapter of course.chapters || []) {
                     for (const lesson of chapter.lessons || []) {
                       if (!lessonProgress[lesson.id]?.completed) {
                         handleLessonClick(chapter.id, lesson.id);
@@ -458,8 +457,8 @@ const StartLearningPage: React.FC = () => {
                   }
                   
                   // If all lessons are completed, go to the first lesson
-                  if (courseData.chapters?.[0]?.lessons?.[0]) {
-                    const firstChapter = courseData.chapters[0];
+                  if (course.chapters?.[0]?.lessons?.[0]) {
+                    const firstChapter = course.chapters[0];
                     const firstLesson = firstChapter.lessons[0];
                     handleLessonClick(firstChapter.id, firstLesson.id);
                   }

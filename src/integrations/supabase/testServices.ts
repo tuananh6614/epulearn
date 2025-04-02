@@ -91,6 +91,7 @@ export const fetchTestQuestions = async (chapterId: string | number): Promise<Te
   return mockTestQuestions;
 };
 
+// Add the fetchCourseTests function referenced in errors
 export const fetchCourseTests = async (courseId: string | number): Promise<{ success: boolean; test: CourseTest; tests: CourseTest[] }> => {
   console.log(`[MOCK] Fetching all tests for course ID: ${courseId}`);
   return {

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 export function SecurityForm() {
-  const { currentUser, updateUserProfile } = useAuth();
+  const { currentUser, changePassword, updateCurrentUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -79,8 +80,10 @@ export function SecurityForm() {
     setIsLoading(true);
     
     try {
-      // Corrected function call - removed the parameter
-      const success = await updateUserProfile();
+      // Use updateCurrentUser instead of the non-existent updateUserProfile
+      const success = await updateCurrentUser({
+        deleteRequested: true
+      });
       
       if (success) {
         toast.success("Tài khoản đã được yêu cầu xóa");

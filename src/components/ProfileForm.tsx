@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -9,10 +8,9 @@ import { Pencil, Database, CheckCircle2, WifiOff } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import UserAvatar from './UserAvatar';
+import { UserAvatar } from './UserAvatar';
 import { checkApiHealth } from '@/services/apiUtils';
 
-// Schema for profile update
 const profileFormSchema = z.object({
   firstName: z.string().min(2, { message: "Tên phải có ít nhất 2 ký tự" }),
   lastName: z.string().min(2, { message: "Họ phải có ít nhất 2 ký tự" }),
@@ -44,10 +42,8 @@ const ProfileForm: React.FC = () => {
     setSyncStatus('none');
     
     try {
-      // Check API availability before update
       const isApiAvailable = await checkApiHealth();
       
-      // Call the API to update user profile
       const success = await updateCurrentUser({
         firstName: values.firstName,
         lastName: values.lastName,
@@ -58,7 +54,6 @@ const ProfileForm: React.FC = () => {
         setSyncStatus('synced');
         toast.success("Thông tin đã được cập nhật thành công");
       } else {
-        // If we couldn't sync to database but local storage was updated
         setSyncStatus('offline');
         toast.warning("Thông tin đã được lưu cục bộ, nhưng chưa đồng bộ với CSDL do lỗi kết nối");
       }
@@ -80,11 +75,10 @@ const ProfileForm: React.FC = () => {
       
       <div className="flex flex-col items-center mb-6">
         <UserAvatar 
-          avatarUrl={currentUser?.avatarUrl || null}
-          firstName={currentUser?.firstName}
-          lastName={currentUser?.lastName}
           size="lg"
-          editable={true}
+          showEditButton={true}
+          userId={currentUser?.id}
+          userImage={currentUser?.avatar_url}
         />
         <p className="text-sm text-muted-foreground mt-2">
           Nhấp vào biểu tượng để cập nhật ảnh đại diện

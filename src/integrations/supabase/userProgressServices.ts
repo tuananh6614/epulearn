@@ -20,15 +20,17 @@ export const getLessonProgress = async (userId: string, lessonId: string | numbe
   };
 };
 
-// Save user progress for a lesson
+// Save user progress for a lesson - fixed parameter count
 export const saveLessonProgress = async (
   userId: string, 
   courseId: string | number,
   chapterId: string | number,
   lessonId: string | number,
-  progress: number = 100
+  position = { scrollPosition: 0 },
+  completed = true,
+  currentPageId?: string | number
 ) => {
-  console.log(`[MOCK] Saving progress for lesson: ${lessonId}, user: ${userId}, progress: ${progress}%`);
+  console.log(`[MOCK] Saving progress for lesson: ${lessonId}, user: ${userId}, completed: ${completed}`);
   
   // Return success response
   return {
@@ -41,20 +43,33 @@ export const saveLessonProgress = async (
 export const getLessonPages = async (lessonId: string | number) => {
   console.log(`[MOCK] Getting pages for lesson: ${lessonId}`);
   
-  // Return mock pages data
+  // Return mock pages data with lesson_id and order_index properties
   return {
     success: true,
     pages: [
-      { id: 1, title: "Introduction", content: "This is the introduction page" },
-      { id: 2, title: "Main Content", content: "This is the main content page" },
-      { id: 3, title: "Summary", content: "This is the summary page" }
+      { id: 1, lesson_id: lessonId, title: "Introduction", content: "This is the introduction page", order_index: 1 },
+      { id: 2, lesson_id: lessonId, title: "Main Content", content: "This is the main content page", order_index: 2 },
+      { id: 3, lesson_id: lessonId, title: "Summary", content: "This is the summary page", order_index: 3 }
     ],
     error: null
+  };
+};
+
+// Add the missing getCourseProgress function
+export const getCourseProgress = async (userId: string, courseId: string | number) => {
+  console.log(`[MOCK] Getting course progress for course: ${courseId}, user: ${userId}`);
+  
+  return {
+    progress_percentage: Math.floor(Math.random() * 100),
+    completed_lessons: Math.floor(Math.random() * 10),
+    total_lessons: 10,
+    last_accessed: new Date().toISOString()
   };
 };
 
 export default {
   getLessonProgress,
   saveLessonProgress,
-  getLessonPages
+  getLessonPages,
+  getCourseProgress
 };

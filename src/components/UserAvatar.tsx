@@ -1,7 +1,10 @@
+
 import React, { useState } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input"; // Import needed components
+import { Label } from "@/components/ui/label"; // Import needed components
 import { Upload, Pencil, Trash, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -20,7 +23,7 @@ export function UserAvatar({
   userId, 
   userImage 
 }: UserAvatarProps) {
-  const { currentUser, updateUserProfile } = useAuth();
+  const { currentUser, updateCurrentUser } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -33,8 +36,8 @@ export function UserAvatar({
   };
   
   const user = userId ? { id: userId, avatar_url: userImage } : currentUser;
-  const avatarUrl = user?.avatar_url || filePreview;
-  const initials = user?.email?.substring(0, 2).toUpperCase() || "U";
+  const avatarUrl = user?.avatar_url || currentUser?.avatar_url || filePreview;
+  const initials = user?.email?.substring(0, 2).toUpperCase() || currentUser?.email?.substring(0, 2).toUpperCase() || "U";
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -65,9 +68,8 @@ export function UserAvatar({
         .from('user-avatars')
         .getPublicUrl(filePath);
       
-      // Update user profile with avatar URL
-      // Corrected function call - removed the third parameter
-      const updated = await updateUserProfile({
+      // Update user profile with avatar URL using updateCurrentUser instead
+      const updated = await updateCurrentUser({
         avatar_url: publicUrl
       });
       
@@ -90,7 +92,7 @@ export function UserAvatar({
     
     try {
       // Update user profile to remove avatar URL
-      const updated = await updateUserProfile({
+      const updated = await updateCurrentUser({
         avatar_url: null
       });
       

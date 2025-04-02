@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,14 +58,13 @@ const ChapterTest: React.FC<ChapterTestProps> = ({
       try {
         setLoading(true);
         const testQuestions = await fetchTestQuestions(chapterId);
-        // Map the API response fields to match our TestQuestion interface
         const formattedQuestions: TestQuestion[] = testQuestions.map(q => ({
           id: q.id,
           question: q.question,
           options: Array.isArray(q.options) 
             ? q.options.map(opt => String(opt))
             : [],
-          answer: q.correct_answer // Map correct_answer from API to answer in our interface
+          answer: q.correct_answer
         }));
         setQuestions(formattedQuestions);
       } catch (error) {
@@ -99,16 +97,16 @@ const ChapterTest: React.FC<ChapterTestProps> = ({
           setHighestScore(data[0].score);
         }
         
-        const { count, error: countError } = await supabase
+        const { data: countData, error: countError } = await supabase
           .from('user_test_results')
-          .select('id', { count: 'exact', head: true })
+          .select('id', { count: 'exact' })
           .eq('user_id', user.id)
           .eq('chapter_id', chapterId);
           
         if (countError) {
           console.error('Error fetching test attempts count:', countError);
-        } else if (count !== null) {
-          setPreviousAttempts(count);
+        } else if (countData) {
+          setPreviousAttempts(countData.length);
         }
       } catch (err) {
         console.error('Error fetching test history:', err);

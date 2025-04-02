@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ChevronLeft, ChevronRight, BookOpen, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -88,18 +89,19 @@ const LessonContentPage = () => {
         } as unknown as Lesson;
         setLesson(lesson);
 
-        const { success, pages: pagesData, error: pagesError } = await getLessonPages(lessonId);
+        // Fetch lesson pages using the modified function
+        const result = await getLessonPages(lessonId);
         
-        if (pagesError) throw pagesError;
-        
-        if (success && pagesData && pagesData.length > 0) {
-          setPages(pagesData as Page[]);
+        if (result.success && result.pages) {
+          // Now pages will have the correct properties: lesson_id and order_index
+          setPages(result.pages as Page[]);
         } else {
+          // Create a default page
           setPages([
             {
               id: 0,
               lesson_id: lessonId,
-              content: lessonData.content,
+              content: lessonData.content || "",
               order_index: 1
             } as Page
           ]);
@@ -165,8 +167,9 @@ const LessonContentPage = () => {
           
         if (!progressError && progressData) {
           const currentPageId = progressData.current_page_id;
-          if (currentPageId) {
-            const pageIndex = pagesData?.findIndex((p: Page) => String(p.id) === String(currentPageId)) || 0;
+          if (currentPageId && result.pages) {
+            // Updated to match against the same type
+            const pageIndex = result.pages.findIndex((p: any) => String(p.id) === String(currentPageId)) || 0;
             if (pageIndex >= 0) {
               setCurrentPageIndex(pageIndex);
             }
@@ -201,8 +204,8 @@ const LessonContentPage = () => {
         await saveLessonProgress(
           user.id,
           courseId,
-          lessonId,
           chapterId || "0",
+          lessonId,
           { scrollPosition: 0 },
           false,
           pages[newIndex].id
@@ -219,9 +222,9 @@ const LessonContentPage = () => {
     try {
       await saveLessonProgress(
         user.id,
-        courseId!,
-        chapterId!,
-        lessonId!
+        courseId,
+        chapterId,
+        lessonId
       );
       
       setLessonProgress({ ...lessonProgress, completed: true });

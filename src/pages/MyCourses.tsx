@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,15 +8,15 @@ import Navbar from '@/components/Navbar';
 import { Course } from '@/models/lesson';
 import { supabaseId } from '@/utils/idConverter';
 
+// Extended course type with progress information
+interface EnrolledCourse extends Course {
+  progress?: number;
+  lastAccessed?: string;
+  enrolledAt?: string;
+}
+
 const MyCourses = () => {
-  const [courses, setCourses] = useState<
-    Course[] & {
-      progress: number;
-      isCompleted: boolean;
-      lastAccessed: string;
-      enrolledAt: string;
-    }[]
-  >([]);
+  const [courses, setCourses] = useState<EnrolledCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
@@ -46,25 +47,29 @@ const MyCourses = () => {
             id: item.course_id,
             title: item.courses?.title || 'Unknown Course',
             description: item.courses?.description || '',
-            image: item.courses?.thumbnail_url || item.courses?.image || '/placeholder.svg',
+            image: item.courses?.thumbnail_url || '/placeholder.svg',
             thumbnail_url: item.courses?.thumbnail_url || '/placeholder.svg',
             level: item.courses?.level || 'Beginner',
             duration: item.courses?.duration || 'Unknown',
             category: item.courses?.category || 'General',
             isPremium: item.courses?.is_premium || false,
             is_premium: item.courses?.is_premium || false,
-            price: item.courses?.price || 'Free',
-            discountPrice: item.courses?.discount_price || item.courses?.discount_price,
-            discount_price: item.courses?.discount_price || item.courses?.discount_price,
+            price: String(item.courses?.price || 'Free'),
+            discountPrice: String(item.courses?.discount_price || ''),
+            discount_price: String(item.courses?.discount_price || ''),
+            isFeatured: item.courses?.is_featured || false,
+            is_featured: item.courses?.is_featured || false,
+            instructor: item.courses?.instructor || 'EPU Learning',
+            status: 'published',
+            created_at: item.courses?.created_at || new Date().toISOString(),
+            updated_at: item.courses?.updated_at || new Date().toISOString(),
+            // Custom fields for enrolled courses
             progress: item.progress_percentage || 0,
             lastAccessed: item.last_accessed || 'Never',
-            enrolledAt: item.created_at || 'Unknown',
-            status: item.courses?.status || 'published',
-            chapters: item.courses?.chapters || [],
-            isCompleted: item.progress_percentage === 100,
+            enrolledAt: item.enrolled_at || 'Unknown',
             color: '#4F46E5'
           }));
-          setCourses(enrolledCourses as any);
+          setCourses(enrolledCourses);
         }
       } catch (error) {
         console.error('Error fetching enrolled courses:', error);
@@ -76,7 +81,7 @@ const MyCourses = () => {
     fetchEnrolledCourses();
   }, [user]);
 
-  const renderCourseCards = (courses: Course[]) => {
+  const renderCourseCards = (courses: EnrolledCourse[]) => {
     return courses.map((course) => (
       <CourseCard
         key={supabaseId(course.id)}
@@ -116,9 +121,6 @@ const MyCourses = () => {
               Bạn chưa đăng ký khóa học nào. Hãy khám phá các khóa học của chúng
               tôi ngay hôm nay!
             </p>
-            {/* <Button asChild>
-              <Link to="/courses">Khám phá khóa học</Link>
-            </Button> */}
           </div>
         )}
       </div>

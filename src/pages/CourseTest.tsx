@@ -1,252 +1,184 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Navbar from '@/components/Navbar';
 import { Button } from "@/components/ui/button";
-import { fetchCourseTests, supabase } from '@/integrations/supabase';
-import CourseTestForm from '@/components/CourseTestForm';
 import { toast } from 'sonner';
+import { fetchCourseTests, saveTestResult } from '@/integrations/supabase/testServices';
 import { useAuth } from '@/context/AuthContext';
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardDescription,
-  CardTitle,
-  CardFooter
-} from '@/components/ui/card';
-import { Clock, FileText, Book, AlertCircle } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { TestQuestion } from '@/models/lesson';
+import { Loader2 } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import { CourseTest, TestQuestion } from '@/models/lesson';
+import { supabaseId } from '@/utils/idConverter';
 
-interface CourseTestQuestion {
-  id: string | number;
-  question: string;
-  options: string[];
-  correct_answer: number;
-  points?: number;
-  course_test_id?: string | number;
-  created_at?: string;
-  updated_at?: string;
-}
+// Type for our local course test state
+type CourseTestType = CourseTest;
 
-interface CourseTestType {
-  id: string | number;
-  title: string;
-  description: string;
-  passing_score: number;
-  time_limit: number;
-  course_id: string | number;
-  created_at: string;
-  updated_at: string;
-  questions: CourseTestQuestion[];
-}
-
-interface UserTestResultType {
-  id: string | number;
-  course_test_id: string | number;
-  user_id: string;
-  score: number;
-  passed: boolean;
-  time_taken?: number;
-  answers?: string;
-  created_at?: string;
-}
-
-const CourseTest: React.FC = () => {
-  const { courseId } = useParams<{ courseId: string }>();
+const CourseTestPage = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-
-  const [tests, setTests] = useState<CourseTestType[]>([]);
-  const [selectedTest, setSelectedTest] = useState<CourseTestType | null>(null);
+  const { currentUser } = useAuth();
+  const [testData, setTestData] = useState<CourseTestType | null>(null);
+  const [questions, setQuestions] = useState<TestQuestion[]>([]);
+  const [selectedAnswers, setSelectedAnswers] = useState<{ [key: string]: number }>({});
   const [loading, setLoading] = useState(true);
-  const [previousResults, setPreviousResults] = useState<UserTestResultType[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  const { user } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [testStarted, setTestStarted] = useState(false);
+  const [testComplete, setTestComplete] = useState(false);
+  const [score, setScore] = useState(0);
 
   useEffect(() => {
+    if (!id || !currentUser) {
+      toast.error('Không tìm thấy bài kiểm tra hoặc bạn chưa đăng nhập');
+      navigate('/courses');
+      return;
+    }
+    
     const loadTest = async () => {
       try {
         setLoading(true);
+        const result = await fetchCourseTests(id);
         
-        if (!courseId) {
-          toast.error("Không có thông tin khóa học");
-          navigate("/courses");
-          return;
-        }
-        
-        console.log("Fetching course test for course ID:", courseId);
-        const { success, test, tests: testsList, error: fetchError } = await fetchCourseTests(courseId);
-        
-        if (!success) {
-          console.error('Error fetching course test:', fetchError);
-          toast.error("Không thể tải bài kiểm tra");
-          setError("Không thể tải bài kiểm tra cho khóa học này");
-          setLoading(false);
-          return;
-        }
-        
-        if (test) {
-          // Map the response to match our CourseTestType
-          const formattedTest: CourseTestType = {
-            id: test.id,
-            title: test.title,
-            description: test.description,
-            passing_score: test.passing_score,
-            time_limit: test.time_limit,
-            course_id: courseId,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            questions: test.questions?.map((q: any) => ({
-              id: q.id,
-              question: q.question,
-              options: Array.isArray(q.options) ? q.options.map((opt: any) => String(opt)) : [],
-              correct_answer: q.correct_answer,
-              points: q.points || 1
-            })) || []
+        if (result.success && result.test) {
+          const testData = {
+            id: result.test.id,
+            title: result.test.title,
+            description: result.test.description,
+            passing_score: result.test.passing_score || 80,
+            time_limit: result.test.time_limit || 30,
+            questions: result.test.questions || [],
+            course_id: result.test.course_id,
+            created_at: result.test.created_at,
+            updated_at: result.test.updated_at
           };
           
-          setTests([formattedTest]);
-          console.log("Test loaded:", formattedTest);
-        } else if (testsList) {
-          // Map each test in the array
-          const formattedTests = testsList.map(t => ({
-            id: t.id,
-            title: t.title,
-            description: t.description,
-            passing_score: t.passing_score,
-            time_limit: t.time_limit,
-            course_id: courseId,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            questions: t.questions || []
-          }));
+          setTestData(testData);
+          setQuestions(result.test.questions || []);
+          setTimeLeft(result.test.time_limit ? result.test.time_limit * 60 : 30 * 60);
+        } else if (result.success && result.tests && result.tests.length > 0) {
+          const testData = {
+            id: result.tests[0].id,
+            title: result.tests[0].title,
+            description: result.tests[0].description,
+            passing_score: result.tests[0].passing_score,
+            time_limit: result.tests[0].time_limit,
+            questions: result.tests[0].questions || [],
+            course_id: result.tests[0].course_id,
+            created_at: result.tests[0].created_at,
+            updated_at: result.tests[0].updated_at
+          };
           
-          setTests(formattedTests);
-          console.log("Tests loaded:", formattedTests.length);
+          setTestData(testData);
+          setQuestions(result.tests[0].questions || []);
+          setTimeLeft(result.tests[0].time_limit ? result.tests[0].time_limit * 60 : 30 * 60);
         } else {
-          setError("Không tìm thấy bài kiểm tra cho khóa học này");
+          toast.error('Không tìm thấy bài kiểm tra');
+          navigate('/courses');
         }
-        
-        setLoading(false);
-      } catch (err) {
-        console.error("Error loading test:", err);
-        toast.error("Đã xảy ra lỗi khi tải bài kiểm tra");
-        setError("Đã xảy ra l��i khi tải bài kiểm tra");
+      } catch (error) {
+        console.error('Error loading test:', error);
+        toast.error('Không thể tải bài kiểm tra');
+      } finally {
         setLoading(false);
       }
     };
     
     loadTest();
-  }, [courseId, navigate]);
+  }, [id, navigate, currentUser]);
 
-  const handleTestSelect = (test: CourseTestType) => {
-    setSelectedTest(test);
-  };
-
-  const handleTestComplete = async (score: number, passed: boolean) => {
-    if (!user || !courseId || !selectedTest) return;
-
-    try {
-      const cheatAttempts = document.visibilityState === 'hidden' ? 1 : 0;
-      console.log('Cheat attempts:', cheatAttempts);
-
-      const { error } = await supabase
-        .from('user_test_results')
-        .insert({
-          user_id: user.id,
-          course_id: courseId,
-          course_test_id: selectedTest.id,
-          score,
-          passed,
-          time_taken: Math.floor(selectedTest.time_limit * 60),
-          answers: JSON.stringify({}), // Tùy chỉnh để lưu đáp án chi tiết
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (testStarted && timeLeft > 0 && !testComplete) {
+      timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            handleSubmitTest();
+            return 0;
+          }
+          return prev - 1;
         });
+      }, 1000);
+    }
+    
+    return () => clearInterval(timer);
+  }, [testStarted, timeLeft, testComplete]);
 
-      if (error) throw error;
+  const handleAnswerSelect = (questionId: string | number, answerIndex: number) => {
+    setSelectedAnswers(prev => ({ ...prev, [String(questionId)]: answerIndex }));
+  };
 
-      if (passed) {
-        const { data: enrollment } = await supabase
-          .from('user_courses')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('course_id', courseId)
-          .single();
-
-        if (enrollment) {
-          const newProgress = Math.min(
-            100,
-            (enrollment.progress_percentage || 0) + 10
-          );
-
-          await supabase
-            .from('user_courses')
-            .update({
-              progress_percentage: newProgress,
-              last_accessed: new Date().toISOString(),
-            })
-            .eq('user_id', user.id)
-            .eq('course_id', courseId);
+  const handleSubmitTest = async () => {
+    if (!testData || !currentUser) return;
+    
+    setSubmitting(true);
+    
+    try {
+      // Calculate score
+      let correctAnswers = 0;
+      let totalPoints = 0;
+      
+      questions.forEach(q => {
+        const selectedAnswer = selectedAnswers[String(q.id)];
+        if (selectedAnswer === q.correct_answer) {
+          correctAnswers += q.points || 1;
         }
-      }
-
-      toast.success(
+        totalPoints += q.points || 1;
+      });
+      
+      const scorePercentage = Math.round((correctAnswers / totalPoints) * 100);
+      const passed = scorePercentage >= (testData.passing_score || 80);
+      
+      setScore(scorePercentage);
+      setTestComplete(true);
+      
+      // Save result to Supabase
+      await saveTestResult(
+        currentUser.id,
+        supabaseId(testData.course_id),
+        supabaseId(testData.id),
+        scorePercentage,
         passed
-          ? 'Chúc mừng! Bạn đã hoàn thành bài kiểm tra'
-          : 'Bạn chưa đạt điểm yêu cầu cho bài kiểm tra này'
       );
-
-      const { data: resultsData } = await supabase
-        .from('user_test_results')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('course_id', courseId);
-
-      setPreviousResults(resultsData as UserTestResultType[] || []);
+      
+      if (passed) {
+        toast.success(`Chúc mừng! Bạn đã vượt qua bài kiểm tra với số điểm ${scorePercentage}%`);
+      } else {
+        toast.error(`Bạn không vượt qua được bài kiểm tra. Điểm số của bạn: ${scorePercentage}%`);
+      }
     } catch (error) {
-      console.error('Failed to save test result:', error);
-      toast.error('Không thể lưu kết quả bài kiểm tra');
+      console.error('Error submitting test:', error);
+      toast.error('Không thể gửi kết quả bài kiểm tra');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const checkEnrollment = async (): Promise<boolean> => {
-    if (!user || !courseId) return false;
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+  };
 
-    try {
-      const { data, error } = await supabase
-        .from('user_courses')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('course_id', courseId)
-        .single();
-
-      if (error) {
-        console.error('Error checking enrollment:', error);
-        return false;
-      }
-      return !!data;
-    } catch (error) {
-      console.error('Failed to check enrollment:', error);
-      return false;
-    }
+  const startTest = () => {
+    setTestStarted(true);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="container max-w-screen-xl mx-auto px-4 pt-24 pb-10">
-          <div className="animate-pulse space-y-4">
-            <div className="h-10 bg-muted rounded w-1/3"></div>
-            <div className="h-4 bg-muted rounded w-1/2"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-40 bg-muted rounded"></div>
-              ))}
-            </div>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!testData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Không tìm thấy bài kiểm tra</h2>
+          <p className="text-gray-500">Bài kiểm tra không tồn tại hoặc đã bị xóa</p>
         </div>
       </div>
     );
@@ -255,185 +187,144 @@ const CourseTest: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container max-w-screen-xl mx-auto px-4 pt-24 pb-10">
-        {selectedTest ? (
-          <div className="max-w-3xl mx-auto">
-            <Button
-              variant="outline"
-              onClick={() => setSelectedTest(null)}
-              className="mb-6"
-            >
-              ← Quay lại danh sách bài kiểm tra
+      <div className="container max-w-3xl py-8 pt-20">
+        <h1 className="text-3xl font-bold mb-2">{testData.title}</h1>
+        <p className="text-gray-500 mb-6">{testData.description}</p>
+        
+        {!testStarted ? (
+          <div className="bg-card p-6 rounded-lg shadow mb-6">
+            <h2 className="text-xl font-semibold mb-4">Thông tin bài kiểm tra</h2>
+            <ul className="space-y-2 mb-6">
+              <li className="flex items-center">
+                <span className="w-40 font-medium">Thời gian:</span>
+                <span>{testData.time_limit} phút</span>
+              </li>
+              <li className="flex items-center">
+                <span className="w-40 font-medium">Số câu hỏi:</span>
+                <span>{questions.length} câu</span>
+              </li>
+              <li className="flex items-center">
+                <span className="w-40 font-medium">Điểm đạt:</span>
+                <span>{testData.passing_score}%</span>
+              </li>
+            </ul>
+            <Button onClick={startTest} className="w-full">
+              Bắt đầu làm bài
             </Button>
-            <CourseTestForm
-              test={selectedTest}
-              courseId={courseId || ''}
-              onComplete={handleTestComplete}
-            />
           </div>
-        ) : (
-          <>
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold tracking-tight">Bài kiểm tra</h1>
-              <p className="text-muted-foreground mt-2">
-                Hoàn thành bài kiểm tra để đánh giá kiến thức của bạn
-              </p>
+        ) : testComplete ? (
+          <div className="bg-card p-6 rounded-lg shadow mb-6">
+            <h2 className="text-xl font-semibold mb-4">Kết quả bài kiểm tra</h2>
+            <div className="mb-6">
+              <div className="flex items-center justify-center">
+                <div className={`text-4xl font-bold ${score >= (testData.passing_score || 80) ? 'text-green-600' : 'text-red-600'}`}>
+                  {score}%
+                </div>
+              </div>
+              <div className="text-center mt-2">
+                {score >= (testData.passing_score || 80) ? (
+                  <p className="text-green-600 font-medium">Chúc mừng! Bạn đã vượt qua bài kiểm tra.</p>
+                ) : (
+                  <p className="text-red-600 font-medium">Bạn chưa vượt qua bài kiểm tra. Hãy thử lại sau!</p>
+                )}
+              </div>
             </div>
-
-            {!user && (
-              <Alert className="mb-6">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Bạn cần đăng nhập để tham gia và lưu kết quả bài kiểm tra
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {user && previousResults.length > 0 && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">
-                  Kết quả bài kiểm tra trước đây
-                </h2>
-                <div className="bg-muted/30 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {previousResults.slice(0, 3).map((result) => (
-                      <div
-                        key={result.id}
-                        className="bg-background p-4 rounded-md border"
+            <div className="space-y-6">
+              {questions.map((question, index) => (
+                <div key={String(question.id)} className="border rounded-lg p-4">
+                  <h3 className="font-medium mb-2">
+                    <span className="font-bold">Câu {index + 1}:</span> {question.question}
+                  </h3>
+                  <div className="space-y-2 ml-6">
+                    {question.options.map((option, optIndex) => (
+                      <div 
+                        key={optIndex}
+                        className={`p-2 rounded ${
+                          optIndex === question.correct_answer
+                            ? 'bg-green-100 border border-green-300'
+                            : selectedAnswers[String(question.id)] === optIndex && optIndex !== question.correct_answer
+                            ? 'bg-red-100 border border-red-300'
+                            : 'bg-gray-50 border'
+                        }`}
                       >
-                        <p className="font-medium">
-                          {tests.find((t) => t.id === result.course_test_id)
-                            ?.title || 'Bài kiểm tra'}
-                        </p>
-                        <div className="flex justify-between mt-2 text-sm">
-                          <span>Điểm số:</span>
-                          <span
-                            className={
-                              result.score >= 70
-                                ? 'text-green-500'
-                                : 'text-red-500'
-                            }
-                          >
-                            {result.score}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between mt-1 text-sm">
-                          <span>Trạng thái:</span>
-                          <span
-                            className={
-                              result.passed
-                                ? 'text-green-500'
-                                : 'text-red-500'
-                            }
-                          >
-                            {result.passed ? 'Đạt' : 'Chưa đạt'}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-2">
-                          {result.created_at
-                            ? new Date(result.created_at).toLocaleDateString(
-                                'vi-VN'
-                              )
-                            : ''}
-                        </div>
+                        {option}
+                        {optIndex === question.correct_answer && (
+                          <span className="ml-2 text-green-600 font-medium">(Đáp án đúng)</span>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
+              ))}
+            </div>
+            <Button onClick={() => navigate(`/course/${testData.course_id}`)} className="w-full mt-6">
+              Quay lại khóa học
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="sticky top-0 bg-background z-10 p-4 border rounded-lg mb-6 flex justify-between items-center">
+              <div className="flex items-center">
+                <span className="font-medium mr-2">Thời gian còn lại:</span>
+                <span className={`font-bold ${timeLeft < 60 ? 'text-red-600' : 'text-primary'}`}>
+                  {formatTime(timeLeft)}
+                </span>
               </div>
-            )}
-
-            {tests.length === 0 ? (
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-lg font-medium">Chưa có bài kiểm tra nào</p>
-                  <p className="text-muted-foreground mt-1">
-                    Khóa học này chưa có bài kiểm tra tổng quát.
-                  </p>
-                  <Button
-                    className="mt-4"
-                    onClick={() => navigate(`/course/${courseId}`)}
-                  >
-                    Quay lại khóa học
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tests.map((test) => {
-                  const testResults = previousResults.filter(
-                    (r) => r.course_test_id === test.id
-                  );
-                  const bestResult =
-                    testResults.length > 0
-                      ? testResults.reduce((prev, current) =>
-                          prev.score > current.score ? prev : current
-                        )
-                      : null;
-
-                  return (
-                    <Card
-                      key={test.id}
-                      className="hover:shadow-md transition-shadow"
-                    >
-                      <CardHeader>
-                        <CardTitle>{test.title}</CardTitle>
-                        <CardDescription className="line-clamp-2">
-                          {test.description ||
-                            'Đánh giá kiến thức của bạn về chủ đề này'}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center">
-                            <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span>{test.questions?.length || 0} câu hỏi</span>
-                          </div>
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span>{test.time_limit} phút</span>
-                          </div>
-                          <div className="flex items-center">
-                            <Book className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span>Điểm đạt: {test.passing_score}%</span>
-                          </div>
-
-                          {bestResult && (
-                            <div
-                              className={`px-3 py-1 mt-2 text-xs rounded-full ${
-                                bestResult.passed
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                  : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                              }`}
-                            >
-                              {bestResult.passed
-                                ? `Đã hoàn thành với ${bestResult.score}%`
-                                : `Chưa đạt - ${bestResult.score}%`}
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                      <Separator />
-                      <CardFooter className="pt-4">
-                        <Button
-                          className="w-full"
-                          onClick={() => handleTestSelect(test)}
-                        >
-                          {bestResult?.passed
-                            ? 'Làm lại bài kiểm tra'
-                            : 'Bắt đầu làm bài'}
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="mt-10">
-              <Button variant="outline" onClick={() => navigate(`/course/${courseId}`)}>
-                Quay lại khóa học
+              <Button 
+                onClick={handleSubmitTest} 
+                disabled={submitting} 
+                variant="default"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Đang nộp...
+                  </>
+                ) : (
+                  'Nộp bài'
+                )}
+              </Button>
+            </div>
+            
+            <div className="space-y-8 mb-8">
+              {questions.map((question, index) => (
+                <div key={String(question.id)} className="border rounded-lg p-6">
+                  <h3 className="font-medium mb-4">
+                    <span className="font-bold">Câu {index + 1}:</span> {question.question}
+                  </h3>
+                  <div className="space-y-2 ml-6">
+                    {question.options.map((option, optIndex) => (
+                      <div 
+                        key={optIndex}
+                        className={`p-3 rounded border ${
+                          selectedAnswers[String(question.id)] === optIndex
+                            ? 'bg-primary/10 border-primary'
+                            : 'bg-card hover:bg-muted/50 cursor-pointer'
+                        }`}
+                        onClick={() => handleAnswerSelect(question.id, optIndex)}
+                      >
+                        {option}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex justify-end">
+              <Button 
+                onClick={handleSubmitTest} 
+                disabled={submitting} 
+                size="lg"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Đang nộp...
+                  </>
+                ) : (
+                  'Nộp bài'
+                )}
               </Button>
             </div>
           </>
@@ -443,4 +334,4 @@ const CourseTest: React.FC = () => {
   );
 };
 
-export default CourseTest;
+export default CourseTestPage;

@@ -1,29 +1,25 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { BadgeCheck, Clock, Award, Crown } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Link } from "react-router-dom";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Calendar, Clock } from "lucide-react";
 
-interface CourseCardProps {
+export interface CourseCardProps {
   id: string;
   title: string;
   description: string;
   image: string;
-  isPremium?: boolean;
-  isEnrolled?: boolean;
-  progress?: number;
-  instructor?: string;
-  duration?: string;
   level?: string;
+  duration?: string;
   category?: string;
-  colorOverride?: string;
-  color?: string;
-  price?: string | number;
-  discountPrice?: string | number;
-  small?: boolean;
-  vipUnlocked?: boolean;
+  isPremium?: boolean;
+  price?: string;
+  discountPrice?: string;
+  progress?: number;
+  lastAccessed?: string;
+  enrolledAt?: string;
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({
@@ -31,147 +27,115 @@ const CourseCard: React.FC<CourseCardProps> = ({
   title,
   description,
   image,
-  isPremium = false,
-  isEnrolled = false,
-  progress = 0,
-  instructor,
-  duration,
   level,
+  duration,
   category,
-  colorOverride,
-  color = 'blue',
+  isPremium,
   price,
   discountPrice,
-  small = false,
-  vipUnlocked = false
+  progress,
+  lastAccessed,
+  enrolledAt,
 }) => {
-  const bgColorClass = colorOverride || {
-    'blue': 'bg-blue-500',
-    'green': 'bg-green-500',
-    'red': 'bg-red-500',
-    'purple': 'bg-purple-500',
-    'yellow': 'bg-yellow-500',
-    'indigo': 'bg-indigo-500',
-    'gray': 'bg-gray-500',
-  }[color];
-
-  const displayPrice = discountPrice || price;
-  const hasDiscount = discountPrice && price && discountPrice !== price;
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('vi-VN', {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+      }).format(date);
+    } catch (e) {
+      return dateString;
+    }
+  };
 
   return (
-    <Card className="group overflow-hidden flex flex-col h-full shadow hover:shadow-md transition-all duration-200">
-      <Link to={`/course/${id}`} className="block relative">
-        <div className="overflow-hidden w-full aspect-video">
-          <img 
-            src={image} 
+    <Card className="overflow-hidden transition-all duration-300 hover:shadow-lg h-full flex flex-col">
+      <Link to={`/course/${id}`} className="block">
+        <div className="relative aspect-video overflow-hidden">
+          <img
+            src={image || '/placeholder.svg'}
             alt={title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
           />
-        </div>
-        <div className={`absolute top-0 left-0 w-1.5 h-full ${bgColorClass}`}></div>
-        
-        {/* Category Badge */}
-        {category && (
-          <div className="absolute top-2 right-2">
-            <Badge className={`${bgColorClass} hover:${bgColorClass}`}>
-              {category}
+          {isPremium && (
+            <Badge variant="default" className="absolute top-2 right-2 bg-amber-500 hover:bg-amber-600">
+              VIP
             </Badge>
-          </div>
-        )}
-        
-        {/* Progress overlay for enrolled courses */}
-        {isEnrolled && progress > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
-            <div 
-              className="h-full bg-green-500" 
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-        )}
+          )}
+        </div>
       </Link>
       
-      <CardContent className={`flex-grow ${small ? 'p-3' : 'p-4'}`}>
-        <div className="mb-2 flex items-center gap-1">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between mb-2">
+          {category && (
+            <Badge variant="outline" className="text-xs">
+              {category}
+            </Badge>
+          )}
           {level && (
-            <Badge variant="outline" className="font-normal text-xs">
+            <Badge variant="secondary" className="text-xs">
               {level}
             </Badge>
           )}
-          
-          {duration && (
-            <Badge variant="outline" className="font-normal text-xs flex items-center gap-1 ml-1">
-              <Clock className="h-3 w-3" /> {duration}
-            </Badge>
-          )}
-          
-          {/* VIP Badge */}
-          {isPremium && !vipUnlocked && (
-            <Badge className="bg-yellow-500 hover:bg-yellow-600 ml-auto flex items-center gap-1">
-              <Crown className="h-3 w-3" /> VIP
-            </Badge>
-          )}
-          
-          {/* VIP Unlocked Badge */}
-          {vipUnlocked && (
-            <Badge className="bg-green-500 hover:bg-green-600 ml-auto flex items-center gap-1">
-              <Crown className="h-3 w-3" /> Đã mở khóa
-            </Badge>
-          )}
-          
-          {isEnrolled && progress >= 100 && (
-            <Badge className="bg-green-500 hover:bg-green-600 ml-auto flex items-center gap-1">
-              <BadgeCheck className="h-3 w-3" /> Hoàn thành
-            </Badge>
-          )}
         </div>
-        
-        <Link to={`/course/${id}`}>
-          <h3 className={`font-semibold text-gray-900 dark:text-gray-100 group-hover:text-primary dark:group-hover:text-primary-foreground transition-colors ${small ? 'text-base' : 'text-lg'} mb-1`}>
+        <Link to={`/course/${id}`} className="block">
+          <h3 className="font-bold text-lg line-clamp-2 hover:text-primary transition-colors">
             {title}
           </h3>
         </Link>
-        
-        <p className={`text-gray-500 dark:text-gray-400 ${small ? 'text-xs' : 'text-sm'} line-clamp-2`}>
+      </CardHeader>
+      
+      <CardContent className="flex-grow">
+        <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
           {description}
         </p>
         
-        {instructor && !small && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            Giảng viên: {instructor}
-          </p>
+        {duration && (
+          <div className="flex items-center text-xs text-muted-foreground mb-2">
+            <Clock className="w-3.5 h-3.5 mr-1" />
+            <span>{duration}</span>
+          </div>
+        )}
+        
+        {lastAccessed && (
+          <div className="flex items-center text-xs text-muted-foreground">
+            <Calendar className="w-3.5 h-3.5 mr-1" />
+            <span>Truy cập lần cuối: {formatDate(lastAccessed)}</span>
+          </div>
+        )}
+        
+        {progress !== undefined && (
+          <div className="mt-4">
+            <div className="flex justify-between text-xs mb-1">
+              <span>Tiến độ</span>
+              <span>{progress}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
         )}
       </CardContent>
       
-      <CardFooter className={`pt-0 ${small ? 'px-3 pb-3' : 'px-4 pb-4'}`}>
-        {(isPremium && !vipUnlocked && !isEnrolled) ? (
-          <div className="w-full flex items-center justify-between">
-            <div>
-              {hasDiscount && (
-                <span className="text-xs line-through text-gray-400 mr-1">
-                  {typeof price === 'number' ? `${price.toLocaleString('vi-VN')}₫` : price}
-                </span>
-              )}
-              <span className={`${hasDiscount ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'} font-bold`}>
-                {typeof displayPrice === 'number' ? `${displayPrice.toLocaleString('vi-VN')}₫` : displayPrice}
-              </span>
-            </div>
-            <Link to={`/course/${id}`}>
-              <Button size="sm" variant="secondary">Xem thêm</Button>
-            </Link>
+      <CardFooter className="pt-2 flex items-center justify-between">
+        {isPremium ? (
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{discountPrice || price}</span>
+            {discountPrice && (
+              <span className="text-xs text-muted-foreground line-through">{price}</span>
+            )}
           </div>
-        ) : isEnrolled ? (
-          <Link to={`/course/${id}`} className="w-full">
-            <Button size="sm" className="w-full">
-              {progress > 0 && progress < 100 ? 'Tiếp tục học' : 'Vào học'}
-            </Button>
-          </Link>
         ) : (
-          <Link to={`/course/${id}`} className="w-full">
-            <Button size="sm" variant="secondary" className="w-full">
-              {vipUnlocked ? 'Bắt đầu học' : 'Xem thêm'}
-            </Button>
-          </Link>
+          <span className="text-sm font-medium">Miễn phí</span>
         )}
+        
+        <Link
+          to={`/course/${id}`}
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          {progress !== undefined ? "Tiếp tục" : "Chi tiết"}
+        </Link>
       </CardFooter>
     </Card>
   );

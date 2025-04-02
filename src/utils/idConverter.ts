@@ -80,15 +80,14 @@ export const convertObjectIds = <T extends Record<string, any>>(
 ): T => {
   if (!object) return object;
   
-  const result = { ...object };
+  const result = { ...object } as Record<string, any>;
   
   for (const field of idFields) {
     if (field in result) {
-      // Fix the generic type indexing issue by using safer access
       const value = result[field];
       result[field] = toNumberId(value);
     }
   }
   
-  return result;
+  return result as T;
 };

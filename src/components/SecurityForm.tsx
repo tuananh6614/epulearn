@@ -1,344 +1,169 @@
-
 import React, { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { Lock, Eye, EyeOff, Loader2, CheckCircle2, AlertTriangle, AlertCircle, Mail } from 'lucide-react';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
-// Schema for password change
-const passwordFormSchema = z.object({
-  currentPassword: z.string().min(1, { message: "Vui lòng nhập mật khẩu hiện tại" }),
-  newPassword: z.string().min(6, { message: "Mật khẩu mới phải có ít nhất 6 ký tự" })
-    .regex(/[A-Z]/, { message: "Mật khẩu phải chứa ít nhất một chữ hoa" })
-    .regex(/[0-9]/, { message: "Mật khẩu phải chứa ít nhất một chữ số" }),
-  confirmPassword: z.string().min(1, { message: "Vui lòng xác nhận mật khẩu mới" }),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Mật khẩu xác nhận không khớp",
-  path: ["confirmPassword"],
-});
+export function SecurityForm() {
+  const { currentUser, updateUserProfile } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
-type PasswordFormValues = z.infer<typeof passwordFormSchema>;
-
-const SecurityForm: React.FC = () => {
-  const { currentUser, changePassword, logout, resendVerificationEmail } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [checkingPassword, setCheckingPassword] = useState(false);
-  const [passwordChecked, setPasswordChecked] = useState(false);
-  const [isCurrentPasswordValid, setIsCurrentPasswordValid] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<'none' | 'syncing' | 'synced' | 'error'>('none');
-  const [isResendingEmail, setIsResendingEmail] = useState(false);
-  const navigate = useNavigate();
-  
-  // Check if email is unverified
-  const isEmailUnverified = currentUser?.email_confirmed_at === undefined || currentUser?.email_confirmed_at === null;
-  
-  const form = useForm<PasswordFormValues>({
-    resolver: zodResolver(passwordFormSchema),
-    defaultValues: {
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    },
-  });
-  
-  // Handle resend verification email
-  const handleResendEmail = async () => {
-    if (isResendingEmail) return;
+  const validatePassword = () => {
+    setPasswordError("");
     
-    setIsResendingEmail(true);
-    try {
-      await resendVerificationEmail();
-    } finally {
-      setIsResendingEmail(false);
+    if (newPassword.length < 8) {
+      setPasswordError("Mật khẩu phải có ít nhất 8 ký tự");
+      return false;
     }
-  };
-  
-  // Check current password directly with Supabase
-  const checkCurrentPassword = async () => {
-    const currentPassword = form.getValues("currentPassword");
     
-    if (!currentPassword) {
-      toast.error("Vui lòng nhập mật khẩu hiện tại");
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Mật khẩu mới và xác nhận không khớp");
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validatePassword()) {
       return;
     }
     
-    setCheckingPassword(true);
+    setIsLoading(true);
     
     try {
-      // Perform a sign-in with current credentials to verify password
-      // This is a workaround since Supabase doesn't have a direct "verify password" endpoint
-      const { error } = await supabase.auth.signInWithPassword({
+      // First authenticate with current password
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email: currentUser?.email || '',
-        password: currentPassword
+        password: currentPassword,
       });
       
-      if (error) {
-        throw new Error("Mật khẩu không chính xác");
+      if (authError) {
+        toast.error("Mật khẩu hiện tại không chính xác");
+        setIsLoading(false);
+        return;
       }
       
-      setIsCurrentPasswordValid(true);
-      setPasswordChecked(true);
-      toast.success("Mật khẩu chính xác");
+      // Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (updateError) {
+        toast.error("Không thể cập nhật mật khẩu");
+        console.error("Password update error:", updateError);
+      } else {
+        toast.success("Mật khẩu đã được cập nhật thành công");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
     } catch (error) {
-      console.error('Error checking password:', error);
-      setIsCurrentPasswordValid(false);
-      setPasswordChecked(true);
-      toast.error((error as Error).message || "Mật khẩu không chính xác");
+      console.error("Password update error:", error);
+      toast.error("Đã xảy ra lỗi khi cập nhật mật khẩu");
     } finally {
-      setCheckingPassword(false);
+      setIsLoading(false);
     }
   };
-  
-  // Handle password change
-  const onSubmit = async (values: PasswordFormValues) => {
-    if (!passwordChecked || !isCurrentPasswordValid) {
-      toast.error("Vui lòng kiểm tra mật khẩu hiện tại trước");
-      return;
-    }
-    
-    if (isEmailUnverified) {
-      toast.error("Bạn cần xác thực email trước khi thay đổi mật khẩu");
-      return;
-    }
-    
-    setLoading(true);
-    setSyncStatus('syncing');
+
+  const handleDeleteAccount = async () => {
+    setIsLoading(true);
     
     try {
-      const success = await changePassword(values.currentPassword, values.newPassword);
+      // Corrected function call - removed the parameter
+      const success = await updateUserProfile();
       
       if (success) {
-        setSyncStatus('synced');
-        toast.success("Mật khẩu đã được cập nhật thành công. Vui lòng đăng nhập lại.");
-        
-        // Clear form
-        form.reset();
-        setPasswordChecked(false);
-        setIsCurrentPasswordValid(false);
-        
-        // Logout and redirect to login page after a short delay
-        setTimeout(() => {
-          logout();
-          navigate('/login');
-        }, 2000);
+        toast.success("Tài khoản đã được yêu cầu xóa");
       } else {
-        setSyncStatus('error');
-        throw new Error("Cập nhật mật khẩu thất bại");
+        toast.error("Không thể xóa tài khoản");
       }
     } catch (error) {
-      console.error("Error changing password:", error);
-      toast.error((error as Error).message || "Lỗi thay đổi mật khẩu");
-      setSyncStatus('error');
+      console.error("Delete account error:", error);
+      toast.error("Đã xảy ra lỗi khi xóa tài khoản");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
-  
+
   return (
-    <>
-      <h2 className="text-xl font-semibold mb-6 flex items-center">
-        <Lock className="h-5 w-5 mr-2 text-blue-500" />
-        Thay đổi mật khẩu
-      </h2>
-      
-      {isEmailUnverified && (
-        <Alert variant="warning" className="mb-6 bg-amber-50 border-amber-300">
-          <AlertCircle className="h-5 w-5 text-amber-600" />
-          <AlertTitle className="text-amber-800 font-medium">Email chưa xác thực</AlertTitle>
-          <AlertDescription className="text-amber-700">
-            <div className="flex flex-col space-y-2">
-              <p>Bạn cần xác thực email trước khi có thể thay đổi mật khẩu. Vui lòng kiểm tra hộp thư và nhấp vào liên kết xác thực.</p>
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-amber-600" />
-                <span className="font-medium">{currentUser?.email}</span>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-fit mt-2 text-amber-700 border-amber-300 hover:bg-amber-100" 
-                onClick={handleResendEmail}
-                disabled={isResendingEmail}
-              >
-                {isResendingEmail ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    Đang gửi...
-                  </>
-                ) : "Gửi lại email xác thực"}
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-      
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="space-y-1">
-            <FormField
-              control={form.control}
-              name="currentPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Mật khẩu hiện tại</FormLabel>
-                  <div className="relative">
-                    <FormControl>
-                      <Input 
-                        type={showCurrentPassword ? "text" : "password"} 
-                        placeholder="••••••" 
-                        {...field} 
-                        disabled={passwordChecked && isCurrentPasswordValid || checkingPassword}
-                        className={passwordChecked ? (isCurrentPasswordValid ? "border-green-500" : "border-red-500") : ""}
-                      />
-                    </FormControl>
-                    <button 
-                      type="button" 
-                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2"
-                    >
-                      {showCurrentPassword ? 
-                        <EyeOff className="h-4 w-4 text-gray-500" /> : 
-                        <Eye className="h-4 w-4 text-gray-500" />}
-                    </button>
-                  </div>
-                  <FormMessage />
-                  <div className="flex justify-end mt-1">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={checkCurrentPassword}
-                      disabled={checkingPassword || (passwordChecked && isCurrentPasswordValid) || isEmailUnverified}
-                    >
-                      {checkingPassword ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          Đang kiểm tra...
-                        </>
-                      ) : passwordChecked && isCurrentPasswordValid ? (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 mr-1 text-green-500" />
-                          Đã xác nhận
-                        </>
-                      ) : "Kiểm tra mật khẩu"}
-                    </Button>
-                  </div>
-                </FormItem>
-              )}
+    <Card>
+      <CardHeader>
+        <CardTitle>Bảo mật</CardTitle>
+        <CardDescription>
+          Quản lý mật khẩu và bảo mật tài khoản của bạn
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <form onSubmit={handlePasswordChange} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="current-password">Mật khẩu hiện tại</Label>
+            <Input 
+              id="current-password" 
+              type="password" 
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
             />
           </div>
           
-          <FormField
-            control={form.control}
-            name="newPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Mật khẩu mới</FormLabel>
-                <div className="relative">
-                  <FormControl>
-                    <Input 
-                      type={showNewPassword ? "text" : "password"} 
-                      placeholder="••••••" 
-                      {...field} 
-                      disabled={!passwordChecked || !isCurrentPasswordValid || loading || isEmailUnverified}
-                    />
-                  </FormControl>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                  >
-                    {showNewPassword ? 
-                      <EyeOff className="h-4 w-4 text-gray-500" /> : 
-                      <Eye className="h-4 w-4 text-gray-500" />}
-                  </button>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="space-y-2">
+            <Label htmlFor="new-password">Mật khẩu mới</Label>
+            <Input 
+              id="new-password" 
+              type="password" 
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+            />
+          </div>
           
-          <FormField
-            control={form.control}
-            name="confirmPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Xác nhận mật khẩu</FormLabel>
-                <div className="relative">
-                  <FormControl>
-                    <Input 
-                      type={showConfirmPassword ? "text" : "password"} 
-                      placeholder="••••••" 
-                      {...field} 
-                      disabled={!passwordChecked || !isCurrentPasswordValid || loading || isEmailUnverified}
-                    />
-                  </FormControl>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                  >
-                    {showConfirmPassword ? 
-                      <EyeOff className="h-4 w-4 text-gray-500" /> : 
-                      <Eye className="h-4 w-4 text-gray-500" />}
-                  </button>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <Button 
-              type="submit" 
-              disabled={loading || !passwordChecked || !isCurrentPasswordValid || isEmailUnverified}
-              className="w-full sm:w-auto"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  Đang cập nhật...
-                </>
-              ) : "Thay đổi mật khẩu"}
-            </Button>
-            
-            {syncStatus !== 'none' && (
-              <div className="flex items-center text-sm">
-                {syncStatus === 'syncing' && (
-                  <span className="flex items-center text-blue-600">
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    Đang cập nhật mật khẩu...
-                  </span>
-                )}
-                {syncStatus === 'synced' && (
-                  <span className="flex items-center text-green-600">
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Đã cập nhật mật khẩu
-                  </span>
-                )}
-                {syncStatus === 'error' && (
-                  <span className="flex items-center text-red-600">
-                    <AlertTriangle className="h-4 w-4 mr-1" />
-                    Lỗi cập nhật mật khẩu
-                  </span>
-                )}
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Xác nhận mật khẩu mới</Label>
+            <Input 
+              id="confirm-password" 
+              type="password" 
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+            {passwordError && (
+              <p className="text-sm text-red-500 mt-1">{passwordError}</p>
             )}
           </div>
+          
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+          </Button>
         </form>
-      </Form>
-    </>
+        
+        <div className="border-t pt-6">
+          <div className="space-y-2">
+            <h3 className="text-lg font-medium">Xóa tài khoản</h3>
+            <p className="text-sm text-muted-foreground">
+              Khi bạn xóa tài khoản, tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn.
+              Hành động này không thể hoàn tác.
+            </p>
+          </div>
+          <Button 
+            variant="destructive" 
+            className="mt-4" 
+            onClick={handleDeleteAccount}
+            disabled={isLoading}
+          >
+            {isLoading ? "Đang xử lý..." : "Xóa tài khoản"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
-};
-
-export default SecurityForm;
+}

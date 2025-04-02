@@ -66,6 +66,13 @@ export const supabase = {
             }),
             limit: (limit: number) => createMockPromiseResult([]),
             eq: (field2: string, value2: any) => returnObj.eq(field2, value2),
+            match: (conditions: any) => ({
+              limit: (limit: number) => createMockPromiseResult([]),
+              data: [],
+              error: null
+            }),
+            select: (columns: string) => createMockPromiseResult(),
+            count: (column: string, options: any) => createMockPromiseResult({ count: 0 }),
             data: [],
             error: null
           };
@@ -111,6 +118,7 @@ export const supabase = {
         },
         single: () => createMockPromiseResult(),
         maybeSingle: () => createMockPromiseResult(),
+        count: (column: string, options: any) => createMockPromiseResult({ count: 0 }),
         data: [],
         error: null
       };
@@ -119,45 +127,67 @@ export const supabase = {
     },
     insert: (data: any) => {
       console.log(`[MOCK] insert into ${table}`, data);
-      const returnObj = {
+      return {
         select: (...selectArgs: any[]) => createMockPromiseResult({}),
-        eq: (field: string, value: any) => returnObj,
+        eq: (field: string, value: any) => ({
+          select: (...selectArgs: any[]) => createMockPromiseResult({}),
+          error: null
+        }),
+        error: null
       };
-      return returnObj;
     },
     update: (data: any) => {
       console.log(`[MOCK] update ${table}`, data);
-      const returnObj = {
+      return {
         eq: (field: string, value: any) => {
           console.log(`[MOCK] eq ${field}=${value}`);
-          return returnObj;
+          return {
+            match: (conditions: any) => ({
+              error: null,
+              select: (...args: any[]) => createMockPromiseResult({})
+            }),
+            select: (...args: any[]) => createMockPromiseResult({}),
+            error: null
+          };
         },
-        match: (conditions: any) => returnObj,
-        select: (...args: any[]) => createMockPromiseResult({})
+        match: (conditions: any) => ({
+          error: null,
+          select: (...args: any[]) => createMockPromiseResult({})
+        }),
+        select: (...args: any[]) => createMockPromiseResult({}),
+        error: null
       };
-      return returnObj;
     },
     upsert: (data: any) => {
       console.log(`[MOCK] upsert ${table}`, data);
-      const returnObj = {
+      return {
         eq: (field: string, value: any) => {
           console.log(`[MOCK] eq ${field}=${value}`);
-          return returnObj;
+          return {
+            select: (...args: any[]) => createMockPromiseResult({}),
+            error: null
+          };
         },
-        select: (...args: any[]) => createMockPromiseResult({})
+        select: (...args: any[]) => createMockPromiseResult({}),
+        error: null
       };
-      return returnObj;
     },
     delete: () => {
       console.log(`[MOCK] delete from ${table}`);
-      const returnObj = {
+      return {
         eq: (field: string, value: any) => {
           console.log(`[MOCK] eq ${field}=${value}`);
-          return returnObj;
+          return {
+            match: (conditions: any) => ({
+              error: null
+            }),
+            error: null
+          };
         },
-        match: (conditions: any) => returnObj
+        match: (conditions: any) => ({
+          error: null
+        })
       };
-      return returnObj;
     }
   }),
   storage: supabaseStorage,

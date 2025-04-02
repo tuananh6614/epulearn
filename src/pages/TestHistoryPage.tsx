@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -68,15 +67,7 @@ const TestHistoryPage: React.FC = () => {
         // Construct query based on whether courseId is provided
         let query = supabase
           .from('user_test_results')
-          .select(`
-            id,
-            user_id,
-            course_id,
-            chapter_id,
-            score,
-            passed,
-            created_at
-          `)
+          .select('id, user_id, course_id, chapter_id, score, passed, created_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
           

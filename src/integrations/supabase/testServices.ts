@@ -86,12 +86,12 @@ export const fetchTestHistory = async (userId: string, courseId?: string | numbe
 };
 
 // Added missing functions referenced in the error messages
-export const fetchTestQuestions = async (chapterId: string | number): Promise<any[]> => {
+export const fetchTestQuestions = async (chapterId: string | number): Promise<TestQuestion[]> => {
   console.log(`[MOCK] Fetching test questions for chapter ID: ${chapterId}`);
   return mockTestQuestions;
 };
 
-export const fetchCourseTests = async (courseId: string | number): Promise<any> => {
+export const fetchCourseTests = async (courseId: string | number): Promise<{ success: boolean; test: CourseTest; tests: CourseTest[] }> => {
   console.log(`[MOCK] Fetching all tests for course ID: ${courseId}`);
   return {
     success: true,

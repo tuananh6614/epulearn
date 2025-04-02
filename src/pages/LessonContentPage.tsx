@@ -219,12 +219,9 @@ const LessonContentPage = () => {
     try {
       await saveLessonProgress(
         user.id,
-        courseId,
-        lessonId,
-        chapterId,
-        { scrollPosition: window.scrollY },
-        true,
-        pages[currentPageIndex]?.id
+        courseId!,
+        chapterId!,
+        lessonId!
       );
       
       setLessonProgress({ ...lessonProgress, completed: true });

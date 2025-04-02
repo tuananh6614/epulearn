@@ -1,143 +1,115 @@
-import React, { useState, useEffect } from 'react';
+
+import React from 'react';
 import { Button } from "@/components/ui/button";
-import { ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import CourseCard from './CourseCard';
 import { Link } from "react-router-dom";
-import { toast } from 'sonner';
-import { fetchFeaturedCourses } from '@/integrations/supabase/apiUtils';
 import { Course } from '@/models/lesson';
-import { supabase } from '@/integrations/supabase/client';
-import { supabaseId } from '@/utils/idConverter';
+
+// Function to generate a random color
+const getRandomColor = () => {
+  const colors = ['#4F46E5', '#10B981', '#3B82F6', '#D946EF', '#F59E0B'];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
+// Mock featured courses data
+const mockFeaturedCourses: Course[] = [
+  {
+    id: '1',
+    title: 'Introduction to Web Development',
+    description: 'Learn the basics of web development with HTML, CSS and JavaScript',
+    thumbnail_url: '/placeholder.jpg',
+    image: '/placeholder.jpg',
+    category: 'Development',
+    duration: '24 hours',
+    level: 'Beginner',
+    is_premium: false,
+    isPremium: false,
+    is_featured: true,
+    isFeatured: true,
+    instructor: 'John Doe',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'published',
+    price: '',
+    discount_price: '',
+    discountPrice: '',
+    color: getRandomColor(),
+    chapters: []
+  },
+  {
+    id: '2',
+    title: 'Advanced React Development',
+    description: 'Master advanced React concepts including hooks, context API and Redux',
+    thumbnail_url: '/placeholder.jpg',
+    image: '/placeholder.jpg',
+    category: 'Development',
+    duration: '32 hours',
+    level: 'Advanced',
+    is_premium: true,
+    isPremium: true,
+    is_featured: true,
+    isFeatured: true,
+    instructor: 'Jane Smith',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'published',
+    price: '99.99',
+    discount_price: '79.99',
+    discountPrice: '79.99',
+    color: getRandomColor(),
+    chapters: []
+  },
+  {
+    id: '3',
+    title: 'UI/UX Design Fundamentals',
+    description: 'Learn the principles of effective UI/UX design',
+    thumbnail_url: '/placeholder.jpg',
+    image: '/placeholder.jpg',
+    category: 'Design',
+    duration: '18 hours',
+    level: 'Intermediate',
+    is_premium: false,
+    isPremium: false,
+    is_featured: true,
+    isFeatured: true,
+    instructor: 'Alex Johnson',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'published',
+    price: '',
+    discount_price: '',
+    discountPrice: '',
+    color: getRandomColor(),
+    chapters: []
+  },
+  {
+    id: '4',
+    title: 'Digital Marketing Essentials',
+    description: 'Learn the fundamentals of digital marketing strategies',
+    thumbnail_url: '/placeholder.jpg',
+    image: '/placeholder.jpg',
+    category: 'Marketing',
+    duration: '15 hours',
+    level: 'Beginner',
+    is_premium: true,
+    isPremium: true,
+    is_featured: true,
+    isFeatured: true,
+    instructor: 'Sarah Williams',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'published',
+    price: '59.99',
+    discount_price: '49.99',
+    discountPrice: '49.99',
+    color: getRandomColor(),
+    chapters: []
+  },
+];
 
 const FeaturedCourses = () => {
-  const [featuredCourses, setFeaturedCourses] = useState<Course[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [retry, setRetry] = useState(0); // Thêm state để thử lại
-
-  const loadFeaturedCourses = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      console.log('Đang tải khóa học nổi bật...');
-      
-      // Kiểm tra kết nối với Supabase trước
-      const { error: healthCheckError } = await supabase
-        .from('courses')
-        .select('count', { count: 'exact', head: true })
-        .limit(1);
-      
-      if (healthCheckError) {
-        console.error('Lỗi kết nối Supabase:', healthCheckError);
-        throw new Error('Không thể kết nối đến máy chủ dữ liệu. Vui lòng thử lại sau.');
-      }
-      
-      // Truy vấn dữ liệu khóa học - giới hạn chỉ lấy 4 khóa học
-      const { data: coursesData, error: coursesError } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('is_featured', true)
-        .limit(4)
-        .order('created_at', { ascending: false });
-      
-      if (coursesError) {
-        throw coursesError;
-      }
-      
-      console.log('Dữ liệu khóa học nổi bật:', coursesData);
-      
-      if (!coursesData || coursesData.length === 0) {
-        console.warn('Không tìm thấy khóa học nổi bật');
-        setFeaturedCourses([]);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Transform data to match Course interface
-      const formattedCourses: Course[] = coursesData.map((course) => ({
-        id: course.id, 
-        title: course.title,
-        description: course.description,
-        level: course.level,
-        duration: course.duration,
-        category: course.category,
-        image: course.thumbnail_url || '/placeholder.svg',
-        isPremium: course.is_premium,
-        price: course.price?.toString() || undefined,
-        discountPrice: course.discount_price?.toString() || undefined,
-        isFeatured: course.is_featured,
-        instructor: course.instructor,
-        chapters: [],  // Chapters will be loaded separately when viewing course details
-        // Add required properties from Course type
-        is_premium: course.is_premium,
-        is_featured: course.is_featured,
-        created_at: course.created_at,
-        updated_at: course.updated_at,
-        status: 'published'
-      }));
-      
-      setFeaturedCourses(formattedCourses);
-      setError(null);
-    } catch (err) {
-      console.error('Lỗi khi tải khóa học nổi bật:', err);
-      setError((err as Error).message || 'Có lỗi xảy ra khi tải khóa học');
-      
-      toast.error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối của bạn hoặc thử lại sau.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadFeaturedCourses();
-  }, [retry]);
-
-  // Thử lại khi gặp lỗi
-  const handleRetry = () => {
-    setRetry(prev => prev + 1);
-  };
-
-  if (isLoading) {
-    return (
-      <section className="py-16 bg-gray-50 dark:bg-gray-900 relative">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-baseline mb-12">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Khóa Học</h2>
-              <p className="text-gray-700 dark:text-gray-300">Đang tải khóa học...</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((_, index) => (
-              <div key={index} className="bg-gray-200 dark:bg-gray-800 animate-pulse h-80 rounded-lg"></div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className="py-16 bg-gray-50 dark:bg-gray-900 relative">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-baseline mb-12">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Khóa Học</h2>
-              <p className="text-gray-700 dark:text-gray-300">Không thể tải khóa học. {error}</p>
-            </div>
-          </div>
-          <div className="flex justify-center items-center py-10">
-            <Button onClick={handleRetry} variant="outline" className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Thử lại
-            </Button>
-          </div>
-        </div>
-      </section>
-    );
-  }
+  const featuredCourses = mockFeaturedCourses;
 
   return (
     <section className="py-16 bg-gray-50 dark:bg-gray-900 relative">
@@ -162,8 +134,8 @@ const FeaturedCourses = () => {
           {featuredCourses.length > 0 ? (
             featuredCourses.map((course) => (
               <CourseCard 
-                key={supabaseId(course.id)} 
-                id={supabaseId(course.id)}
+                key={String(course.id)} 
+                id={String(course.id)}
                 title={course.title}
                 description={course.description}
                 level={course.level}
@@ -173,6 +145,7 @@ const FeaturedCourses = () => {
                 isPremium={course.isPremium || false}
                 price={course.price}
                 discountPrice={course.discountPrice}
+                color={course.color}
               />
             ))
           ) : (

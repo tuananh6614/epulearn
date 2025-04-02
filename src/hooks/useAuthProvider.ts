@@ -1,16 +1,22 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from 'sonner';
 import { User } from '@/types/auth';
-import { fetchUserProfile, FIXED_ACCOUNT, handleAuthStateChange } from '@/utils/authUtils';
+
+// Mock fixed account for demo purposes
+export const FIXED_ACCOUNT = {
+  id: 'fixed-user-id-123',
+  email: 'demo@example.com',
+  firstName: 'Demo',
+  lastName: 'User',
+  password: 'password123'
+};
 
 export const useAuthProvider = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [authInitialized, setAuthInitialized] = useState(false);
   const navigate = useNavigate();
 
   // Initialize from localStorage
@@ -28,49 +34,8 @@ export const useAuthProvider = () => {
     } else {
       console.log("No user found in localStorage");
     }
-  }, []);
-
-  // Check authentication and set up subscription
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        console.log("Checking auth session...");
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          console.log("Session found for user:", session.user.email);
-          const userData = await fetchUserProfile(session.user.id, session.user.email || '', session.user.email_confirmed_at);
-          if (userData) {
-            console.log("User profile loaded successfully");
-            setCurrentUser(userData);
-          } else {
-            console.log("Failed to load user profile");
-          }
-        } else {
-          console.log("No active session found");
-        }
-      } catch (error) {
-        console.error('Session check error:', error);
-      } finally {
-        setLoading(false);
-        setAuthInitialized(true);
-        console.log("Auth initialization complete");
-      }
-    };
     
-    checkAuth();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth state change event:", event);
-        await handleAuthStateChange(event, session, setCurrentUser);
-      }
-    );
-    
-    return () => {
-      console.log("Cleaning up auth subscription");
-      subscription.unsubscribe();
-    };
+    setLoading(false);
   }, []);
 
   // Update user profile
@@ -99,32 +64,10 @@ export const useAuthProvider = () => {
         userData.lastNameChanged = now.toISOString();
       }
       
-      const updateData: Record<string, any> = {};
-      
-      if (userData.firstName !== undefined) updateData.first_name = userData.firstName;
-      if (userData.lastName !== undefined) updateData.last_name = userData.lastName;
-      if (userData.avatarUrl !== undefined) updateData.avatar_url = userData.avatarUrl;
-      if (userData.bio !== undefined) updateData.bio = userData.bio;
-      if (userData.isVip !== undefined) updateData.is_vip = userData.isVip;
-      if (userData.vipExpirationDate !== undefined) updateData.vip_expiration_date = userData.vipExpirationDate;
-      
-      updateData.updated_at = new Date().toISOString();
-      
-      if (Object.keys(updateData).length > 0) {
-        const { error } = await supabase
-          .from('profiles')
-          .update(updateData)
-          .eq('id', currentUser.id);
-        
-        if (error) {
-          console.error('Error updating profile:', error);
-          toast.error("Không thể cập nhật thông tin. " + error.message);
-          setLoading(false);
-          return false;
-        }
-      }
-      
       const updatedUser = { ...currentUser, ...userData };
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       localStorage.setItem('epu_user', JSON.stringify(updatedUser));
       setCurrentUser(updatedUser);
@@ -157,21 +100,14 @@ export const useAuthProvider = () => {
         return false;
       }
       
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-      
-      if (error) {
-        console.error('Error changing password:', error);
-        toast.error(error.message || "Không thể thay đổi mật khẩu");
-        return false;
-      }
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
       
       toast.success("Mật khẩu đã được thay đổi thành công");
       return true;
     } catch (error) {
       console.error('Error changing password:', error);
-      toast.error((error as Error).message || "Không thể thay đổi mật khẩu");
+      toast.error("Không thể thay đổi mật khẩu");
       return false;
     } finally {
       setLoading(false);
@@ -188,16 +124,8 @@ export const useAuthProvider = () => {
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: currentUser.email,
-      });
-      
-      if (error) {
-        console.error('Error resending verification email:', error);
-        toast.error(error.message || "Không thể gửi lại email xác thực");
-        return false;
-      }
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast.success("Đã gửi lại email xác thực. Vui lòng kiểm tra hộp thư của bạn.", {
         duration: 6000,
@@ -205,7 +133,7 @@ export const useAuthProvider = () => {
       return true;
     } catch (error) {
       console.error('Error resending verification email:', error);
-      toast.error((error as Error).message || "Không thể gửi lại email xác thực");
+      toast.error("Không thể gửi lại email xác thực");
       return false;
     } finally {
       setLoading(false);
@@ -246,8 +174,7 @@ export const useAuthProvider = () => {
       }
       
       // Check for demo account first
-      if (FIXED_ACCOUNT.email && FIXED_ACCOUNT.password && 
-          email === FIXED_ACCOUNT.email && password === FIXED_ACCOUNT.password) {
+      if (email === FIXED_ACCOUNT.email && password === FIXED_ACCOUNT.password) {
         console.log("Using demo account login");
         const user: User = {
           id: FIXED_ACCOUNT.id,
@@ -263,40 +190,27 @@ export const useAuthProvider = () => {
         return true;
       }
       
-      console.log("Attempting Supabase login");
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Mock successful login for demo purposes
+      // In a real app, this would validate credentials against a backend
+      const mockUser: User = {
+        id: `user-${Date.now()}`,
         email,
-        password
-      });
+        firstName: 'User',
+        lastName: email.split('@')[0],
+        isEmailVerified: true
+      };
       
-      if (error) {
-        console.error('Login error from Supabase:', error);
-        toast.error(error.message || "Đăng nhập thất bại");
-        return false;
-      }
+      localStorage.setItem('epu_user', JSON.stringify(mockUser));
+      setCurrentUser(mockUser);
       
-      if (!data?.user) {
-        console.error('No user data returned from Supabase');
-        toast.error("Đăng nhập thất bại: Không có dữ liệu người dùng");
-        return false;
-      }
-      
-      console.log("Login successful, user ID:", data.user.id);
-      const userData = await fetchUserProfile(data.user.id, data.user.email || '', data.user.email_confirmed_at);
-      
-      if (userData) {
-        console.log("User profile fetched successfully");
-        setCurrentUser(userData);
-        toast.success("Đăng nhập thành công");
-        return true;
-      } else {
-        console.error('Failed to fetch user profile after login');
-        toast.error("Đăng nhập thất bại: Không thể tải thông tin người dùng");
-        return false;
-      }
+      toast.success("Đăng nhập thành công");
+      return true;
     } catch (error) {
       console.error('Login error:', error);
-      toast.error((error as Error).message || "Đăng nhập thất bại");
+      toast.error("Đăng nhập thất bại");
       return false;
     } finally {
       setLoading(false);
@@ -318,28 +232,13 @@ export const useAuthProvider = () => {
         return false;
       }
       
-      if (FIXED_ACCOUNT.email && email === FIXED_ACCOUNT.email) {
+      if (email === FIXED_ACCOUNT.email) {
         toast.error("Email này đã được sử dụng");
         return false;
       }
       
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName
-          },
-          emailRedirectTo: window.location.origin + '/login'
-        }
-      });
-      
-      if (error) {
-        console.error('Signup error:', error);
-        toast.error(error.message || "Đăng ký thất bại");
-        return false;
-      }
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.", {
         duration: 5000
@@ -352,7 +251,7 @@ export const useAuthProvider = () => {
       return true;
     } catch (error) {
       console.error('Signup error:', error);
-      toast.error((error as Error).message || "Đăng ký thất bại");
+      toast.error("Đăng ký thất bại");
       return false;
     } finally {
       setLoading(false);
@@ -369,8 +268,6 @@ export const useAuthProvider = () => {
     try {
       setCurrentUser(null);
       localStorage.removeItem('epu_user');
-      
-      supabase.auth.signOut();
       
       navigate('/login');
       toast.info("Đã đăng xuất. Hẹn gặp lại bạn!");

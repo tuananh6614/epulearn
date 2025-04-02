@@ -20,7 +20,7 @@ export interface CourseCardProps {
   progress?: number;
   lastAccessed?: string;
   enrolledAt?: string;
-  color?: string; // Added color property to interface
+  color?: string; // Added color property
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({

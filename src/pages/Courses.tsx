@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import CourseCard from '@/components/CourseCard';
 import { Input } from "@/components/ui/input"
@@ -20,7 +21,6 @@ import {
 import { Course } from '@/models/lesson';
 import { Loader2 } from "lucide-react";
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/Navbar';
 
 // Function to generate a random color
@@ -28,6 +28,102 @@ const getRandomColor = () => {
   const colors = ['#4F46E5', '#10B981', '#3B82F6', '#D946EF', '#F59E0B'];
   return colors[Math.floor(Math.random() * colors.length)];
 };
+
+// Mock courses data
+const mockCourses: Course[] = [
+  {
+    id: '1',
+    title: 'Introduction to Web Development',
+    description: 'Learn the basics of web development with HTML, CSS and JavaScript',
+    thumbnail_url: '/placeholder.jpg',
+    image: '/placeholder.jpg',
+    category: 'Development',
+    duration: '24 hours',
+    level: 'Beginner',
+    is_premium: false,
+    isPremium: false,
+    is_featured: true,
+    isFeatured: true,
+    instructor: 'John Doe',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'published',
+    price: '',
+    discount_price: '',
+    discountPrice: '',
+    color: getRandomColor(),
+    chapters: []
+  },
+  {
+    id: '2',
+    title: 'Advanced React Development',
+    description: 'Master advanced React concepts including hooks, context API and Redux',
+    thumbnail_url: '/placeholder.jpg',
+    image: '/placeholder.jpg',
+    category: 'Development',
+    duration: '32 hours',
+    level: 'Advanced',
+    is_premium: true,
+    isPremium: true,
+    is_featured: true,
+    isFeatured: true,
+    instructor: 'Jane Smith',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'published',
+    price: '99.99',
+    discount_price: '79.99',
+    discountPrice: '79.99',
+    color: getRandomColor(),
+    chapters: []
+  },
+  {
+    id: '3',
+    title: 'UI/UX Design Fundamentals',
+    description: 'Learn the principles of effective UI/UX design',
+    thumbnail_url: '/placeholder.jpg',
+    image: '/placeholder.jpg',
+    category: 'Design',
+    duration: '18 hours',
+    level: 'Intermediate',
+    is_premium: false,
+    isPremium: false,
+    is_featured: false,
+    isFeatured: false,
+    instructor: 'Alex Johnson',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'published',
+    price: '',
+    discount_price: '',
+    discountPrice: '',
+    color: getRandomColor(),
+    chapters: []
+  },
+  {
+    id: '4',
+    title: 'Digital Marketing Essentials',
+    description: 'Learn the fundamentals of digital marketing strategies',
+    thumbnail_url: '/placeholder.jpg',
+    image: '/placeholder.jpg',
+    category: 'Marketing',
+    duration: '15 hours',
+    level: 'Beginner',
+    is_premium: true,
+    isPremium: true,
+    is_featured: false,
+    isFeatured: false,
+    instructor: 'Sarah Williams',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'published',
+    price: '59.99',
+    discount_price: '49.99',
+    discountPrice: '49.99',
+    color: getRandomColor(),
+    chapters: []
+  },
+];
 
 const Courses = () => {
   const [allCourses, setAllCourses] = useState<Course[]>([]);
@@ -38,49 +134,18 @@ const Courses = () => {
   const [searchTerm, setSearchTerm] = useState("");
   
   useEffect(() => {
+    // Simulate loading from a database
     const fetchCourses = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('courses')
-          .select('*')
-          .order('created_at', { ascending: false });
-          
-        if (error) {
-          console.error('Error fetching courses:', error);
-          toast.error("Đã xảy ra lỗi khi tải dữ liệu.");
-          return;
-        }
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Transform the data to match our Course model
-        const formattedCourses: Course[] = data.map(course => ({
-          id: course.id,
-          title: course.title,
-          description: course.description,
-          thumbnail_url: course.thumbnail_url,
-          image: course.thumbnail_url || '/placeholder.jpg',
-          category: course.category,
-          duration: course.duration,
-          level: course.level,
-          is_premium: course.is_premium,
-          isPremium: course.is_premium,
-          is_featured: course.is_featured,
-          isFeatured: course.is_featured,
-          instructor: course.instructor,
-          created_at: course.created_at,
-          updated_at: course.updated_at,
-          status: 'published', // Setting default status
-          price: course.price?.toString() || '',
-          discount_price: course.discount_price?.toString() || '',
-          discountPrice: course.discount_price?.toString() || '',
-          color: getRandomColor(),
-          chapters: []
-        }));
-        
-        setAllCourses(formattedCourses);
-        setFilteredCourses(formattedCourses);
+        setAllCourses(mockCourses);
+        setFilteredCourses(mockCourses);
       } catch (err) {
         console.error("Error fetching courses:", err);
+        toast.error("Đã xảy ra lỗi khi tải dữ liệu.");
       } finally {
         setLoading(false);
       }

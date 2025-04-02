@@ -1,9 +1,8 @@
+
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { useRealtimeSubscription } from './useRealtimeSubscription';
-import { supabaseId } from '@/utils/idConverter';
+import { convertId } from '@/utils/idConverter';
 
 interface UseCourseProgressProps {
   courseId?: number | string;
@@ -66,37 +65,26 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
         }
       }
       
-      // Check if user is enrolled in the course
-      const { data, error: enrollmentError } = await supabase
-        .from('user_courses')
-        .select('progress_percentage, last_accessed')
-        .eq('user_id', user.id)
-        .eq('course_id', supabaseId(courseId))
-        .maybeSingle();
-
-      if (enrollmentError) {
-        console.error('[CourseProgress] Error checking enrollment:', enrollmentError);
-        setError(enrollmentError);
-      }
-
-      console.log('[CourseProgress] Progress data received:', data);
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      if (data) {
-        setEnrolled(true);
-        setProgress(data.progress_percentage || 0);
-        setLastAccessed(data.last_accessed);
-      } else {
-        setEnrolled(false);
-        setProgress(0);
-        setLastAccessed(null);
-      }
+      // Mock data based on course ID
+      const mockData = {
+        enrolled: courseId === '1' || courseId === '2',
+        progress: courseId === '1' ? 45 : courseId === '2' ? 20 : 0,
+        lastAccessed: courseId === '1' ? new Date().toISOString() : courseId === '2' ? new Date(Date.now() - 86400000).toISOString() : null
+      };
+
+      setEnrolled(mockData.enrolled);
+      setProgress(mockData.progress);
+      setLastAccessed(mockData.lastAccessed);
       
       // Update cache
       progressCache.set(getCacheKey(), {
         data: {
-          enrolled: !!data,
-          progress: data?.progress_percentage || 0,
-          lastAccessed: data?.last_accessed || null
+          enrolled: mockData.enrolled,
+          progress: mockData.progress,
+          lastAccessed: mockData.lastAccessed
         },
         timestamp: Date.now()
       });
@@ -115,31 +103,6 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
     fetchProgressData();
   }, [fetchProgressData]);
 
-  // Subscribe to realtime updates for this user's course progress
-  useRealtimeSubscription({
-    table: 'user_courses',
-    userId: user?.id,
-    filter: user?.id && courseId ? `user_id=eq.${user.id}&course_id=eq.${supabaseId(courseId)}` : undefined,
-    onDataChange: (payload) => {
-      console.log('[CourseProgress] Realtime update detected:', payload);
-      if (payload.new && payload.new.user_id === user?.id && payload.new.course_id === supabaseId(courseId)) {
-        setEnrolled(true);
-        setProgress(payload.new.progress_percentage || 0);
-        setLastAccessed(payload.new.last_accessed);
-        
-        // Update cache
-        progressCache.set(getCacheKey(), {
-          data: {
-            enrolled: true,
-            progress: payload.new.progress_percentage || 0,
-            lastAccessed: payload.new.last_accessed
-          },
-          timestamp: Date.now()
-        });
-      }
-    }
-  });
-
   // Function to refresh progress data
   const refreshProgress = async () => {
     await fetchProgressData(true);
@@ -154,23 +117,9 @@ export const useCourseProgress = ({ courseId }: UseCourseProgressProps): CourseP
     try {
       console.log('[CourseProgress] Enrolling in course:', courseId);
       
-      // Add user to course
-      const { error: enrollError } = await supabase
-        .from('user_courses')
-        .upsert({
-          user_id: user.id,
-          course_id: supabaseId(courseId),
-          progress_percentage: 0,
-          enrolled_at: new Date().toISOString(),
-          last_accessed: new Date().toISOString()
-        });
-
-      if (enrollError) {
-        console.error('[CourseProgress] Error enrolling in course:', enrollError);
-        toast.error('Không thể đăng ký khóa học. Vui lòng thử lại sau.');
-        return false;
-      }
-
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 700));
+      
       // Update local state
       setEnrolled(true);
       setProgress(0);

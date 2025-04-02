@@ -1,10 +1,134 @@
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Course, Lesson } from '@/models/lesson';
-import { supabaseId } from '@/utils/idConverter';
+import { Course, Lesson, Chapter } from '@/models/lesson';
 import { useAuth } from '@/context/AuthContext';
+
+// Function to generate a random color
+const getRandomColor = () => {
+  const colors = ['#4F46E5', '#10B981', '#3B82F6', '#D946EF', '#F59E0B'];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
+// Mock course data
+const mockCourseData: Course = {
+  id: '1',
+  title: 'Introduction to Web Development',
+  description: 'Learn the basics of web development with HTML, CSS and JavaScript',
+  thumbnail_url: '/placeholder.jpg',
+  image: '/placeholder.jpg',
+  category: 'Development',
+  duration: '24 hours',
+  level: 'Beginner',
+  is_premium: false,
+  isPremium: false,
+  is_featured: true,
+  isFeatured: true,
+  instructor: 'John Doe',
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  status: 'published',
+  price: '',
+  discount_price: '',
+  discountPrice: '',
+  color: getRandomColor(),
+  full_description: 'This comprehensive course covers all the fundamentals of web development, starting with HTML structure, CSS styling, and JavaScript interactivity. You\'ll build several projects throughout the course to reinforce your learning.',
+  objectives: [
+    'Understand HTML5 document structure and semantics',
+    'Create responsive layouts with CSS',
+    'Implement interactivity with JavaScript',
+    'Build a complete website from scratch'
+  ],
+  requirements: [
+    'No previous coding experience required',
+    'Basic computer skills',
+    'A computer with internet access'
+  ],
+  chapters: []
+};
+
+// Mock chapters and lessons
+const mockChapters: Chapter[] = [
+  {
+    id: '1',
+    title: 'Introduction to HTML',
+    description: 'Learn the basics of HTML markup',
+    order_index: 1,
+    course_id: '1',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    lessons: [
+      {
+        id: '1',
+        title: 'HTML Document Structure',
+        content: '<h1>HTML Document Structure</h1><p>In this lesson, we\'ll explore the basic structure of an HTML document including doctype, html, head, and body elements.</p>',
+        type: 'text',
+        duration: '15 minutes',
+        order_index: 1,
+        chapter_id: '1',
+        course_id: '1',
+        is_premium: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        title: 'HTML Elements and Tags',
+        content: '<h1>HTML Elements and Tags</h1><p>This lesson covers the most commonly used HTML elements and tags for structuring content.</p>',
+        type: 'text',
+        duration: '20 minutes',
+        order_index: 2,
+        chapter_id: '1',
+        course_id: '1',
+        is_premium: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ]
+  },
+  {
+    id: '2',
+    title: 'CSS Styling Basics',
+    description: 'Learn how to style HTML with CSS',
+    order_index: 2,
+    course_id: '1',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    lessons: [
+      {
+        id: '3',
+        title: 'CSS Selectors',
+        content: '<h1>CSS Selectors</h1><p>Learn how to select and target HTML elements with various CSS selector types.</p>',
+        type: 'text',
+        duration: '25 minutes',
+        order_index: 1,
+        chapter_id: '2',
+        course_id: '1',
+        is_premium: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '4',
+        title: 'CSS Box Model',
+        content: '<h1>CSS Box Model</h1><p>Understand the CSS box model including margin, border, padding, and content.</p>',
+        type: 'text',
+        duration: '20 minutes',
+        order_index: 2,
+        chapter_id: '2',
+        course_id: '1',
+        is_premium: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    ]
+  }
+];
+
+// Mock lessons extracted from chapters for flat access
+const mockLessons: Lesson[] = mockChapters.reduce((acc: Lesson[], chapter) => {
+  return [...acc, ...chapter.lessons!];
+}, []);
 
 export interface UseCourseDataProps {
   courseId?: string | number;
@@ -31,55 +155,49 @@ export const useCourseData = ({ courseId }: UseCourseDataProps) => {
         setLoading(true);
         setError(null);
 
-        const { data, error } = await supabase
-          .from('courses')
-          .select('*')
-          .eq('id', supabaseId(courseId))
-          .single();
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 800));
 
-        if (error) {
-          throw error;
-        }
-
-        if (data) {
-          const courseData: Course = {
-            id: data.id,
-            title: data.title,
-            description: data.description,
-            image: data.thumbnail_url || '/placeholder.svg',
-            thumbnail_url: data.thumbnail_url,
-            category: data.category,
-            level: data.level,
-            duration: data.duration,
-            isPremium: data.is_premium,
-            is_premium: data.is_premium,
-            price: String(data.price || ''),
-            discountPrice: String(data.discount_price || ''),
-            discount_price: String(data.discount_price || ''),
-            instructor: data.instructor,
-            isFeatured: data.is_featured,
-            is_featured: data.is_featured,
-            full_description: data.full_description || data.description,
-            created_at: data.created_at,
-            updated_at: data.updated_at,
-            status: 'published',
-            objectives: data.objectives || [],
-            requirements: data.requirements || []
-          };
-
-          setCourse(courseData);
+        // Retrieve mock course data
+        if (courseId === '1') {
+          setCourse(mockCourseData);
           
-          // Check if user is enrolled in this course
+          // Simulate user enrollment check
           if (user) {
-            const { data: enrollmentData } = await supabase
-              .from('user_courses')
-              .select('*')
-              .eq('user_id', user.id)
-              .eq('course_id', supabaseId(courseId))
-              .maybeSingle();
-              
-            setIsEnrolled(!!enrollmentData);
-            setUserProgress(enrollmentData?.progress_percentage || 0);
+            setIsEnrolled(true);
+            setUserProgress(45); // Mock progress percentage
+          }
+        } else {
+          // For other course IDs, generate a different mock course
+          const mockCourse: Course = {
+            id: String(courseId),
+            title: `Course ${courseId}`,
+            description: `This is a mock course with ID ${courseId}`,
+            thumbnail_url: '/placeholder.jpg',
+            image: '/placeholder.jpg',
+            category: 'Development',
+            duration: '20 hours',
+            level: 'Intermediate',
+            is_premium: false,
+            isPremium: false,
+            is_featured: false,
+            isFeatured: false,
+            instructor: 'Mock Instructor',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            status: 'published',
+            price: '',
+            discount_price: '',
+            discountPrice: '',
+            color: getRandomColor(),
+            chapters: []
+          };
+          
+          setCourse(mockCourse);
+          
+          if (user) {
+            setIsEnrolled(Math.random() > 0.5); // Randomly determine enrollment
+            setUserProgress(Math.floor(Math.random() * 100)); // Random progress
           }
         }
       } catch (err) {
@@ -104,55 +222,33 @@ export const useCourseData = ({ courseId }: UseCourseDataProps) => {
       try {
         setLoading(true);
 
-        // First fetch chapters
-        const { data: chaptersData, error: chaptersError } = await supabase
-          .from('chapters')
-          .select('*')
-          .eq('course_id', supabaseId(courseId))
-          .order('order_index', { ascending: true });
-
-        if (chaptersError) {
-          throw chaptersError;
-        }
-
-        // Then fetch lessons for each chapter
-        const allLessons: Lesson[] = [];
-
-        if (chaptersData && chaptersData.length > 0) {
-          for (const chapter of chaptersData) {
-            const { data: lessonsData, error: lessonsError } = await supabase
-              .from('lessons')
-              .select('*')
-              .eq('chapter_id', chapter.id)
-              .order('order_index', { ascending: true });
-
-            if (lessonsError) {
-              console.error('Error fetching lessons for chapter:', lessonsError);
-              continue;
-            }
-
-            if (lessonsData) {
-              const transformedLessons: Lesson[] = lessonsData.map(lesson => ({
-                id: lesson.id,
-                title: lesson.title,
-                content: lesson.content,
-                type: lesson.type,
-                duration: lesson.duration,
-                chapter_id: lesson.chapter_id,
-                chapterTitle: chapter.title,
-                order_index: lesson.order_index,
-                course_id: lesson.course_id,
-                is_premium: lesson.is_premium,
-                created_at: lesson.created_at,
-                updated_at: lesson.updated_at
-              }));
-
-              allLessons.push(...transformedLessons);
-            }
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        if (courseId === '1') {
+          setLessons(mockLessons);
+        } else {
+          // Generate mock lessons for other course IDs
+          const generatedLessons: Lesson[] = [];
+          
+          for (let i = 1; i <= 4; i++) {
+            generatedLessons.push({
+              id: `${courseId}-${i}`,
+              title: `Lesson ${i} for Course ${courseId}`,
+              content: `<h1>Lesson ${i}</h1><p>This is the content for lesson ${i} of course ${courseId}.</p>`,
+              type: 'text',
+              duration: '15 minutes',
+              order_index: i,
+              chapter_id: `${courseId}-chapter-1`,
+              course_id: String(courseId),
+              is_premium: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
           }
+          
+          setLessons(generatedLessons);
         }
-
-        setLessons(allLessons);
       } catch (err) {
         console.error('Error fetching lessons:', err);
         toast.error('Không thể tải danh sách bài học');
@@ -166,8 +262,25 @@ export const useCourseData = ({ courseId }: UseCourseDataProps) => {
 
   // Function to update course progress
   const updateProgress = async (lessonId: string | number, completed: boolean) => {
-    // Implementation details...
-    return true;
+    try {
+      if (!user || !courseId) {
+        return false;
+      }
+      
+      // Simulate progress update
+      console.log(`Updating progress for lesson ${lessonId}, completed: ${completed}`);
+      
+      // Update local progress state
+      if (completed) {
+        const newProgress = Math.min(userProgress + 10, 100);
+        setUserProgress(newProgress);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      return false;
+    }
   };
   
   // Function to enroll in course
@@ -178,21 +291,12 @@ export const useCourseData = ({ courseId }: UseCourseDataProps) => {
         return;
       }
       
-      const { error } = await supabase
-        .from('user_courses')
-        .insert({
-          user_id: user.id,
-          course_id: supabaseId(courseId),
-          progress_percentage: 0,
-        });
-        
-      if (error) {
-        console.error('Error enrolling in course:', error);
-        toast.error('Không thể đăng ký khóa học');
-        return;
-      }
+      // Simulate enrollment delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       setIsEnrolled(true);
+      setUserProgress(0);
+      
       toast.success('Đăng ký khóa học thành công');
     } catch (err) {
       console.error('Error enrolling in course:', err);

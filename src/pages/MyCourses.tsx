@@ -1,12 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import CourseCard from '@/components/CourseCard';
 import { Loader2 } from "lucide-react";
 import Navbar from '@/components/Navbar';
 import { Course } from '@/models/lesson';
-import { supabaseId } from '@/utils/idConverter';
+
+// Function to generate a random color
+const getRandomColor = () => {
+  const colors = ['#4F46E5', '#10B981', '#3B82F6', '#D946EF', '#F59E0B'];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
 
 // Extended course type with progress information
 interface EnrolledCourse extends Course {
@@ -14,6 +18,62 @@ interface EnrolledCourse extends Course {
   lastAccessed?: string;
   enrolledAt?: string;
 }
+
+// Mock enrolled courses data
+const mockEnrolledCourses: EnrolledCourse[] = [
+  {
+    id: '1',
+    title: 'Introduction to Web Development',
+    description: 'Learn the basics of web development with HTML, CSS and JavaScript',
+    thumbnail_url: '/placeholder.jpg',
+    image: '/placeholder.jpg',
+    category: 'Development',
+    duration: '24 hours',
+    level: 'Beginner',
+    is_premium: false,
+    isPremium: false,
+    is_featured: true,
+    isFeatured: true,
+    instructor: 'John Doe',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'published',
+    price: '',
+    discount_price: '',
+    discountPrice: '',
+    color: getRandomColor(),
+    chapters: [],
+    progress: 45,
+    lastAccessed: new Date().toISOString(),
+    enrolledAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days ago
+  },
+  {
+    id: '2',
+    title: 'Advanced React Development',
+    description: 'Master advanced React concepts including hooks, context API and Redux',
+    thumbnail_url: '/placeholder.jpg',
+    image: '/placeholder.jpg',
+    category: 'Development',
+    duration: '32 hours',
+    level: 'Advanced',
+    is_premium: true,
+    isPremium: true,
+    is_featured: true,
+    isFeatured: true,
+    instructor: 'Jane Smith',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'published',
+    price: '99.99',
+    discount_price: '79.99',
+    discountPrice: '79.99',
+    color: getRandomColor(),
+    chapters: [],
+    progress: 20,
+    lastAccessed: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    enrolledAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days ago
+  }
+];
 
 const MyCourses = () => {
   const [courses, setCourses] = useState<EnrolledCourse[]>([]);
@@ -24,52 +84,11 @@ const MyCourses = () => {
     const fetchEnrolledCourses = async () => {
       setLoading(true);
       try {
-        if (!user) return;
-
-        const { data, error } = await supabase
-          .from('user_courses')
-          .select(`
-            *,
-            courses (
-              *
-            )
-          `)
-          .eq('user_id', user.id);
-
-        if (error) {
-          console.error('Error fetching enrolled courses:', error);
-          setLoading(false);
-          return;
-        }
-
-        if (data) {
-          const enrolledCourses = data.map((item) => ({
-            id: item.course_id,
-            title: item.courses?.title || 'Unknown Course',
-            description: item.courses?.description || '',
-            image: item.courses?.thumbnail_url || '/placeholder.svg',
-            thumbnail_url: item.courses?.thumbnail_url || '/placeholder.svg',
-            level: item.courses?.level || 'Beginner',
-            duration: item.courses?.duration || 'Unknown',
-            category: item.courses?.category || 'General',
-            isPremium: item.courses?.is_premium || false,
-            is_premium: item.courses?.is_premium || false,
-            price: String(item.courses?.price || 'Free'),
-            discountPrice: String(item.courses?.discount_price || ''),
-            discount_price: String(item.courses?.discount_price || ''),
-            isFeatured: item.courses?.is_featured || false,
-            is_featured: item.courses?.is_featured || false,
-            instructor: item.courses?.instructor || 'EPU Learning',
-            status: 'published',
-            created_at: item.courses?.created_at || new Date().toISOString(),
-            updated_at: item.courses?.updated_at || new Date().toISOString(),
-            // Custom fields for enrolled courses
-            progress: item.progress_percentage || 0,
-            lastAccessed: item.last_accessed || 'Never',
-            enrolledAt: item.enrolled_at || 'Unknown',
-            color: '#4F46E5'
-          }));
-          setCourses(enrolledCourses);
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        if (user) {
+          setCourses(mockEnrolledCourses);
         }
       } catch (error) {
         console.error('Error fetching enrolled courses:', error);
@@ -84,8 +103,8 @@ const MyCourses = () => {
   const renderCourseCards = (courses: EnrolledCourse[]) => {
     return courses.map((course) => (
       <CourseCard
-        key={supabaseId(course.id)}
-        id={supabaseId(course.id)}
+        key={String(course.id)}
+        id={String(course.id)}
         title={course.title}
         description={course.description}
         image={course.image || course.thumbnail_url || '/placeholder.svg'}
@@ -98,6 +117,7 @@ const MyCourses = () => {
         progress={course.progress}
         lastAccessed={course.lastAccessed}
         enrolledAt={course.enrolledAt}
+        color={course.color}
       />
     ));
   };

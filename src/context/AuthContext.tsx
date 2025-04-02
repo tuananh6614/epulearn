@@ -1,36 +1,35 @@
 
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import useAuthProvider from '@/hooks/useAuthProvider';
 import { AuthContextType } from '@/types/auth';
 import LogoutConfirmDialog from '@/components/LogoutConfirmDialog';
-import { clearLocalCache } from '@/lib/utils';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create the context with a default value
+export const AuthContext = createContext<AuthContextType>({
+  currentUser: null,
+  loading: true,
+  login: async () => false,
+  logout: () => {},
+  signup: async () => false,
+  isAuthenticated: false,
+  showLogoutConfirm: false,
+  setShowLogoutConfirm: () => {},
+  updateCurrentUser: async () => false,
+  changePassword: async () => false,
+  resendVerificationEmail: async () => false,
+  performLogout: async () => {},
+  user: null
+});
 
+// Create a provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const auth = useAuthProvider();
-  
-  // Clear local cache when auth state changes
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Only persist cache for authenticated users
-      if (!auth.currentUser) {
-        clearLocalCache();
-      }
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [auth.currentUser]);
   
   return (
     <AuthContext.Provider value={auth}>
       {children}
-      <LogoutConfirmDialog 
-        open={auth.showLogoutConfirm} 
+      <LogoutConfirmDialog
+        open={auth.showLogoutConfirm}
         onOpenChange={auth.setShowLogoutConfirm}
         onConfirm={auth.performLogout}
       />
@@ -38,12 +37,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
-export default AuthContext;
+// Create a hook to use the auth context
+export const useAuth = () => useContext(AuthContext);

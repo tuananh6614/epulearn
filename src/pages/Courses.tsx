@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import CourseCard from '@/components/CourseCard';
 import { Input } from "@/components/ui/input"
@@ -49,10 +48,7 @@ const Courses = () => {
           
         if (error) {
           console.error('Error fetching courses:', error);
-          toast({
-            title: "Error",
-            description: "Đã xảy ra lỗi khi tải dữ liệu."
-          });
+          toast.error("Đã xảy ra lỗi khi tải dữ liệu.");
           return;
         }
         

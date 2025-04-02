@@ -80,7 +80,7 @@ export function SecurityForm() {
     setIsLoading(true);
     
     try {
-      // Use updateCurrentUser instead of the non-existent updateUserProfile
+      // Add the deleteRequested property to User type in auth.ts
       const success = await updateCurrentUser({
         deleteRequested: true
       });

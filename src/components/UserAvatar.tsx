@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input"; // Import needed components
-import { Label } from "@/components/ui/label"; // Import needed components
+import { Input } from "@/components/ui/input"; 
+import { Label } from "@/components/ui/label"; 
 import { Upload, Pencil, Trash, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -35,8 +35,9 @@ export function UserAvatar({
     lg: "h-20 w-20",
   };
   
-  const user = userId ? { id: userId, avatar_url: userImage } : currentUser;
-  const avatarUrl = user?.avatar_url || currentUser?.avatar_url || filePreview;
+  // Create a typed user object
+  const user = userId ? { id: userId, avatarUrl: userImage } : currentUser;
+  const avatarUrl = user?.avatarUrl || currentUser?.avatarUrl || filePreview;
   const initials = user?.email?.substring(0, 2).toUpperCase() || currentUser?.email?.substring(0, 2).toUpperCase() || "U";
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,9 +69,9 @@ export function UserAvatar({
         .from('user-avatars')
         .getPublicUrl(filePath);
       
-      // Update user profile with avatar URL using updateCurrentUser instead
+      // Update user profile with avatar URL
       const updated = await updateCurrentUser({
-        avatar_url: publicUrl
+        avatarUrl: publicUrl
       });
       
       if (updated) {
@@ -93,7 +94,7 @@ export function UserAvatar({
     try {
       // Update user profile to remove avatar URL
       const updated = await updateCurrentUser({
-        avatar_url: null
+        avatarUrl: null
       });
       
       if (updated) {

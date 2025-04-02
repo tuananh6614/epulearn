@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -78,7 +79,7 @@ const ProfileForm: React.FC = () => {
           size="lg"
           showEditButton={true}
           userId={currentUser?.id}
-          userImage={currentUser?.avatar_url}
+          userImage={currentUser?.avatarUrl}
         />
         <p className="text-sm text-muted-foreground mt-2">
           Nhấp vào biểu tượng để cập nhật ảnh đại diện

@@ -15,8 +15,7 @@ export const AuthContext = createContext<AuthContextType>({
   showLogoutConfirm: false,
   setShowLogoutConfirm: () => {},
   updateCurrentUser: async () => false,
-  // Add the missing updateUserProfile function
-  updateUserProfile: async () => false,
+  updateUserProfile: async () => false, // Include in the default value
   changePassword: async () => false,
   resendVerificationEmail: async () => false,
   performLogout: async () => {},

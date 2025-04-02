@@ -9,6 +9,7 @@ export interface User {
   email_confirmed_at?: string | null;
   isVip?: boolean;
   vipExpirationDate?: string | null;
+  deleteRequested?: boolean;  // Add this property for delete account functionality
 }
 
 export interface AuthContextType {
@@ -21,6 +22,7 @@ export interface AuthContextType {
   showLogoutConfirm: boolean;
   setShowLogoutConfirm: (show: boolean) => void;
   updateCurrentUser: (data: Partial<User>) => Promise<boolean>;
+  updateUserProfile: (data: Partial<User>) => Promise<boolean>; // Add this property
   changePassword: (oldPassword: string, newPassword: string) => Promise<boolean>;
   resendVerificationEmail: () => Promise<boolean>;
   performLogout: () => Promise<void>;

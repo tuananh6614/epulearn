@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { User, AuthContextType } from '@/types/auth';
 import { toast } from 'sonner';
@@ -215,6 +214,11 @@ export default function useAuthProvider(): AuthContextType {
     }
   }, [currentUser]);
 
+  // Add updateUserProfile function that calls updateCurrentUser
+  const updateUserProfile = useCallback(async (userData: Partial<User>): Promise<boolean> => {
+    return updateCurrentUser(userData);
+  }, [updateCurrentUser]);
+
   return {
     currentUser,
     loading,
@@ -225,6 +229,7 @@ export default function useAuthProvider(): AuthContextType {
     showLogoutConfirm,
     setShowLogoutConfirm,
     updateCurrentUser,
+    updateUserProfile, // Include the new function here
     changePassword,
     resendVerificationEmail,
     performLogout,

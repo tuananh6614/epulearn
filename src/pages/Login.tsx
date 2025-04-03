@@ -92,7 +92,7 @@ const Login = () => {
 
           {authError && (
             <div className="px-6">
-              <Alert variant="destructive" className="mb-4">
+              <Alert variant="warning" className="mb-4">
                 <AlertCircle className="h-4 w-4 mr-2" />
                 <AlertDescription>{authError}</AlertDescription>
               </Alert>

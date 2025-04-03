@@ -1,9 +1,9 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
@@ -41,19 +41,7 @@ export function SecurityForm() {
     setIsLoading(true);
     
     try {
-      // First authenticate with current password
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: currentUser?.email || '',
-        password: currentPassword,
-      });
-      
-      if (authError) {
-        toast.error("Mật khẩu hiện tại không chính xác");
-        setIsLoading(false);
-        return;
-      }
-      
-      // Call changePassword with both the current and new passwords
+      // Authenticate with current password and change to new password
       const success = await changePassword(currentPassword, newPassword);
       
       if (!success) {

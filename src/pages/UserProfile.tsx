@@ -4,9 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import ProfileForm from "@/components/ProfileForm";
 import { SecurityForm } from "@/components/SecurityForm";
-import { User as UserIcon, ShieldAlert } from 'lucide-react';
+import { User, ShieldAlert } from 'lucide-react';
 
-// Update to use default export
 const UserProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState("profile");
 
@@ -17,7 +16,7 @@ const UserProfile: React.FC = () => {
       <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="profile" className="flex items-center">
-            <UserIcon className="mr-2 h-4 w-4" />
+            <User className="mr-2 h-4 w-4" />
             Hồ sơ
           </TabsTrigger>
           <TabsTrigger value="security" className="flex items-center">
@@ -44,5 +43,4 @@ const UserProfile: React.FC = () => {
   );
 };
 
-// Add default export
 export default UserProfile;

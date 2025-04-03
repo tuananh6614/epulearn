@@ -1,7 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import {
@@ -59,14 +59,13 @@ const TestHistoryPage = () => {
       return;
     }
 
-    // Mock approach instead of supabase querying
+    // Mock approach for test history
     const fetchTestHistory = async () => {
       if (!user) return;
       
       try {
         // For courseId specific history
         if (courseId) {
-          // Using a mock implementation instead of the problematic query
           console.log(`[MOCK] Fetching test history for user ${user.id} in course ${courseId}`);
           setTestHistory([
             {
@@ -93,14 +92,31 @@ const TestHistoryPage = () => {
         } else {
           // For all user tests
           console.log(`[MOCK] Fetching all test history for user ${user.id}`);
-          const { data, error } = await supabase
-            .from('user_test_results')
-            .select('*, courses(*)')
-            .order('created_at', { ascending: false });
-          
-          if (!error && data) {
-            setTestHistory(data);
-          }
+          // Mock data for all tests
+          setTestHistory([
+            {
+              id: 1,
+              user_id: user.id,
+              course_id: 1,
+              score: 85,
+              passed: true,
+              created_at: new Date().toISOString(),
+              duration: 1200,
+              test_type: 'course',
+              courses: { title: 'JavaScript Basics' }
+            },
+            {
+              id: 2,
+              user_id: user.id,
+              course_id: 2,
+              score: 75,
+              passed: true,
+              created_at: new Date(Date.now() - 86400000).toISOString(),
+              duration: 900,
+              test_type: 'chapter',
+              courses: { title: 'React Fundamentals' }
+            }
+          ]);
         }
       } catch (err) {
         console.error('Error fetching test history:', err);

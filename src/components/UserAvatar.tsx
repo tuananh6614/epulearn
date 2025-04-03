@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Upload, Pencil, Trash, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { supabaseStorage } from "@/integrations/supabase/client"; 
 
 interface UserAvatarProps {
   size?: "sm" | "md" | "lg";
@@ -68,24 +67,12 @@ export function UserAvatar({
     setIsUploading(true);
     
     try {
-      const fileExt = selectedFile.name.split('.').pop();
-      const filePath = `avatars/${user.id}/avatar.${fileExt}`;
-      
-      // Upload file to Supabase Storage
-      const { data, error } = await supabaseStorage
-        .from('user-avatars')
-        .upload(filePath, selectedFile);
-        
-      if (error) throw error;
-      
-      // Get the public URL
-      const { data: { publicUrl } } = supabaseStorage
-        .from('user-avatars')
-        .getPublicUrl(filePath);
+      // Create a local file URL
+      const fileUrl = URL.createObjectURL(selectedFile);
       
       // Update user profile with avatar URL
       const updated = await updateCurrentUser({
-        avatarUrl: publicUrl
+        avatarUrl: fileUrl
       });
       
       if (updated) {

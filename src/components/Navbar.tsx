@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import { Code, BookOpen, GraduationCap, Home, Menu, X, User, LogOut, Crown } from "lucide-react";
+import { Code, BookOpen, Home, Menu, X, User, LogOut, Crown } from "lucide-react";
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -38,7 +37,6 @@ const Navbar = () => {
   }, []);
   
   useEffect(() => {
-    // Close mobile menu when screen size changes
     const handleResize = () => {
       if (window.innerWidth >= 768 && mobileMenuOpen) {
         setMobileMenuOpen(false);
@@ -51,7 +49,6 @@ const Navbar = () => {
     };
   }, [mobileMenuOpen]);
   
-  // Disable scroll when mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -94,10 +91,6 @@ const Navbar = () => {
           <Link to="/vip-courses" className="nav-link text-sm font-medium flex items-center gap-1 text-yellow-600 dark:text-yellow-400 hover:text-yellow-500 dark:hover:text-yellow-300 transition-colors whitespace-nowrap">
             <Crown className="h-4 w-4" />
             Khóa Học VIP
-          </Link>
-          <Link to="/certification" className="nav-link text-sm font-medium flex items-center gap-1 text-gray-800 dark:text-gray-200 hover:text-green-500 dark:hover:text-green-400 transition-colors whitespace-nowrap">
-            <GraduationCap className="h-4 w-4" />
-            Chứng Chỉ
           </Link>
         </nav>
         

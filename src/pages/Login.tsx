@@ -38,26 +38,8 @@ const Login = () => {
     }
   }, []);
 
-  // Debugging
-  useEffect(() => {
-    console.log("Login component mounted, isAuthenticated:", isAuthenticated);
-    
-    try {
-      // Check if the token is available in localStorage
-      const session = localStorage.getItem('epu_user');
-      console.log("User in localStorage:", session ? "Available" : "Not available");
-    } catch (error) {
-      console.error("Error checking localStorage:", error);
-    }
-    
-    return () => {
-      console.log("Login component unmounted");
-    };
-  }, [isAuthenticated]);
-
   // Redirect if already logged in
   if (isAuthenticated) {
-    console.log("User is authenticated, redirecting to home");
     return <Navigate to="/" replace />;
   }
 
@@ -73,21 +55,16 @@ const Login = () => {
     setAuthError(null);
     
     try {
-      console.log("Attempting login with:", email);
       const success = await login(email, password);
-      console.log("Login result:", success);
       
       if (success) {
-        console.log("Login successful, navigating to home");
         navigate('/');
         toast.success("Đăng nhập thành công!");
       } else {
-        console.log("Login failed but no error was thrown");
         setAuthError("Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu của bạn.");
       }
     } catch (error) {
-      console.error("Login error:", error);
-      setAuthError("Đăng nhập thất bại. Vui lòng thử lại.");
+      setAuthError("Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu của bạn.");
     } finally {
       setIsSubmitting(false);
     }

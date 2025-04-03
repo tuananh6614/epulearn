@@ -15,9 +15,8 @@ export const AuthContext = createContext<AuthContextType>({
   showLogoutConfirm: false,
   setShowLogoutConfirm: () => {},
   updateCurrentUser: async () => false,
-  updateUserProfile: async () => false, // Include in the default value
+  updateUserProfile: async () => false,
   changePassword: async () => false,
-  resendVerificationEmail: async () => false,
   performLogout: async () => {},
   user: null
 });

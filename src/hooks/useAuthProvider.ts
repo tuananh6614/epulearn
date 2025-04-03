@@ -1,6 +1,8 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { User, AuthContextType } from '@/types/auth';
 import { toast } from 'sonner';
+import { checkVipAccess } from '@/integrations/api/client';
 
 // Mock user data for demo purposes
 const DEMO_USER: User = {
@@ -9,7 +11,6 @@ const DEMO_USER: User = {
   firstName: "Demo",
   lastName: "User",
   avatarUrl: "https://ui-avatars.com/api/?name=Demo+User&background=random",
-  email_confirmed_at: new Date().toISOString(),
   isVip: false
 };
 
@@ -59,10 +60,13 @@ export default function useAuthProvider(): AuthContextType {
       if (email.toLowerCase() === DEMO_USER.email && password === DEMO_PASSWORD) {
         console.log("Login successful");
         
-        // Create a new user object with current timestamp
+        // Check if user is VIP
+        const vipStatus = await checkVipAccess(DEMO_USER.id);
+        
+        // Create a new user object with current timestamp and VIP status
         const user: User = {
           ...DEMO_USER,
-          // Add additional properties if needed
+          isVip: vipStatus.isVip
         };
 
         // Save the user to localStorage
@@ -122,10 +126,23 @@ export default function useAuthProvider(): AuthContextType {
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       // In a real app, we would create a new user in the backend
-      // For now, just pretend we created a user and notify that verification is needed
       console.log("Sign-up successful");
-      toast.success("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
       
+      // Create a new user
+      const newUser: User = {
+        id: `user-${Math.random().toString(36).substring(2, 15)}`,
+        email,
+        firstName,
+        lastName,
+        avatarUrl: `https://ui-avatars.com/api/?name=${firstName}+${lastName}&background=random`,
+        isVip: false
+      };
+      
+      // Auto-login after signup
+      localStorage.setItem('epu_user', JSON.stringify(newUser));
+      setCurrentUser(newUser);
+      
+      toast.success("Đăng ký thành công!");
       return true;
     } catch (error) {
       console.error("Sign-up error:", error);
@@ -193,31 +210,12 @@ export default function useAuthProvider(): AuthContextType {
     }
   }, [currentUser]);
 
-  // Simulated resend verification email function
-  const resendVerificationEmail = useCallback(async (): Promise<boolean> => {
-    try {
-      if (!currentUser) {
-        console.error("Cannot resend verification email: No user is logged in");
-        return false;
-      }
-      
-      console.log("Resending verification email to:", currentUser.email);
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success("Email xác thực đã được gửi lại!");
-      return true;
-    } catch (error) {
-      console.error("Resend verification email error:", error);
-      return false;
-    }
-  }, [currentUser]);
-
   // Add updateUserProfile function that calls updateCurrentUser
   const updateUserProfile = useCallback(async (userData: Partial<User>): Promise<boolean> => {
     return updateCurrentUser(userData);
   }, [updateCurrentUser]);
+
+  // Remove resendVerificationEmail function as it's no longer needed
 
   return {
     currentUser,
@@ -229,9 +227,8 @@ export default function useAuthProvider(): AuthContextType {
     showLogoutConfirm,
     setShowLogoutConfirm,
     updateCurrentUser,
-    updateUserProfile, // Include the new function here
+    updateUserProfile,
     changePassword,
-    resendVerificationEmail,
     performLogout,
     user: currentUser
   };

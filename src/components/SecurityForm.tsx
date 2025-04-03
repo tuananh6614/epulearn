@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,8 +53,7 @@ export function SecurityForm() {
         return;
       }
       
-      // Update password - calling changePassword with the correct number of arguments
-      // The implementation in useAuthProvider expects both passwords
+      // Call changePassword with both the current and new passwords
       const success = await changePassword(currentPassword, newPassword);
       
       if (!success) {

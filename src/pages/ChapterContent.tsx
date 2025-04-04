@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/integrations/api/client';
 import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,6 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import GreenButton from '@/components/GreenButton';
 
-// Định nghĩa các kiểu dữ liệu
 interface Lesson {
   id: string;
   title: string;
@@ -75,42 +74,34 @@ const ChapterContent = () => {
       try {
         setLoading(true);
         
-        // Fetch course details
-        const { data: courseData, error: courseError } = await supabase
-          .from('courses')
-          .select('*')
-          .eq('id', courseId)
-          .single();
+        const { data: courseData, error: courseError } = await api
+          .get(`/courses/${courseId}`)
+          .then(response => response.data)
+          .catch(error => error);
           
         if (courseError) throw courseError;
         setCourse(courseData as Course);
         
-        // Fetch chapter details
-        const { data: chapterData, error: chapterError } = await supabase
-          .from('chapters')
-          .select('*')
-          .eq('id', chapterId)
-          .single();
+        const { data: chapterData, error: chapterError } = await api
+          .get(`/chapters/${chapterId}`)
+          .then(response => response.data)
+          .catch(error => error);
           
         if (chapterError) throw chapterError;
         setChapter(chapterData as Chapter);
         
-        // Fetch chapter lessons
-        const { data: lessonsData, error: lessonsError } = await supabase
-          .from('lessons')
-          .select('*')
-          .eq('chapter_id', chapterId)
-          .order('order_index', { ascending: true });
+        const { data: lessonsData, error: lessonsError } = await api
+          .get(`/lessons?chapter_id=${chapterId}`)
+          .then(response => response.data)
+          .catch(error => error);
           
         if (lessonsError) throw lessonsError;
         setLessons(lessonsData || []);
         
-        // Fetch all chapters for navigation
-        const { data: chaptersData, error: chaptersError } = await supabase
-          .from('chapters')
-          .select('id, title, order_index')
-          .eq('course_id', courseId)
-          .order('order_index', { ascending: true });
+        const { data: chaptersData, error: chaptersError } = await api
+          .get(`/chapters?course_id=${courseId}`)
+          .then(response => response.data)
+          .catch(error => error);
           
         if (chaptersError) throw chaptersError;
         
@@ -126,12 +117,10 @@ const ChapterContent = () => {
           }
         }
         
-        // Fetch user progress
-        const { data: progressData, error: progressError } = await supabase
-          .from('user_lesson_progress')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('chapter_id', chapterId);
+        const { data: progressData, error: progressError } = await api
+          .get(`/user_lesson_progress?user_id=${user.id}&chapter_id=${chapterId}`)
+          .then(response => response.data)
+          .catch(error => error);
           
         if (progressError) throw progressError;
         
@@ -142,7 +131,6 @@ const ChapterContent = () => {
         
         setLessonProgress(progressMap);
         
-        // Calculate chapter progress
         if (lessonsData && lessonsData.length > 0) {
           const completedLessons = lessonsData.filter(
             lesson => progressMap[lesson.id]?.completed
@@ -175,7 +163,6 @@ const ChapterContent = () => {
   };
   
   const handleContinueLearning = () => {
-    // Find first incomplete lesson
     const incompleteLesson = lessons.find(
       lesson => !lessonProgress[lesson.id]?.completed
     );
@@ -183,7 +170,6 @@ const ChapterContent = () => {
     if (incompleteLesson) {
       handleLessonClick(incompleteLesson.id);
     } else if (lessons.length > 0) {
-      // If all lessons completed, go to the test or first lesson
       handleStartChapterTest();
     }
   };
@@ -313,7 +299,6 @@ const ChapterContent = () => {
               );
             })}
             
-            {/* Chapter test */}
             <div 
               className="p-4 border rounded-lg flex items-center justify-between hover:border-primary/50 cursor-pointer transition-all bg-orange-50 dark:bg-orange-900/10"
               onClick={handleStartChapterTest}

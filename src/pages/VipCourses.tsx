@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { supabaseId } from '@/utils/idConverter';
+import { api } from '@/integrations/api/client';
 
 const VipCourses = () => {
   const [vipCourses, setVipCourses] = useState<Course[]>([]);

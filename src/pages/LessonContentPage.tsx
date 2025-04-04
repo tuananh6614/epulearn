@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, ChevronLeft, ChevronRight, BookOpen, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -7,13 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/integrations/api/client';
 import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
 import GreenButton from '@/components/GreenButton';
-import { saveLessonProgress, getLessonPages } from '@/integrations/supabase/userProgressServices';
+import { saveLessonProgress, getLessonPages } from '@/services/userProgressServices';
 import { toNumberId, toStringId, idsAreEqual, supabaseId } from '@/utils/idConverter';
-import { Chapter, Lesson, Page } from '@/models/lesson';
+import { Lesson, LessonPage, Chapter, Page } from '@/models/lesson';
 
 interface LessonProgress {
   completed: boolean;
@@ -48,7 +47,7 @@ const LessonContentPage = () => {
         setLoading(true);
         
         // First, fetch chapter info
-        const { data: chapterData, error: chapterError } = await supabase
+        const { data: chapterData, error: chapterError } = await api
           .from('chapters')
           .select('*')
           .eq('id', supabaseId(chapterId))
@@ -69,7 +68,7 @@ const LessonContentPage = () => {
         setChapter(chapter);
         
         // Then fetch the lesson
-        const { data: lessonData, error: lessonError } = await supabase
+        const { data: lessonData, error: lessonError } = await api
           .from('lessons')
           .select('*')
           .eq('id', supabaseId(lessonId))
@@ -108,7 +107,7 @@ const LessonContentPage = () => {
         }
         
         // For lesson navigation, ensure proper type comparison with id
-        const { data: navigationData, error: navigationError } = await supabase
+        const { data: navigationData, error: navigationError } = await api
           .from('lessons')
           .select('id, title, order_index')
           .eq('chapter_id', supabaseId(chapterId))
@@ -141,7 +140,7 @@ const LessonContentPage = () => {
               chapter_id: chapterId
             } as unknown as Lesson);
           } else {
-            const { data: testLesson, error: testError } = await supabase
+            const { data: testLesson, error: testError } = await api
               .from('lessons')
               .select('*')
               .eq('chapter_id', supabaseId(chapterId))
@@ -158,7 +157,7 @@ const LessonContentPage = () => {
           }
         }
         
-        const { data: progressData, error: progressError } = await supabase
+        const { data: progressData, error: progressError } = await api
           .from('user_lesson_progress')
           .select('*')
           .eq('user_id', user.id)
@@ -237,7 +236,7 @@ const LessonContentPage = () => {
           navigate(`/course/${courseId}/chapter/${chapterId}/lesson/${nextLesson.id}`);
         }
       } else {
-        const { data: chapters, error: chaptersError } = await supabase
+        const { data: chapters, error: chaptersError } = await api
           .from('chapters')
           .select('id, order_index')
           .eq('course_id', supabaseId(courseId))

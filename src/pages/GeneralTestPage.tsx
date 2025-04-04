@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -13,7 +12,7 @@ import { ArrowLeft, Clock, FileText, CheckCircle, AlertCircle, Trophy, BarChart 
 import { useAuth } from '@/context/AuthContext';
 import { fetchCourseTests } from '@/services/testServices';
 import { toast } from 'sonner';
-import { api as supabase } from '@/integrations/api/client';
+import { api } from '@/integrations/api/client';
 import { CourseTest } from '@/models/lesson';
 
 interface GeneralTestPageProps {}
@@ -66,21 +65,19 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
         
         if (response.test) {
           setCourseTest(response.test);
-          // Make sure we're handling the questions correctly
           const testQuestions = response.test.questions || [];
           setQuestions(testQuestions);
           setTimeRemaining((response.test.time_limit || 30) * 60);
         } else if (response.tests && response.tests.length > 0) {
           const firstTest = response.tests[0];
           setCourseTest(firstTest);
-          // Check if the test has questions property or course_test_questions
           const testQuestions = firstTest.questions || [];
           setQuestions(testQuestions);
           setTimeRemaining((firstTest.time_limit || 30) * 60);
         }
         
         if (user) {
-          const { data: previousTests, error } = await supabase
+          const { data: previousTests, error } = await api
             .from('user_test_results')
             .select('*')
             .eq('user_id', user.id)
@@ -143,7 +140,6 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
       [questionId]: answerIndex
     }));
     
-    // Log to verify the selection is being saved properly
     console.log(`Selected answer for question ${questionId}: option ${answerIndex}`);
   };
   
@@ -169,7 +165,7 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
     try {
       const timeTaken = (courseTest?.time_limit * 60) - timeRemaining;
       
-      const { error } = await supabase
+      const { error } = await api
         .from('user_test_results')
         .insert({
           user_id: user.id,
@@ -187,7 +183,7 @@ const GeneralTestPage: React.FC<GeneralTestPageProps> = () => {
       } else {
         toast.success("Đã lưu kết quả kiểm tra");
         
-        const { data: previousTests, error: fetchError } = await supabase
+        const { data: previousTests, error: fetchError } = await api
           .from('user_test_results')
           .select('*')
           .eq('user_id', user.id)

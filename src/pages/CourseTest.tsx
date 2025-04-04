@@ -7,7 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CourseTestForm from '@/components/CourseTestForm';
 import { toast } from 'sonner';
-import { api as supabase } from '@/integrations/api/client';
+import { api } from '@/integrations/api/client';
 
 const CourseTest = () => {
   const { courseId } = useParams();
@@ -40,7 +40,7 @@ const CourseTest = () => {
         setTest(testData);
         
         // Get course details
-        const { data: courseData, error: courseError } = await supabase
+        const { data: courseData, error: courseError } = await api
           .from('courses')
           .select('title')
           .eq('id', courseId)

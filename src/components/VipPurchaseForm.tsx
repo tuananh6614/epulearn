@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { toast } from 'sonner';
 import VipActivationPending from './VipActivationPending';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { api } from '@/integrations/api/client';
 
 const QR_CODE_IMAGES = {
   "1-month": "/lovable-uploads/image.png",
@@ -65,7 +65,6 @@ const VipPlan: React.FC<VipPlanProps> = ({
       isUpgrade ? 'border-4 border-green-500 dark:border-green-600 bg-green-50 dark:bg-green-900/20' : 
       'border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
     }`}>
-      {/* Badge hiển thị ở góc trên bên phải, không đè lên khung */}
       <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/2 z-10">
         {isPopular && (
           <Badge className="bg-yellow-500 text-white px-4 py-1 rounded-full text-xs font-medium shadow-md">
@@ -99,7 +98,7 @@ const VipPlan: React.FC<VipPlanProps> = ({
         </CardDescription>
       </CardHeader>
       
-      <CardContent className="space-y-5 p-6"> {/* Tăng padding để có thêm không gian */}
+      <CardContent className="space-y-5 p-6">
         <div className="flex flex-col items-start gap-2">
           <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">
             {finalPrice.toLocaleString('vi-VN')}đ
@@ -161,7 +160,6 @@ const VipPurchaseForm = () => {
         setVipStatus(status);
         
         if (status.isVip) {
-          // Mock implementation to fix the error with .eq
           const mockData = { data: [{ plan_type: '6-months' }] };
           setCurrentVipPlan(mockData.data[0].plan_type);
         }
@@ -187,7 +185,7 @@ const VipPurchaseForm = () => {
     "3-months": {
       title: "3 Tháng",
       months: 3,
-      price: 600000, // Giá gốc mới từ hình ảnh
+      price: 600000,
       discount: 0,
       features: [
         "Truy cập đầy đủ tất cả khóa học VIP",
@@ -199,7 +197,7 @@ const VipPurchaseForm = () => {
     "6-months": {
       title: "6 Tháng",
       months: 6,
-      price: 1200000, // Giá gốc mới từ hình ảnh
+      price: 1200000,
       discount: 10,
       isPopular: true,
       features: [
@@ -213,7 +211,7 @@ const VipPurchaseForm = () => {
     "1-year": {
       title: "1 Năm",
       months: 12,
-      price: 2400000, // Giá gốc giữ nguyên
+      price: 2400000,
       discount: 30,
       features: [
         "Truy cập đầy đủ tất cả khóa học VIP",
@@ -321,29 +319,10 @@ const VipPurchaseForm = () => {
       const isUpgrade = vipStatus.isVip;
       
       if (isUpgrade) {
-        // Mock update for Supabase queries
         console.log('Upgrading VIP from: ', currentVipPlan, 'to:', selectedPlan);
-        // In a real implementation with proper Supabase typings, we would use:
-        // const { error: upgradeError } = await supabase
-        //  .from('vip_purchases')
-        //  .update({ status: 'upgraded' })
-        //  .eq('user_id', currentUser.id)
-        //  .eq('status', 'active');
       }
       
-      // Mock insert for Supabase queries
       console.log('Recording purchase for plan:', selectedPlan, 'amount:', finalPrice);
-      // In a real implementation with proper Supabase typings, we would use:
-      // const { error: purchaseError } = await supabase
-      //   .from('vip_purchases')
-      //   .insert({...});
-      
-      // Mock insert for user_courses
-      console.log('Enrolling user in course:', `vip-${selectedPlan}`);
-      // In a real implementation with proper Supabase typings, we would use:
-      // const { error: courseError } = await supabase
-      //   .from('user_courses')
-      //   .insert({...});
       
       activateVip(plan.months, isUpgrade);
       
@@ -368,7 +347,6 @@ const VipPurchaseForm = () => {
       
       const isUpgrade = vipStatus.isVip;
       
-      // Mock implementation to fix the error with .from(...).insert(...).eq
       console.log('Recording vip_purchase:', {
         user_id: currentUser.id,
         plan_type: selectedPlan,
@@ -411,32 +389,9 @@ const VipPurchaseForm = () => {
         expirationDate.setMonth(expirationDate.getMonth() + months);
       }
       
-      // Mock Supabase update
       console.log('Updating user profile: VIP activated until', expirationDate.toISOString());
-      // In a real implementation with proper Supabase typings, we would use:
-      // await supabase
-      //   .from('profiles')
-      //   .update({ 
-      //     is_vip: true,
-      //     vip_expiration_date: expirationDate.toISOString()
-      //   })
-      //   .eq('id', currentUser.id);
       
-      // Mock Supabase update for user_courses
-      console.log('Updating user course payment for:', `vip-${selectedPlan}`);
-      // In a real implementation with proper Supabase typings, we would use:
-      // await supabase
-      //   .from('user_courses')
-      //   .update({
-      //     has_paid: true,
-      //     payment_date: new Date().toISOString()
-      //   })
-      //   .eq('user_id', currentUser.id)
-      //   .eq('course_id', `vip-${selectedPlan}`);
-      
-      toast.success(isUpgrade ? "Tài khoản VIP đã được nâng cấp!" : "Tài khoản VIP đã được kích hoạt!", {
-        description: `Tài khoản của bạn đã được ${isUpgrade ? 'nâng cấp' : 'kích hoạt'} và có hiệu lực đến ${expirationDate.toLocaleDateString('vi-VN')}`
-      });
+      activateVip(plan.months, isUpgrade);
       
     } catch (error) {
       console.error("Lỗi khi kích hoạt VIP:", error);

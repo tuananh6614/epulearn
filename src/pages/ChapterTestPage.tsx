@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import ChapterTest from '@/components/ChapterTest';
 import Navbar from '@/components/Navbar';
 import { fetchChapterTest, saveTestResult } from '@/services/testServices';
-import { api as supabase } from '@/integrations/api/client';
+import { api } from '@/integrations/api/client';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { toStringId } from '@/utils/idConverter';
@@ -26,12 +25,10 @@ const ChapterTestPage = () => {
       return;
     }
     
-    // Provide a default value for chapterId to fix TS error
     const loadTest = async () => {
       try {
         setLoading(true);
         
-        // Fetch chapter test
         const test = await fetchChapterTest(chapterId || '0');
         
         if (!test) {
@@ -48,8 +45,7 @@ const ChapterTestPage = () => {
         
         setTestQuestions(formattedQuestions);
         
-        // Fetch course and chapter info
-        const { data: chapterData, error: chapterError } = await supabase
+        const { data: chapterData, error: chapterError } = await api
           .from('chapters')
           .select('title, courses(title)')
           .eq('id', toStringId(chapterId || '0'))
@@ -79,7 +75,6 @@ const ChapterTestPage = () => {
       const percentScore = Math.round((score / total) * 100);
       const passed = percentScore >= 70;
       
-      // Save test result
       const saveResult = await saveTestResult({
         user_id: user.id,
         course_id: courseId,
@@ -92,9 +87,8 @@ const ChapterTestPage = () => {
         console.log('Test result saved successfully');
       }
       
-      // Mark lesson as completed if it exists and test is passed
       if (lessonId && passed) {
-        const { error } = await supabase
+        const { error } = await api
           .from('user_lesson_progress')
           .upsert({
             user_id: user.id,

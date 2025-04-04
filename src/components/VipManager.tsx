@@ -6,7 +6,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { Crown, Check, UserCheck } from 'lucide-react';
-import { supabase } from "@/integrations/supabase/client";
 
 interface VipManagerProps {
   userId: string;
@@ -67,19 +66,8 @@ const VipManager: React.FC<VipManagerProps> = React.memo(({
       const duration = durations[selectedDuration as keyof typeof durations];
       const expiryDate = calculateExpiryDate(duration.months);
       
-      // Record the VIP purchase in vip_purchases table
-      // Using a mock implementation
+      // Record the VIP purchase - mock implementation
       console.log(`[MOCK] Creating VIP purchase for user ${userId}, plan: ${duration.planType}`);
-      
-      // In a real implementation, we would use Supabase like this:
-      // const { error: purchaseError } = await supabase
-      //  .from('vip_purchases')
-      //  .insert({
-      //    user_id: userId,
-      //    plan_type: duration.planType,
-      //    amount: duration.months * 100000, 
-      //    status: 'pending'
-      //  });
       
       setShowSuccess(true);
       setTimeout(() => {
@@ -92,30 +80,8 @@ const VipManager: React.FC<VipManagerProps> = React.memo(({
       // For this demo, we'll simulate it with a timeout
       setTimeout(async () => {
         try {
-          // Cập nhật trạng thái VIP trong profiles
-          // Using a mock implementation
+          // Update VIP status in profiles - mock implementation
           console.log(`[MOCK] Updating VIP status for user ${userId}`);
-          
-          // In a real implementation:
-          // const { error: updateError } = await supabase
-          //  .from('profiles')
-          //  .update({ 
-          //    is_vip: true,
-          //    vip_expiration_date: expiryDate.toISOString()
-          //  })
-          //  .eq('id', userId);
-          
-          // Update the purchase record
-          // In a real implementation:
-          // const { error: purchaseUpdateError } = await supabase
-          //  .from('vip_purchases')
-          //  .update({
-          //    status: 'active',
-          //    activation_date: new Date().toISOString()
-          //  })
-          //  .eq('user_id', userId)
-          //  .eq('status', 'pending');
-            
         } catch (error) {
           console.error('Error activating VIP status:', error);
         }
@@ -135,28 +101,9 @@ const VipManager: React.FC<VipManagerProps> = React.memo(({
     try {
       setLoading(true);
       
-      // Update VIP status in profiles - using a mock implementation
+      // Update VIP status - mock implementation
       console.log(`[MOCK] Removing VIP status for user ${userId}`);
       
-      // In a real implementation:
-      // const { error: updateError } = await supabase
-      //  .from('profiles')
-      //  .update({ 
-      //    is_vip: false,
-      //    vip_expiration_date: null
-      //  })
-      //  .eq('id', userId);
-      
-      // Update related vip_purchases to expired
-      // In a real implementation:
-      // const { error: purchaseUpdateError } = await supabase
-      //  .from('vip_purchases')
-      //  .update({
-      //    status: 'expired'
-      //  })
-      //  .eq('user_id', userId)
-      //  .eq('status', 'active');
-        
       toast.success('VIP access has been removed successfully');
       onVipStatusChanged();
       

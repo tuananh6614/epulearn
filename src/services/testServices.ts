@@ -1,4 +1,8 @@
 
+/**
+ * Mock Test Services
+ */
+
 import { TestQuestion, CourseTest, TestResult } from '@/models/lesson';
 
 // Mock test questions
@@ -47,13 +51,13 @@ const mockTestResults: TestResult[] = [
   }
 ];
 
-// Fetch course test
+// API for course test
 export const fetchCourseTest = async (courseId: string | number): Promise<CourseTest | null> => {
   console.log(`[MOCK] Fetching course test for course ID: ${courseId}`);
   return { ...mockCourseTest, course_id: Number(courseId) };
 };
 
-// Fetch chapter test
+// API for chapter test
 export const fetchChapterTest = async (chapterId: string | number): Promise<CourseTest | null> => {
   console.log(`[MOCK] Fetching chapter test for chapter ID: ${chapterId}`);
   return {
@@ -65,13 +69,13 @@ export const fetchChapterTest = async (chapterId: string | number): Promise<Cour
   };
 };
 
-// Save test result
+// API for saving test result
 export const saveTestResult = async (result: Partial<TestResult>): Promise<boolean> => {
   console.log('[MOCK] Saving test result:', result);
   return true;
 };
 
-// Fetch test history
+// API for test history
 export const fetchTestHistory = async (userId: string, courseId?: string | number): Promise<TestResult[]> => {
   console.log(`[MOCK] Fetching test history for user: ${userId}, course: ${courseId || 'all'}`);
   if (courseId) {
@@ -82,13 +86,13 @@ export const fetchTestHistory = async (userId: string, courseId?: string | numbe
   return mockTestResults.filter(result => result.user_id === userId);
 };
 
-// Fetch test questions
+// API for test questions
 export const fetchTestQuestions = async (chapterId: string | number): Promise<TestQuestion[]> => {
   console.log(`[MOCK] Fetching test questions for chapter ID: ${chapterId}`);
   return mockTestQuestions;
 };
 
-// Fetch course tests
+// API for course tests
 export const fetchCourseTests = async (courseId: string | number): Promise<{ success: boolean; test: CourseTest; tests: CourseTest[] }> => {
   console.log(`[MOCK] Fetching all tests for course ID: ${courseId}`);
   return {

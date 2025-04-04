@@ -1,222 +1,180 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { User, AuthContextType } from '@/types/auth';
+import { User } from '@/types/auth';
 import { toast } from 'sonner';
-import { checkVipAccess } from '@/integrations/api/client';
 
-// Mock user data for demo purposes
-const DEMO_USER: User = {
-  id: "demo-user-1",
-  email: "demo@example.com",
-  firstName: "Demo",
-  lastName: "User",
-  avatarUrl: "https://ui-avatars.com/api/?name=Demo+User&background=random",
-  isVip: false
-};
+// Mock user database
+const mockUsers = [
+  { 
+    id: 'demo-user-1', 
+    email: 'demo@example.com', 
+    firstName: 'Demo',
+    lastName: 'User',
+    password: 'password',
+    isVip: true,
+    vipExpirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    avatarUrl: '/placeholder.svg',
+    bio: 'This is a demo user'
+  }
+];
 
-// Store the password for the demo user - in a real app, passwords would never be stored like this
-const DEMO_PASSWORD = "password123";
-
-export default function useAuthProvider(): AuthContextType {
+const useAuthProvider = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState<boolean>(false);
-
-  // Get the user from localStorage on mount
+  const [loading, setLoading] = useState(true);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  
+  // Check for user in localStorage on initial load
   useEffect(() => {
-    const loadUser = () => {
+    const checkAuth = async () => {
       try {
-        const storedUser = localStorage.getItem('epu_user');
-        if (storedUser) {
-          const user = JSON.parse(storedUser) as User;
-          console.log("Loaded user from localStorage:", user.email);
-          setCurrentUser(user);
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          setCurrentUser(parsedUser);
         } else {
-          console.log("No user found in localStorage");
-          setCurrentUser(null);
+          console.info('No user found in localStorage');
         }
       } catch (error) {
-        console.error("Error loading user:", error);
-        localStorage.removeItem('epu_user');
-        setCurrentUser(null);
+        console.error('Error checking auth state:', error);
       } finally {
         setLoading(false);
       }
     };
-
-    loadUser();
+    
+    checkAuth();
   }, []);
-
-  // Simulated login function
+  
+  // Login handler
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
-      setLoading(true);
-      console.log("Login attempt with email:", email);
-
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Check if the email and password match our demo user
-      if (email.toLowerCase() === DEMO_USER.email && password === DEMO_PASSWORD) {
-        console.log("Login successful");
-        
-        // Check if user is VIP
-        const vipStatus = await checkVipAccess(DEMO_USER.id);
-        
-        // Create a new user object with current timestamp and VIP status
-        const user: User = {
-          ...DEMO_USER,
-          isVip: vipStatus.isVip
-        };
-
-        // Save the user to localStorage
-        localStorage.setItem('epu_user', JSON.stringify(user));
-        setCurrentUser(user);
+      // Find the user in our mock database
+      const user = mockUsers.find(u => u.email === email && u.password === password);
+      
+      if (user) {
+        const { password, ...userWithoutPassword } = user;
+        setCurrentUser(userWithoutPassword);
+        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
         return true;
-      } else {
-        console.log("Login failed: incorrect credentials");
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('Đăng nhập thất bại');
+      return false;
+    }
+  }, []);
+  
+  // Signup handler
+  const signup = useCallback(async (email: string, password: string, firstName: string, lastName: string): Promise<boolean> => {
+    try {
+      // Check if the user already exists
+      if (mockUsers.some(u => u.email === email)) {
+        toast.error('Email đã được sử dụng');
         return false;
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Simulated logout function
-  const logout = useCallback(() => {
-    console.log("Logout requested");
-    setShowLogoutConfirm(true);
-  }, []);
-
-  // Actual logout implementation
-  const performLogout = useCallback(async () => {
-    try {
-      console.log("Performing logout");
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Clear user data
-      localStorage.removeItem('epu_user');
-      setCurrentUser(null);
-      setShowLogoutConfirm(false);
-      
-      toast.success("Đăng xuất thành công!");
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast.error("Đăng xuất thất bại. Vui lòng thử lại.");
-    }
-  }, []);
-
-  // Simulated signup function
-  const signup = useCallback(async (
-    email: string, 
-    password: string,
-    firstName: string,
-    lastName: string
-  ): Promise<boolean> => {
-    try {
-      setLoading(true);
-      console.log("Sign-up attempt with email:", email);
-
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // In a real app, we would create a new user in the backend
-      console.log("Sign-up successful");
       
       // Create a new user
-      const newUser: User = {
-        id: `user-${Math.random().toString(36).substring(2, 15)}`,
+      const newUser = {
+        id: `user-${Date.now()}`,
         email,
         firstName,
         lastName,
-        avatarUrl: `https://ui-avatars.com/api/?name=${firstName}+${lastName}&background=random`,
-        isVip: false
+        isVip: false,
+        vipExpirationDate: null,
+        avatarUrl: null,
+        bio: null,
+        password
       };
       
-      // Auto-login after signup
-      localStorage.setItem('epu_user', JSON.stringify(newUser));
-      setCurrentUser(newUser);
+      mockUsers.push(newUser);
       
-      toast.success("Đăng ký thành công!");
+      const { password: _, ...userWithoutPassword } = newUser;
+      setCurrentUser(userWithoutPassword);
+      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+      
       return true;
     } catch (error) {
-      console.error("Sign-up error:", error);
+      console.error('Signup error:', error);
+      toast.error('Đăng ký thất bại');
       return false;
-    } finally {
-      setLoading(false);
     }
   }, []);
-
-  // Simulated update user function
-  const updateCurrentUser = useCallback(async (userData: Partial<User>): Promise<boolean> => {
+  
+  // Logout confirmation
+  const logout = useCallback(() => {
+    setShowLogoutConfirm(true);
+  }, []);
+  
+  // Perform logout
+  const performLogout = useCallback(async () => {
     try {
-      if (!currentUser) {
-        console.error("Cannot update user: No user is logged in");
-        return false;
-      }
-
-      console.log("Updating user data:", userData);
+      localStorage.removeItem('user');
+      setCurrentUser(null);
+      setShowLogoutConfirm(false);
+      toast.success('Đăng xuất thành công');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Đăng xuất thất bại');
+    }
+  }, []);
+  
+  // Update current user
+  const updateCurrentUser = useCallback(async (data: Partial<User>): Promise<boolean> => {
+    try {
+      if (!currentUser) return false;
       
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Update the current user with the new data
-      const updatedUser: User = {
-        ...currentUser,
-        ...userData
-      };
-      
-      localStorage.setItem('epu_user', JSON.stringify(updatedUser));
+      const updatedUser = { ...currentUser, ...data };
       setCurrentUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
       
-      toast.success("Cập nhật thông tin thành công!");
+      // Update the mock user in the database
+      const userIndex = mockUsers.findIndex(u => u.id === currentUser.id);
+      if (userIndex >= 0) {
+        mockUsers[userIndex] = { ...mockUsers[userIndex], ...data };
+      }
+      
       return true;
     } catch (error) {
-      console.error("Update user error:", error);
+      console.error('Update user error:', error);
       return false;
     }
   }, [currentUser]);
-
-  // Simulated change password function
+  
+  // Update user profile
+  const updateUserProfile = useCallback(async (data: Partial<User>): Promise<boolean> => {
+    try {
+      return await updateCurrentUser(data);
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return false;
+    }
+  }, [updateCurrentUser]);
+  
+  // Change password
   const changePassword = useCallback(async (oldPassword: string, newPassword: string): Promise<boolean> => {
     try {
-      if (!currentUser) {
-        console.error("Cannot change password: No user is logged in");
-        return false;
-      }
+      if (!currentUser) return false;
       
-      console.log("Changing password");
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, we would verify the old password and update with the new one
-      if (oldPassword === DEMO_PASSWORD) {
-        // For demo purposes, we don't actually change the stored password
-        toast.success("Mật khẩu đã được cập nhật thành công!");
+      // Find the user in our mock database
+      const userIndex = mockUsers.findIndex(u => u.id === currentUser.id);
+      if (userIndex >= 0) {
+        if (mockUsers[userIndex].password !== oldPassword) {
+          toast.error('Mật khẩu hiện tại không chính xác');
+          return false;
+        }
+        
+        mockUsers[userIndex].password = newPassword;
         return true;
-      } else {
-        toast.error("Mật khẩu hiện tại không chính xác");
-        return false;
       }
+      
+      return false;
     } catch (error) {
-      console.error("Change password error:", error);
+      console.error('Change password error:', error);
       return false;
     }
   }, [currentUser]);
-
-  // Add updateUserProfile function that calls updateCurrentUser
-  const updateUserProfile = useCallback(async (userData: Partial<User>): Promise<boolean> => {
-    return updateCurrentUser(userData);
-  }, [updateCurrentUser]);
-
-  // Remove resendVerificationEmail function as it's no longer needed
-
+  
   return {
     currentUser,
     loading,
@@ -230,6 +188,8 @@ export default function useAuthProvider(): AuthContextType {
     updateUserProfile,
     changePassword,
     performLogout,
-    user: currentUser
+    user: currentUser,
   };
-}
+};
+
+export default useAuthProvider;

@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import VipManager from './VipManager';
 import VipActivationPending from './VipActivationPending';
 import { formatDate } from '@/lib/utils';
-import { checkVipAccess } from '@/integrations/supabase/client';
+import { checkVipAccess } from '@/integrations/api/client';
 import { toast } from 'sonner';
 
 const VipStatusDisplay = memo(({ isVip, expirationDate, daysRemaining }: { 

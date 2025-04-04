@@ -1,5 +1,9 @@
 
-// Mock user progress tracking functionality
+/**
+ * User Progress Services
+ * 
+ * Mock implementation for user progress tracking functionality
+ */
 
 // Get user progress for a specific lesson
 export const getLessonProgress = async (userId: string, lessonId: string | number) => {

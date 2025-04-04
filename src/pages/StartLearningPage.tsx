@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Loader2, BookOpen, CheckCircle, ArrowLeft, ArrowRight, PlayCircle, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,8 +12,8 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import Navbar from '@/components/Navbar';
 import { useCourseData } from '@/hooks/useCourseData';
-import { getCourseProgress } from '@/integrations/supabase/userProgressServices';
-import { fetchCourseTests } from '@/integrations/supabase/testServices';
+import { getCourseProgress } from '@/services/userProgressServices';
+import { fetchCourseTests } from '@/services/testServices';
 import { toNumberId, supabaseId } from '@/utils/idConverter';
 
 interface Lesson {
@@ -44,7 +43,7 @@ interface LessonProgress {
   lesson_id: string | number;
   course_id?: string | number;
   completed: boolean;
-  last_position?: string; // Có thể là JSON string
+  last_position?: string;
 }
 
 interface CourseTest {
@@ -68,26 +67,18 @@ const StartLearningPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'chapters' | 'all-lessons' | 'tests'>('chapters');
   const [courseTests, setCourseTests] = useState<CourseTest[]>([]);
   
+  // Use the course data hook
   const { course, isEnrolled, error, userProgress } = useCourseData({ courseId: numericCourseId });
   
   useEffect(() => {
     if (course && user && courseId) {
-      // Fetch user's progress in this course
-      const fetchCourseProgress = async () => {
+      const fetchUserProgressData = async () => {
         try {
           setLoadingProgress(true);
-          const { data, error } = await supabase
-            .from('user_courses')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('course_id', supabaseId(courseId))
-            .maybeSingle();
           
-          if (error) {
-            console.error('Error fetching course progress:', error);
-            toast.error('Không thể kiểm tra tiến độ khóa học');
-          }
-          // Note: userProgress is now handled by useCourseData
+          // Mock data instead of using Supabase
+          console.log(`[MOCK] Fetching course progress for user ${user.id} and course ${courseId}`);
+          
         } catch (err) {
           console.error('Error:', err);
         } finally {
@@ -95,7 +86,7 @@ const StartLearningPage: React.FC = () => {
         }
       };
       
-      fetchCourseProgress();
+      fetchUserProgressData();
     }
   }, [course, user, courseId]);
   
@@ -106,20 +97,21 @@ const StartLearningPage: React.FC = () => {
       try {
         setLoading(true);
         
-        // Fetch user progress for all lessons in this course
-        const { data: progressData, error: progressError } = await supabase
-          .from('user_lesson_progress')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('course_id', supabaseId(numericCourseId));
-          
-        if (progressError) throw progressError;
+        // Mock data for lesson progress
+        console.log(`[MOCK] Fetching lesson progress for user ${user.id} and course ${numericCourseId}`);
         
-        // Convert to a map for easier lookup
+        // Generate mock progress data
         const progressMap: Record<string, LessonProgress> = {};
-        progressData?.forEach((item) => {
-          progressMap[String(item.lesson_id)] = item;
-        });
+        if (course?.chapters) {
+          course.chapters.forEach(chapter => {
+            chapter.lessons?.forEach(lesson => {
+              progressMap[String(lesson.id)] = {
+                lesson_id: lesson.id,
+                completed: Math.random() > 0.5,
+              };
+            });
+          });
+        }
         
         setLessonProgress(progressMap);
         
@@ -140,7 +132,7 @@ const StartLearningPage: React.FC = () => {
     };
     
     fetchData();
-  }, [numericCourseId, user]);
+  }, [numericCourseId, user, course]);
   
   const handleChapterClick = (chapterId: string | number) => {
     navigate(`/course/${courseId}/chapter/${supabaseId(chapterId)}`);

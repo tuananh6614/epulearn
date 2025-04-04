@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Crown, CheckCircle, Clock, QrCode, Download, Share2, AlertCircle, ArrowUpRight, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase, checkVipAccess, VipStatus } from "@/integrations/supabase/client";
+import { checkVipAccess, VipStatus } from "@/integrations/api/client";
 import { toast } from 'sonner';
 import VipActivationPending from './VipActivationPending';
 import { Alert, AlertDescription } from "@/components/ui/alert";

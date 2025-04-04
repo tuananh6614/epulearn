@@ -1,14 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchCourseTest, saveTestResult } from '@/integrations/supabase/testServices';
+import { fetchCourseTest, saveTestResult } from '@/services/testServices';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import CourseTestForm from '@/components/CourseTestForm';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { api as supabase } from '@/integrations/api/client';
 
 const CourseTest = () => {
   const { courseId } = useParams();

@@ -11,9 +11,9 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Clock, FileText, CheckCircle, AlertCircle, Trophy, BarChart } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { fetchCourseTests } from '@/integrations/supabase/testServices';
+import { fetchCourseTests } from '@/services/testServices';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { api as supabase } from '@/integrations/api/client';
 import { CourseTest } from '@/models/lesson';
 
 interface GeneralTestPageProps {}

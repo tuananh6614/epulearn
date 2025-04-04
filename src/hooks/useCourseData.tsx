@@ -1,20 +1,28 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 interface Course {
   id: number | string;
   title: string;
   description: string;
   duration: string;
+  image: string;
+  level: string;
+  instructor: string;
+  category: string;
+  full_description?: string;
+  requirements?: string[];
+  objectives?: string[];
+  is_premium?: boolean;
   chapters: Chapter[];
-  // ... other course properties
 }
 
 interface Chapter {
   id: number | string;
   title: string;
   lessons: Lesson[];
-  // ... other chapter properties
 }
 
 interface Lesson {
@@ -22,7 +30,7 @@ interface Lesson {
   title: string;
   duration?: string;
   type?: string;
-  // ... other lesson properties
+  is_premium?: boolean;
 }
 
 interface UseCourseDataParams {
@@ -35,6 +43,7 @@ interface UseCourseDataResult {
   loading: boolean;
   error: Error | null;
   userProgress: number;
+  enrollInCourse: () => Promise<void>;
 }
 
 // Mock data
@@ -44,24 +53,32 @@ const mockCourses: Record<string, Course> = {
     title: "JavaScript Fundamentals",
     description: "Learn the core concepts of JavaScript programming",
     duration: "10 hours",
+    image: "/images/courses/javascript.jpg",
+    level: "Beginner",
+    instructor: "John Doe",
+    category: "Programming",
+    full_description: "A comprehensive course on JavaScript fundamentals covering all the basics and advanced topics.",
+    requirements: ["Basic computer skills", "Understanding of HTML and CSS"],
+    objectives: ["Understand JavaScript syntax", "Create interactive web pages", "Build basic web applications"],
+    is_premium: false,
     chapters: [
       {
         id: 1,
         title: "Introduction to JavaScript",
         lessons: [
-          { id: 1, title: "What is JavaScript?", duration: "10 min", type: "video" },
-          { id: 2, title: "Setting up your environment", duration: "15 min", type: "text" },
-          { id: 3, title: "Hello World", duration: "5 min", type: "code" }
+          { id: 1, title: "What is JavaScript?", duration: "10 min", type: "video", is_premium: false },
+          { id: 2, title: "Setting up your environment", duration: "15 min", type: "text", is_premium: false },
+          { id: 3, title: "Hello World", duration: "5 min", type: "code", is_premium: false }
         ]
       },
       {
         id: 2,
         title: "JavaScript Basics",
         lessons: [
-          { id: 4, title: "Variables and Data Types", duration: "20 min", type: "video" },
-          { id: 5, title: "Operators", duration: "15 min", type: "text" },
-          { id: 6, title: "Control Flow", duration: "25 min", type: "code" },
-          { id: 7, title: "Chapter Quiz", duration: "10 min", type: "test" }
+          { id: 4, title: "Variables and Data Types", duration: "20 min", type: "video", is_premium: false },
+          { id: 5, title: "Operators", duration: "15 min", type: "text", is_premium: false },
+          { id: 6, title: "Control Flow", duration: "25 min", type: "code", is_premium: false },
+          { id: 7, title: "Chapter Quiz", duration: "10 min", type: "test", is_premium: true }
         ]
       }
     ]
@@ -71,23 +88,31 @@ const mockCourses: Record<string, Course> = {
     title: "React for Beginners",
     description: "Learn React from scratch",
     duration: "15 hours",
+    image: "/images/courses/react.jpg",
+    level: "Intermediate",
+    instructor: "Jane Smith",
+    category: "Frontend Development",
+    full_description: "Master React, the popular JavaScript library for building user interfaces.",
+    requirements: ["JavaScript knowledge", "Basic HTML and CSS"],
+    objectives: ["Understand React components", "State management with hooks", "Build complete React applications"],
+    is_premium: true,
     chapters: [
       {
         id: 3,
         title: "Introduction to React",
         lessons: [
-          { id: 8, title: "What is React?", duration: "10 min", type: "video" },
-          { id: 9, title: "Setting up a React project", duration: "20 min", type: "text" }
+          { id: 8, title: "What is React?", duration: "10 min", type: "video", is_premium: false },
+          { id: 9, title: "Setting up a React project", duration: "20 min", type: "text", is_premium: true }
         ]
       },
       {
         id: 4,
         title: "React Components",
         lessons: [
-          { id: 10, title: "Functional Components", duration: "15 min", type: "video" },
-          { id: 11, title: "Class Components", duration: "20 min", type: "text" },
-          { id: 12, title: "Props and State", duration: "25 min", type: "code" },
-          { id: 13, title: "Component Quiz", duration: "10 min", type: "test" }
+          { id: 10, title: "Functional Components", duration: "15 min", type: "video", is_premium: true },
+          { id: 11, title: "Class Components", duration: "20 min", type: "text", is_premium: true },
+          { id: 12, title: "Props and State", duration: "25 min", type: "code", is_premium: true },
+          { id: 13, title: "Component Quiz", duration: "10 min", type: "test", is_premium: true }
         ]
       }
     ]
@@ -150,11 +175,51 @@ export const useCourseData = ({ courseId }: UseCourseDataParams): UseCourseDataR
     fetchCourseData();
   }, [courseId, user]);
   
+  const enrollInCourse = async () => {
+    try {
+      setLoading(true);
+      
+      if (!user) {
+        toast.error("Bạn cần đăng nhập để đăng ký khóa học");
+        return;
+      }
+      
+      if (!courseId) {
+        toast.error("Không tìm thấy thông tin khóa học");
+        return;
+      }
+      
+      // Simulate enrollment API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update mock enrollment data
+      if (user.id) {
+        if (!mockEnrollments[user.id]) {
+          mockEnrollments[user.id] = [];
+        }
+        
+        if (!mockEnrollments[user.id].includes(courseId.toString())) {
+          mockEnrollments[user.id].push(courseId.toString());
+        }
+        
+        setIsEnrolled(true);
+        toast.success("Đăng ký khóa học thành công");
+      }
+      
+    } catch (err) {
+      console.error('Error enrolling in course:', err);
+      toast.error("Có lỗi xảy ra khi đăng ký khóa học");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   return {
     course,
     isEnrolled,
     loading,
     error,
-    userProgress
+    userProgress,
+    enrollInCourse
   };
 };
